@@ -21,6 +21,7 @@ export default function Home() {
         <div>
           <h1
             className="text-5xl font-bold tracking-tight text-chromed"
+            style={{ WebkitTextStroke: "0.5px rgba(15, 15, 15, 0.075)", paintOrder: "stroke fill" }}
           >
             Chris Pramana
           </h1>
