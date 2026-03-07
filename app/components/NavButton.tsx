@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 const iconProps = { width: 20, height: 20, strokeWidth: 2, color: "var(--color-primary)" };
 
@@ -21,6 +21,22 @@ interface NavButtonProps {
 export default function NavButton({ icon: Icon, label, href, active, onClick, iconKey, iconAnimation, target, rel, tooltipsReady, onTooltipShown }: NavButtonProps) {
   const [visible, setVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [ExitingIcon, setExitingIcon] = useState<React.ElementType | null>(null);
+  const [exitAnimation, setExitAnimation] = useState("");
+  const prevIconRef = useRef(Icon);
+
+  useEffect(() => {
+    if (prevIconRef.current !== Icon && iconAnimation) {
+      const exiting = prevIconRef.current;
+      const exitAnim = iconAnimation === "animate-icon-enter-up" ? "animate-icon-exit-up" : "animate-icon-exit-down";
+      setExitingIcon(() => exiting);
+      setExitAnimation(exitAnim);
+      prevIconRef.current = Icon;
+      const timer = setTimeout(() => setExitingIcon(null), 250);
+      return () => clearTimeout(timer);
+    }
+    prevIconRef.current = Icon;
+  }, [Icon, iconAnimation]);
 
   const handleMouseEnter = () => {
     if (tooltipsReady) {
@@ -38,21 +54,38 @@ export default function NavButton({ icon: Icon, label, href, active, onClick, ic
     setVisible(false);
   };
 
-  const className = "flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 transition-colors";
+  const handleClick = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setVisible(false);
+    timerRef.current = setTimeout(() => {
+      setVisible(true);
+      onTooltipShown();
+    }, 1500);
+  };
 
-  const el = href ? (
-    <a href={href} className={className} target={target} rel={rel} aria-label={label}>
-      <Icon {...iconProps} />
-    </a>
-  ) : (
-    <button className={className} aria-label={label} onClick={onClick}>
-      <span key={iconKey} className={`inline-flex${iconAnimation ? ` ${iconAnimation}` : ""}`}><Icon {...iconProps} /></span>
-    </button>
-  );
+  const buttonClass = "flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 transition-colors";
 
   return (
     <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-      {el}
+      <div className="relative h-10 w-10 overflow-hidden rounded-full">
+        {href ? (
+          <a href={href} className={buttonClass} target={target} rel={rel} aria-label={label}>
+            <Icon {...iconProps} />
+          </a>
+        ) : (
+          <>
+            <button className={buttonClass} aria-label={label} onClick={() => { onClick?.(); handleClick(); }} />
+            {ExitingIcon && (
+              <span className={`absolute inset-0 flex items-center justify-center pointer-events-none ${exitAnimation}`}>
+                <ExitingIcon {...iconProps} />
+              </span>
+            )}
+            <span key={iconKey} className={`absolute inset-0 flex items-center justify-center pointer-events-none${iconAnimation ? ` ${iconAnimation}` : ""}`}>
+              <Icon {...iconProps} />
+            </span>
+          </>
+        )}
+      </div>
       {active && (
         <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ backgroundColor: "var(--color-secondary)" }} />
       )}

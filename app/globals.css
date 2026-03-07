@@ -61,10 +61,11 @@ body {
   font-family: var(--font-zalando-sans), sans-serif;
 }
 
+
 @keyframes icon-enter-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(40px);
   }
   to {
     opacity: 1;
@@ -75,7 +76,7 @@ body {
 @keyframes icon-enter-down {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-40px);
   }
   to {
     opacity: 1;
@@ -84,11 +85,41 @@ body {
 }
 
 .animate-icon-enter-up {
-  animation: icon-enter-up 0.2s ease-out;
+  animation: icon-enter-up 0.15s ease;
 }
 
 .animate-icon-enter-down {
-  animation: icon-enter-down 0.2s ease-out;
+  animation: icon-enter-down 0.15s ease;
+}
+
+@keyframes icon-exit-up {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+}
+
+@keyframes icon-exit-down {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+
+.animate-icon-exit-up {
+  animation: icon-exit-up 0.15s ease forwards;
+}
+
+.animate-icon-exit-down {
+  animation: icon-exit-down 0.15s ease forwards;
 }
 
 @keyframes spin-slow {
