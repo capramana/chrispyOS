@@ -1,0 +1,59 @@
+@keyframes icon-enter-sunrise {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes icon-enter-sunset {
+  from {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-icon-enter-sunrise {
+  animation: icon-enter-sunrise 0.2s ease;
+}
+
+.animate-icon-enter-sunset {
+  animation: icon-enter-sunset 0.2s ease;
+}
+
+@keyframes icon-exit-sunrise {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+}
+
+@keyframes icon-exit-sunset {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+
+.animate-icon-exit-sunrise {
+  animation: icon-exit-sunrise 0.2s ease forwards;
+}
+
+.animate-icon-exit-sunset {
+  animation: icon-exit-sunset 0.2s ease forwards;
+}

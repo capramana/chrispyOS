@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import "./NavButton.css";
 
 const iconProps = { width: 20, height: 20, strokeWidth: 2, color: "var(--color-primary)" };
 
@@ -28,7 +29,7 @@ export default function NavButton({ icon: Icon, label, href, active, onClick, ic
   useEffect(() => {
     if (prevIconRef.current !== Icon && iconAnimation) {
       const exiting = prevIconRef.current;
-      const exitAnim = iconAnimation === "animate-icon-enter-up" ? "animate-icon-exit-up" : "animate-icon-exit-down";
+      const exitAnim = iconAnimation === "animate-icon-enter-sunrise" ? "animate-icon-exit-sunrise" : "animate-icon-exit-sunset";
       setExitingIcon(() => exiting);
       setExitAnimation(exitAnim);
       prevIconRef.current = Icon;

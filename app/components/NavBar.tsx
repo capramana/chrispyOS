@@ -27,7 +27,7 @@ export default function NavBar() {
         <NavButton icon={JournalIcon} label="Writing" {...sharedProps} />
         <NavButton icon={GridIcon} label="Vault" {...sharedProps} />
         <div className="mx-1 h-6 w-px bg-gray-200" />
-        <NavButton icon={isDark ? SunIcon : MoonIcon} label={isDark ? "Light mode" : "Dark mode"} iconKey={isDark ? "sun" : "moon"} iconAnimation={isDark ? "animate-icon-enter-up" : "animate-icon-enter-down"} onClick={() => setIsDark(!isDark)} {...sharedProps} />
+        <NavButton icon={isDark ? SunIcon : MoonIcon} label={isDark ? "Light mode" : "Dark mode"} iconKey={isDark ? "sun" : "moon"} iconAnimation={isDark ? "animate-icon-enter-sunrise" : "animate-icon-enter-sunset"} onClick={() => setIsDark(!isDark)} {...sharedProps} />
         <NavButton icon={MailIcon} label="Email" href="mailto:christopher.apramana@gmail.com" {...sharedProps} />
         <div className="mx-1 h-6 w-px bg-gray-200" />
         <MusicPlayer />
