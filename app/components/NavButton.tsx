@@ -24,16 +24,18 @@ export default function NavButton({ icon: Icon, label, href, active, onClick, ic
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [ExitingIcon, setExitingIcon] = useState<React.ElementType | null>(null);
   const [exitAnimation, setExitAnimation] = useState("");
+  const [activeAnimation, setActiveAnimation] = useState("");
   const prevIconRef = useRef(Icon);
 
   useEffect(() => {
     if (prevIconRef.current !== Icon && iconAnimation) {
       const exiting = prevIconRef.current;
       const exitAnim = iconAnimation === "animate-icon-enter-sunrise" ? "animate-icon-exit-sunrise" : "animate-icon-exit-sunset";
+      setActiveAnimation(iconAnimation);
       setExitingIcon(() => exiting);
       setExitAnimation(exitAnim);
-      prevIconRef.current = Icon;
       const timer = setTimeout(() => setExitingIcon(null), 250);
+      prevIconRef.current = Icon;
       return () => clearTimeout(timer);
     }
     prevIconRef.current = Icon;
@@ -81,7 +83,7 @@ export default function NavButton({ icon: Icon, label, href, active, onClick, ic
                 <ExitingIcon {...iconProps} />
               </span>
             )}
-            <span key={iconKey} className={`absolute inset-0 flex items-center justify-center pointer-events-none${iconAnimation ? ` ${iconAnimation}` : ""}`}>
+            <span key={iconKey} className={`absolute inset-0 flex items-center justify-center pointer-events-none${activeAnimation ? ` ${activeAnimation}` : ""}`}>
               <Icon {...iconProps} />
             </span>
           </>
