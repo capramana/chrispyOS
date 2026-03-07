@@ -20,12 +20,11 @@ export default function Home() {
       <div className="flex min-h-screen items-center justify-center">
         <div>
           <h1
-            className="text-5xl font-bold tracking-tight text-chromed"
-            style={{ WebkitTextStroke: "0.5px rgba(15, 15, 15, 0.075)", paintOrder: "stroke fill" }}
+            className="text-5xl font-semibold tracking-tight text-chromed"
           >
             Chris Pramana
           </h1>
-          <p className="mt-3 text-lg text-gray-400">
+          <p className="mt-3 text-lg text-chromed">
             builds products with intention and care :)
           </p>
         </div>
