@@ -6,7 +6,7 @@ import { HomeSimple as HomeIcon, EditPencil as JournalIcon, BookmarkBook as Grid
 import MusicPlayer from "./MusicPlayer";
 import NavButton from "./NavButton";
 
-const springTransition = { type: "spring" as const, stiffness: 400, damping: 40 };
+const springTransition = { type: "spring" as const, bounce: 0.5 };
 
 export default function NavBar() {
   const [tooltipsReady, setTooltipsReady] = useState(false);
@@ -54,7 +54,9 @@ export default function NavBar() {
         </AnimatePresence>
         <NavButton icon={isDark ? SunIcon : MoonIcon} label={isDark ? "Light mode" : "Dark mode"} iconKey={isDark ? "sun" : "moon"} iconAnimation={isDark ? "animate-icon-enter-sunrise" : "animate-icon-enter-sunset"} onClick={() => setIsDark(!isDark)} {...sharedProps} />
         <NavButton icon={MailIcon} label="Email" href="mailto:christopher.apramana@gmail.com" {...sharedProps} />
-        <MusicPlayer />
+        <motion.div layout="position">
+          <MusicPlayer />
+        </motion.div>
       </motion.div>
     </div>
   );
