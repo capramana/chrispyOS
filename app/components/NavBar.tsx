@@ -95,7 +95,6 @@ export default function NavBar() {
         <div className="w-3 shrink-0" />
         <NavButton icon={MailIcon} label="Email" href="mailto:christopher.apramana@gmail.com" {...sharedProps} />
         <div className="w-3 shrink-0" />
-        <div className="mx-1 h-6 w-px bg-gray-200 shrink-0" />
         <div className="w-2 shrink-0" />
         <MusicPlayer />
       </div>
