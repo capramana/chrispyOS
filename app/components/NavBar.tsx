@@ -70,13 +70,14 @@ export default function NavBar() {
 
         <div
           className="shrink-0"
-          style={containerStyle()}
+          style={{ willChange: "max-width", ...containerStyle() }}
           onAnimationEnd={handleAnimationEnd}
         >
           <div className="flex items-center">
             <div className="w-3 shrink-0" />
             <div
               style={{
+                willChange: "opacity, filter, transform",
                 opacity: iconVisible ? 1 : 0,
                 filter: iconVisible ? "blur(0px)" : "blur(4px)",
                 transform: iconVisible ? "scale(1)" : "scale(0.85)",

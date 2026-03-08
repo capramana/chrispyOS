@@ -81,11 +81,11 @@ export default function NavButton({ icon: Icon, label, href, active, onClick, ic
           <>
             <button className={buttonClass} aria-label={label} onClick={() => { onClick?.(); handleClick(); }} />
             {ExitingIcon && (
-              <span className={`absolute inset-0 flex items-center justify-center pointer-events-none ${exitAnimation}`}>
+              <span className={`absolute inset-0 flex items-center justify-center pointer-events-none ${exitAnimation}`} style={{ willChange: "opacity, filter, transform" }}>
                 <ExitingIcon {...iconProps} />
               </span>
             )}
-            <span key={iconKey} className={`absolute inset-0 flex items-center justify-center pointer-events-none${activeAnimation ? ` ${activeAnimation}` : ""}`}>
+            <span key={iconKey} className={`absolute inset-0 flex items-center justify-center pointer-events-none${activeAnimation ? ` ${activeAnimation}` : ""}`} style={{ willChange: "opacity, filter, transform" }}>
               <Icon {...iconProps} />
             </span>
           </>
