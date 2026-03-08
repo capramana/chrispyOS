@@ -1,0 +1,9 @@
+@keyframes filter-expand {
+  from { max-width: 0px; }
+  to   { max-width: 80px; }
+}
+
+@keyframes filter-collapse {
+  from { max-width: 80px; }
+  to   { max-width: 0px; }
+}

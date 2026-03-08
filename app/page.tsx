@@ -18,13 +18,11 @@ export default function Home() {
       {/* Center Content */}
       <div className="flex min-h-screen items-center justify-center">
         <div>
-          <h1
-            className="text-[40px] font-medium tracking-tight text-chromed"
-          >
+          <h1 className="text-[40px] font-medium tracking-tight text-chromed">
             Chris Pramana
           </h1>
           <p className="mt-2 text-lg text-chromed-sub max-w-[460px]">
-          lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+            lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
           </p>
         </div>
       </div>
