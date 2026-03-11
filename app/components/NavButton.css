@@ -1,3 +1,5 @@
+/* ─── Icon swap animations (dark mode toggle) ───────────────── */
+
 @keyframes icon-enter-sunrise {
   from {
     opacity: 0;
@@ -22,14 +24,6 @@
     filter: blur(0px);
     transform: translateY(0);
   }
-}
-
-.animate-icon-enter-sunrise {
-  animation: icon-enter-sunrise 0.2s ease;
-}
-
-.animate-icon-enter-sunset {
-  animation: icon-enter-sunset 0.2s ease;
 }
 
 @keyframes icon-exit-sunrise {
@@ -58,10 +52,7 @@
   }
 }
 
-.animate-icon-exit-sunrise {
-  animation: icon-exit-sunrise 0.2s ease forwards;
-}
-
-.animate-icon-exit-sunset {
-  animation: icon-exit-sunset 0.2s ease forwards;
-}
+.animate-icon-enter-sunrise { animation: icon-enter-sunrise 0.275s ease; }
+.animate-icon-enter-sunset  { animation: icon-enter-sunset  0.275s ease; }
+.animate-icon-exit-sunrise  { animation: icon-exit-sunrise  0.275s ease forwards; }
+.animate-icon-exit-sunset   { animation: icon-exit-sunset   0.275s ease forwards; }

@@ -2,6 +2,8 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ─── Design tokens ─────────────────────────────────────────── */
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -31,6 +33,8 @@
   --font-sans: var(--font-zalando-sans);
   --font-mono: var(--font-geist-mono);
 }
+
+/* ─── Utility classes ───────────────────────────────────────── */
 
 @layer utilities {
   .text-primary {
@@ -90,12 +94,40 @@
   paint-order: stroke fill;
 }
 
+/* ─── Theme transitions ─────────────────────────────────────── */
 
+/* Color — applied globally */
 @layer base {
   *, *::before, *::after {
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.275s ease, border-color 0.275s ease, color 0.275s ease;
   }
 }
+
+/* Blur — h1 and subtext */
+.transition-blur {
+  transition: filter 0.275s ease;
+}
+.theme-transitioning .transition-blur {
+  filter: blur(2px);
+}
+
+/* Blur — clock, new york, @chrispramana */
+.transition-blur-corner {
+  transition: filter 0.275s ease;
+}
+.theme-transitioning .transition-blur-corner {
+  filter: blur(1px);
+}
+
+/* Blur — logo */
+.transition-blur-logo {
+  transition: filter 0.275s ease;
+}
+.theme-transitioning .transition-blur-logo {
+  filter: blur(4px);
+}
+
+/* ─── Base ──────────────────────────────────────────────────── */
 
 body {
   background: var(--background);

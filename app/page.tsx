@@ -7,21 +7,23 @@ export default function Home() {
     <div className="relative min-h-screen bg-white dark:bg-[#191919]">
       {/* Top Left - City */}
       <div className="fixed top-12 left-12">
-        <span className="font-mono text-base tracking-wide text-primary">new york, ny</span>
+        <span className="transition-blur-corner inline-block font-mono text-base tracking-wide text-primary">new york, ny</span>
       </div>
 
       {/* Top Right - Work Experience */}
       <div className="fixed top-12 right-12">
-        <WorkExperience />
+        <div className="transition-blur-logo">
+          <WorkExperience />
+        </div>
       </div>
 
       {/* Center Content */}
       <div className="flex min-h-screen items-center justify-center">
         <div>
-          <h1 className="text-[40px] font-medium tracking-tight text-chromed">
+          <h1 className="transition-blur text-[40px] font-medium tracking-tight text-chromed">
             Chris Pramana
           </h1>
-          <p className="mt-2 text-lg text-chromed-sub max-w-[460px]">
+          <p className="transition-blur mt-2 text-lg text-chromed-sub max-w-[460px]">
             lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
           </p>
         </div>
@@ -29,7 +31,9 @@ export default function Home() {
 
       {/* Bottom Left - Clock */}
       <div className="fixed bottom-12 left-12">
-        <Clock />
+        <div className="transition-blur-corner">
+          <Clock />
+        </div>
       </div>
 
       {/* Bottom Center - Navigation Bar */}
@@ -41,7 +45,7 @@ export default function Home() {
           href="https://x.com/chrispramana"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-mono text-base tracking-wide text-primary hover:underline"
+          className="transition-blur-corner block font-mono text-base tracking-wide text-primary hover:underline"
         >
           @chrispramana
         </a>

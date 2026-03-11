@@ -37,7 +37,7 @@ export default function NavButton({ icon: Icon, label, href, active, onClick, ic
       setExitAnimation(exitAnim);
       setActiveAnimation(iconAnimation);
       prevIconRef.current = Icon;
-      exitTimerRef.current = setTimeout(() => setExitingIcon(null), 250);
+      exitTimerRef.current = setTimeout(() => setExitingIcon(null), 275);
     } else {
       prevIconRef.current = Icon;
     }
