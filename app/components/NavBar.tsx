@@ -59,14 +59,14 @@ export default function NavBar() {
 
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2" onMouseEnter={handleNavMouseEnter} onMouseLeave={handleNavMouseLeave}>
-      <div className="flex items-center rounded-full border border-gray-200 bg-white pl-3 pr-2 py-2 shadow-sm overflow-visible">
+      <div className="flex items-center rounded-full border border-gray-200 dark:border-[#444] bg-white dark:bg-[#191919] pl-3 pr-2 py-2 shadow-sm overflow-visible">
         <NavButton icon={HomeIcon} label="Home" active={activePage === "home"} onClick={() => setActivePage("home")} {...sharedProps} />
         <div className="w-3 shrink-0" />
         <NavButton icon={JournalIcon} label="Writing" active={activePage === "writing"} onClick={() => setActivePage("writing")} {...sharedProps} />
         <div className="w-3 shrink-0" />
         <NavButton icon={GridIcon} label="Vault" active={activePage === "vault"} onClick={() => setActivePage("vault")} {...sharedProps} />
         <div className="w-3 shrink-0" />
-        <div className="mx-1 h-6 w-px bg-gray-200 shrink-0" />
+        <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-[#444] shrink-0" />
 
         <div
           className="shrink-0"
@@ -87,12 +87,12 @@ export default function NavBar() {
               <NavButton icon={FilterIcon} label="Filter" {...sharedProps} />
             </div>
             <div className="w-3 shrink-0" />
-            <div className="mx-1 h-6 w-px bg-gray-200 shrink-0" />
+            <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-[#444] shrink-0" />
           </div>
         </div>
 
         <div className="w-3 shrink-0" />
-        <NavButton icon={isDark ? SunIcon : MoonIcon} label={isDark ? "Light mode" : "Dark mode"} iconKey={isDark ? "sun" : "moon"} iconAnimation={isDark ? "animate-icon-enter-sunrise" : "animate-icon-enter-sunset"} onClick={() => setIsDark(!isDark)} {...sharedProps} />
+        <NavButton icon={isDark ? SunIcon : MoonIcon} label={isDark ? "Light mode" : "Dark mode"} iconKey={isDark ? "sun" : "moon"} iconAnimation={isDark ? "animate-icon-enter-sunrise" : "animate-icon-enter-sunset"} onClick={() => { const next = !isDark; setIsDark(next); document.documentElement.classList.toggle("dark", next); }} {...sharedProps} />
         <div className="w-3 shrink-0" />
         <NavButton icon={MailIcon} label="Email" href="mailto:christopher.apramana@gmail.com" {...sharedProps} />
         <div className="w-3 shrink-0" />

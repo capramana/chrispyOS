@@ -4,7 +4,7 @@ import WorkExperience from "./components/WorkExperience";
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen bg-white">
+    <div className="relative min-h-screen bg-white dark:bg-[#191919]">
       {/* Top Left - City */}
       <div className="fixed top-12 left-12">
         <span className="font-mono text-base tracking-wide text-primary">new york, ny</span>

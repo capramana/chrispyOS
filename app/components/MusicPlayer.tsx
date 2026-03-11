@@ -85,9 +85,9 @@ export default function MusicPlayer() {
     <div
       className="group cursor-pointer overflow-hidden"
       style={{
-        background: "linear-gradient(to top right, #EFEFEF 25%, #F7F7F7 100%)",
+        background: "var(--music-player-bg)",
         borderRadius: "8px 26px 26px 8px",
-        border: "1.5px solid #C6C6C8",
+        border: "1.5px solid var(--music-player-border)",
       }}
       onClick={togglePlay}
     >
