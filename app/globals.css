@@ -108,7 +108,7 @@
   transition: filter 0.275s ease;
 }
 .theme-transitioning .transition-blur {
-  filter: blur(2px);
+  filter: blur(1px);
 }
 
 /* Blur — clock, new york, @chrispramana */
@@ -124,7 +124,7 @@
   transition: filter 0.275s ease;
 }
 .theme-transitioning .transition-blur-logo {
-  filter: blur(4px);
+  filter: blur(2px);
 }
 
 /* ─── Base ──────────────────────────────────────────────────── */
