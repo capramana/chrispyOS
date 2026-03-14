@@ -83,7 +83,7 @@ export default function MusicPlayer() {
 
   return (
     <div
-      className="group cursor-pointer overflow-hidden"
+      className="music-player group cursor-pointer overflow-hidden"
       style={{
         background: "var(--music-player-bg)",
         borderRadius: "8px 26px 26px 8px",

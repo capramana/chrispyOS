@@ -59,7 +59,7 @@ export default function NavBar() {
 
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2" onMouseEnter={handleNavMouseEnter} onMouseLeave={handleNavMouseLeave}>
-      <div className="flex items-center rounded-full border border-gray-200 dark:border-[#444] bg-white dark:bg-[#191919] pl-3 pr-2 py-2 shadow-sm overflow-visible">
+      <div className="flex items-center rounded-full border-[0.5px] border-gray-200 dark:border-[#444] bg-white dark:bg-[#191919] pl-3 pr-2 py-2 shadow-sm overflow-visible">
         <NavButton icon={HomeIcon} label="Home" active={activePage === "home"} onClick={() => setActivePage("home")} {...sharedProps} />
         <div className="w-3 shrink-0" />
         <NavButton icon={JournalIcon} label="Writing" active={activePage === "writing"} onClick={() => setActivePage("writing")} {...sharedProps} />
