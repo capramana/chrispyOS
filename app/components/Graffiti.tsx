@@ -148,6 +148,7 @@ export default function Graffiti() {
         left: placement.left,
         width: W,
         height: H,
+        overflow: "visible",
         transform: `rotate(${placement.rotation}deg)`,
         transformOrigin: "center",
         color: placement.color,
@@ -158,12 +159,14 @@ export default function Graffiti() {
         transition: instant ? "none" : "opacity 0.5s ease, filter 0.5s ease",
       }}
     >
-      <svg width={W} height={H} viewBox="0 0 151 75" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width={W} height={H} viewBox="0 0 151 75" fill="none" xmlns="http://www.w3.org/2000/svg" overflow="visible" style={{ overflow: "visible" }}>
         <defs>
-          <filter id="graffiti-glow" x="-25%" y="-25%" width="150%" height="150%">
-            <feGaussianBlur stdDeviation="2.5" result="blur" />
+          <filter id="graffiti-glow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="3" result="blur-tight" />
+            <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur-wide" />
             <feMerge>
-              <feMergeNode in="blur" />
+              <feMergeNode in="blur-wide" />
+              <feMergeNode in="blur-tight" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
