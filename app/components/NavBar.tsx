@@ -2,13 +2,13 @@
 
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { HomeSimple as HomeIcon, EditPencil as JournalIcon, BookmarkBook as GridIcon, HalfMoon as MoonIcon, SunLight as SunIcon, MailOut as MailIcon, Filter as FilterIcon } from "iconoir-react";
+import { HomeSimple as HomeIcon, Edit as JournalIcon, BookmarkBook as GridIcon, HalfMoon as MoonIcon, SunLight as SunIcon, MailOut as MailIcon, Filter as FilterIcon } from "iconoir-react";
 import MusicPlayer from "./MusicPlayer";
 import NavButton from "./NavButton";
 type Page = "home" | "writing" | "vault";
 
 const expandTransition  = { type: "spring" as const, stiffness: 1100, damping: 60, mass: 2 };
-const collapseTransition = { type: "tween" as const, ease: "easeOut" as const, duration: 0.275 };
+const collapseTransition = { type: "tween" as const, ease: "easeInOut" as const, duration: 0.2 };
 
 export default function NavBar() {
   const [tooltipsReady, setTooltipsReady] = useState(false);
@@ -26,7 +26,7 @@ export default function NavBar() {
     if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
   };
 
-  const sharedProps = { tooltipsReady, onTooltipShown: () => setTooltipsReady(true) };
+  const sharedProps = { tooltipsReady, onTooltipShown: () => setTooltipsReady(true), onTooltipReset: () => setTooltipsReady(false) };
 
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2" onMouseEnter={handleNavMouseEnter} onMouseLeave={handleNavMouseLeave}>
@@ -50,8 +50,8 @@ export default function NavBar() {
             <motion.div
               layout="position"
               variants={{
-                visible: { opacity: 1, filter: "blur(0px)", scale: 1, transition: { duration: 0.225, ease: "easeOut" } },
-                hidden:  { opacity: 0, filter: "blur(4px)", scale: 0.85, transition: { duration: 0.225, ease: "easeOut" } },
+                visible: { opacity: 1, filter: "blur(0px)", scale: 1,   transition: { duration: 0.225, ease: "easeOut" } },
+                hidden:  { opacity: 0, filter: "blur(4px)", scale: 0.85, transition: { duration: 0.1, ease: "easeInOut" } },
               }}
               initial="hidden"
               animate="visible"

@@ -17,9 +17,10 @@ interface NavButtonProps {
   iconAnimation?: string;
   tooltipsReady: boolean;
   onTooltipShown: () => void;
+  onTooltipReset: () => void;
 }
 
-export default function NavButton({ icon: Icon, label, href, active, onClick, iconKey, iconAnimation, target, rel, tooltipsReady, onTooltipShown }: NavButtonProps) {
+export default function NavButton({ icon: Icon, label, href, active, onClick, iconKey, iconAnimation, target, rel, tooltipsReady, onTooltipShown, onTooltipReset }: NavButtonProps) {
   const [visible, setVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [ExitingIcon, setExitingIcon] = useState<React.ElementType | null>(null);
@@ -62,10 +63,7 @@ export default function NavButton({ icon: Icon, label, href, active, onClick, ic
   const handleClick = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setVisible(false);
-    timerRef.current = setTimeout(() => {
-      setVisible(true);
-      onTooltipShown();
-    }, 1500);
+    onTooltipReset();
   };
 
   const buttonClass = "flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-[#2A2A2E] transition-colors";
