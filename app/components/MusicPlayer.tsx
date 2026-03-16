@@ -22,6 +22,7 @@ const tracks: Track[] = [
 export default function MusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack] = useState(0);
+  const [hovered, setHovered] = useState(false);
   const [rotation, setRotation] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -83,63 +84,79 @@ export default function MusicPlayer() {
 
   return (
     <div
-      className="music-player group cursor-pointer overflow-hidden"
+      className="music-player cursor-pointer overflow-hidden"
       style={{
         background: "var(--music-player-bg)",
         borderRadius: "8px 26px 26px 8px",
         border: "1.5px solid var(--music-player-border)",
       }}
       onClick={togglePlay}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <div className="flex items-center gap-2 pl-2 pr-1 py-1">
       <audio ref={audioRef} src={track.src} />
 
-      {/* Track info - visible by default, hidden on hover */}
-      <div className="flex flex-col text-left group-hover:hidden w-[116px] flex-shrink-0">
-        <span className="text-sm font-medium text-primary truncate">
-          {track.title}
-        </span>
-        <span className="text-xs truncate" style={{ color: "var(--color-secondary)" }}>{track.artist}</span>
-      </div>
-
-      {/* Controls - hidden by default, visible on hover */}
-      <div className="hidden group-hover:flex items-center justify-center gap-2 w-[116px]">
-        {/* Previous */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            // Previous track logic
+      <div className="relative w-[116px] flex-shrink-0 h-9">
+        {/* Track info - fades out on hover */}
+        <div
+          className="absolute inset-0 flex flex-col text-left justify-center"
+          style={{
+            opacity: hovered ? 0 : 1,
+            filter: hovered ? "blur(4px)" : "blur(0px)",
+            transition: "opacity 0.125s ease, filter 0.125s ease",
           }}
-          className="p-1 rounded-full transition-transform hover:scale-125"
         >
-          <SkipPrev width={16} height={16} strokeWidth={2} color="var(--color-primary)" fill="var(--color-primary)" />
-        </button>
+          <span className="text-sm font-medium text-primary truncate">
+            {track.title}
+          </span>
+          <span className="text-xs truncate" style={{ color: "var(--color-secondary)" }}>{track.artist}</span>
+        </div>
 
-        {/* Play/Pause */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            togglePlay();
+        {/* Controls - fades in on hover */}
+        <div
+          className="absolute inset-0 flex items-center justify-center gap-2"
+          style={{
+            opacity: hovered ? 1 : 0,
+            filter: hovered ? "blur(0px)" : "blur(4px)",
+            transition: "opacity 0.125s ease, filter 0.125s ease",
           }}
-          className="p-1 rounded-full transition-transform hover:scale-125"
         >
-          {isPlaying ? (
-            <Pause width={20} height={20} strokeWidth={2} color="var(--color-primary)" fill="var(--color-primary)" />
-          ) : (
-            <Play width={20} height={20} strokeWidth={2} color="var(--color-primary)" fill="var(--color-primary)" />
-          )}
-        </button>
+          {/* Previous */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className="p-1 rounded-full transition-transform hover:scale-125"
+          >
+            <SkipPrev width={16} height={16} strokeWidth={2} color="var(--color-primary)" fill="var(--color-primary)" />
+          </button>
 
-        {/* Next */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            // Next track logic
-          }}
-          className="p-1 rounded-full transition-transform hover:scale-125"
-        >
-          <SkipNext width={16} height={16} strokeWidth={2} color="var(--color-primary)" fill="var(--color-primary)" />
-        </button>
+          {/* Play/Pause */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              togglePlay();
+            }}
+            className="p-1 rounded-full transition-transform hover:scale-125"
+          >
+            {isPlaying ? (
+              <Pause width={20} height={20} strokeWidth={2} color="var(--color-primary)" fill="var(--color-primary)" />
+            ) : (
+              <Play width={20} height={20} strokeWidth={2} color="var(--color-primary)" fill="var(--color-primary)" />
+            )}
+          </button>
+
+          {/* Next */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className="p-1 rounded-full transition-transform hover:scale-125"
+          >
+            <SkipNext width={16} height={16} strokeWidth={2} color="var(--color-primary)" fill="var(--color-primary)" />
+          </button>
+        </div>
       </div>
       <div
         className="relative h-10 w-10 rounded-full overflow-hidden flex-shrink-0"

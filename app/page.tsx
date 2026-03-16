@@ -1,6 +1,8 @@
 import Clock from "./components/Clock";
 import NavBar from "./components/NavBar";
 import WorkExperience from "./components/WorkExperience";
+import ChisledText from "./components/ChisledText";
+import Graffiti from "./components/Graffiti";
 
 export default function Home() {
   return (
@@ -20,11 +22,11 @@ export default function Home() {
       {/* Center Content */}
       <div className="flex min-h-screen items-center justify-center">
         <div>
-          <h1 className="transition-blur text-[40px] font-medium tracking-tight text-chromed">
-            Chris Pramana
+          <h1 id="main-heading" className="transition-blur text-[40px] font-medium tracking-tight">
+            <ChisledText>Chris Pramana</ChisledText>
           </h1>
-          <p className="transition-blur mt-2 text-lg text-chromed-sub max-w-[460px]">
-            lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+          <p id="main-description" className="transition-blur mt-2 text-lg max-w-[460px]">
+            <ChisledText sub>lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</ChisledText>
           </p>
         </div>
       </div>
@@ -50,6 +52,9 @@ export default function Home() {
           @chrispramana
         </a>
       </div>
+
+      {/* Graffiti - idle neon doodle (dark mode only) */}
+      <Graffiti />
     </div>
   );
 }

@@ -68,7 +68,7 @@ export default function NavButton({ icon: Icon, label, href, active, onClick, ic
     }, 1500);
   };
 
-  const buttonClass = "flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors";
+  const buttonClass = "flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-[#2A2A2E] transition-colors";
 
   return (
     <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
@@ -95,7 +95,16 @@ export default function NavButton({ icon: Icon, label, href, active, onClick, ic
         <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ backgroundColor: "var(--color-secondary)" }} />
       )}
       {label && (
-        <div className={`absolute bottom-full mb-1 left-1/2 -translate-x-1/2 px-2 py-1 rounded-md bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs whitespace-nowrap transition-opacity pointer-events-none ${visible ? "opacity-100" : "opacity-0"}`}>
+        <div
+          className={`absolute bottom-full mb-1 left-1/2 -translate-x-1/2 px-2 py-1 text-xs whitespace-nowrap transition-opacity pointer-events-none ${visible ? "opacity-100" : "opacity-0"}`}
+          style={{
+            background: "var(--navbar-bg)",
+            border: "var(--navbar-border)",
+            boxShadow: "var(--navbar-shadow)",
+            borderRadius: 6,
+            color: "var(--color-primary)",
+          }}
+        >
           {label}
         </div>
       )}

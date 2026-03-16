@@ -1,51 +1,22 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { HomeSimple as HomeIcon, EditPencil as JournalIcon, BookmarkBook as GridIcon, HalfMoon as MoonIcon, SunLight as SunIcon, MailOut as MailIcon, Filter as FilterIcon } from "iconoir-react";
 import MusicPlayer from "./MusicPlayer";
 import NavButton from "./NavButton";
-import "./NavBar.css";
-
 type Page = "home" | "writing" | "vault";
-type FilterAnim = "collapsed" | "expanding" | "expanded" | "collapsing";
 
-const FILTER_WIDTH = 80;
+const expandTransition  = { type: "spring" as const, stiffness: 1100, damping: 60, mass: 2 };
+const collapseTransition = { type: "tween" as const, ease: "easeOut" as const, duration: 0.275 };
 
 export default function NavBar() {
   const [tooltipsReady, setTooltipsReady] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [activePage, setActivePage] = useState<Page>("home");
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [filterAnim, setFilterAnim] = useState<FilterAnim>("collapsed");
 
-  const showsFilter = activePage === "writing" || activePage === "vault";
-
-  useEffect(() => {
-    if (showsFilter) {
-      setFilterAnim((prev) => prev === "collapsed" || prev === "collapsing" ? "expanding" : prev);
-    } else {
-      setFilterAnim((prev) => prev === "expanded" || prev === "expanding" ? "collapsing" : prev);
-    }
-  }, [showsFilter]);
-
-  const handleAnimationEnd = () => {
-    setFilterAnim((prev) => {
-      if (prev === "expanding") return "expanded";
-      if (prev === "collapsing") return "collapsed";
-      return prev;
-    });
-  };
-
-  const containerStyle = (): React.CSSProperties => {
-    switch (filterAnim) {
-      case "collapsed":  return { maxWidth: "0px", overflow: "hidden" };
-      case "expanding":  return { animation: "filter-expand 350ms cubic-bezier(0.24,0.69,0.45,0.94) forwards", overflow: "hidden" };
-      case "expanded":   return { maxWidth: `${FILTER_WIDTH}px`, overflow: "visible" };
-      case "collapsing": return { animation: "filter-collapse 325ms cubic-bezier(0.24,0.69,0.43,1) forwards", overflow: "hidden" };
-    }
-  };
-
-  const iconVisible = filterAnim === "expanding" || filterAnim === "expanded";
+  const showFilter = activePage === "writing" || activePage === "vault";
 
   const handleNavMouseLeave = () => {
     resetTimerRef.current = setTimeout(() => setTooltipsReady(false), 300);
@@ -59,7 +30,13 @@ export default function NavBar() {
 
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2" onMouseEnter={handleNavMouseEnter} onMouseLeave={handleNavMouseLeave}>
-      <div className="flex items-center rounded-full border-[0.5px] border-gray-200 dark:border-[#444] bg-white dark:bg-[#191919] pl-3 pr-2 py-2 shadow-sm overflow-visible">
+      <motion.div
+        layout
+        transition={showFilter ? expandTransition : collapseTransition}
+        className="navbar-pill relative flex items-center pl-3 pr-2 py-2 overflow-visible"
+        style={{ background: "var(--navbar-bg)", borderRadius: 9999 }}
+      >
+        <div className="absolute inset-0 pointer-events-none" style={{ borderRadius: 9999, border: "var(--navbar-border)", boxShadow: "var(--navbar-shadow)" }} />
         <NavButton icon={HomeIcon} label="Home" active={activePage === "home"} onClick={() => setActivePage("home")} {...sharedProps} />
         <div className="w-3 shrink-0" />
         <NavButton icon={JournalIcon} label="Writing" active={activePage === "writing"} onClick={() => setActivePage("writing")} {...sharedProps} />
@@ -68,28 +45,26 @@ export default function NavBar() {
         <div className="w-3 shrink-0" />
         <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-[#444] shrink-0" />
 
-        <div
-          className="shrink-0"
-          style={{ willChange: "max-width", ...containerStyle() }}
-          onAnimationEnd={handleAnimationEnd}
-        >
-          <div className="flex items-center">
-            <div className="w-3 shrink-0" />
-            <div
-              style={{
-                willChange: "opacity, filter, transform",
-                opacity: iconVisible ? 1 : 0,
-                filter: iconVisible ? "blur(0px)" : "blur(4px)",
-                transform: iconVisible ? "scale(1)" : "scale(0.85)",
-                transition: "opacity 225ms ease-out, filter 225ms ease-out, transform 225ms ease-out",
+        <AnimatePresence mode="popLayout">
+          {showFilter && (
+            <motion.div
+              layout="position"
+              variants={{
+                visible: { opacity: 1, filter: "blur(0px)", scale: 1, transition: { duration: 0.225, ease: "easeOut" } },
+                hidden:  { opacity: 0, filter: "blur(4px)", scale: 0.85, transition: { duration: 0.225, ease: "easeOut" } },
               }}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              className="flex items-center"
             >
+              <div className="w-3 shrink-0" />
               <NavButton icon={FilterIcon} label="Filter" {...sharedProps} />
-            </div>
-            <div className="w-3 shrink-0" />
-            <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-[#444] shrink-0" />
-          </div>
-        </div>
+              <div className="w-3 shrink-0" />
+              <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-[#444] shrink-0" />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="w-3 shrink-0" />
         <NavButton icon={isDark ? SunIcon : MoonIcon} label={isDark ? "Light mode" : "Dark mode"} iconKey={isDark ? "sun" : "moon"} iconAnimation={isDark ? "animate-icon-enter-sunrise" : "animate-icon-enter-sunset"} onClick={() => { const next = !isDark; setIsDark(next); document.documentElement.classList.toggle("dark", next); document.documentElement.classList.add("theme-transitioning"); setTimeout(() => document.documentElement.classList.remove("theme-transitioning"), 275); }} {...sharedProps} />
@@ -98,7 +73,7 @@ export default function NavBar() {
         <div className="w-3 shrink-0" />
         <div className="w-2 shrink-0" />
         <MusicPlayer />
-      </div>
+      </motion.div>
     </div>
   );
 }
