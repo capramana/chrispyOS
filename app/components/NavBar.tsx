@@ -36,7 +36,7 @@ export default function NavBar() {
         className="navbar-pill relative flex items-center pl-3 pr-2 py-2 overflow-visible"
         style={{ background: "var(--navbar-bg)", borderRadius: 9999, willChange: "width" }}
       >
-        <div className="absolute inset-0 pointer-events-none" style={{ borderRadius: 9999, border: "var(--navbar-border)", boxShadow: "var(--navbar-shadow)" }} />
+        <div className="navbar-shadow-overlay absolute inset-0 pointer-events-none" style={{ borderRadius: 9999, border: "var(--navbar-border)", boxShadow: "var(--navbar-shadow)" }} />
         <NavButton icon={HomeIcon} label="Home" active={activePage === "home"} onClick={() => setActivePage("home")} {...sharedProps} />
         <div className="w-3 shrink-0" />
         <NavButton icon={JournalIcon} label="Writing" active={activePage === "writing"} onClick={() => setActivePage("writing")} {...sharedProps} />
@@ -67,7 +67,7 @@ export default function NavBar() {
         </AnimatePresence>
 
         <div className="w-3 shrink-0" />
-        <NavButton icon={isDark ? SunIcon : MoonIcon} label={isDark ? "Light mode" : "Dark mode"} iconKey={isDark ? "sun" : "moon"} iconAnimation={isDark ? "animate-icon-enter-sunrise" : "animate-icon-enter-sunset"} onClick={() => { const next = !isDark; setIsDark(next); document.documentElement.classList.toggle("dark", next); document.documentElement.classList.add("theme-transitioning"); setTimeout(() => document.documentElement.classList.remove("theme-transitioning"), 275); }} {...sharedProps} />
+        <NavButton icon={isDark ? SunIcon : MoonIcon} label={isDark ? "Light mode" : "Dark mode"} iconKey={isDark ? "sun" : "moon"} iconAnimation={isDark ? "animate-icon-enter-sunrise" : "animate-icon-enter-sunset"} onClick={() => { const next = !isDark; setIsDark(next); document.documentElement.classList.add("theme-snap"); document.documentElement.classList.toggle("dark", next); document.documentElement.classList.add("theme-transitioning"); requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove("theme-snap"))); setTimeout(() => document.documentElement.classList.remove("theme-transitioning"), 275); }} {...sharedProps} />
         <div className="w-3 shrink-0" />
         <NavButton icon={MailIcon} label="Email" href="mailto:christopher.apramana@gmail.com" {...sharedProps} />
         <div className="w-3 shrink-0" />
