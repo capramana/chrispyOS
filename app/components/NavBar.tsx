@@ -34,7 +34,7 @@ export default function NavBar() {
         layout
         transition={showFilter ? expandTransition : collapseTransition}
         className="navbar-pill relative flex items-center pl-3 pr-2 py-2 overflow-visible"
-        style={{ background: "var(--navbar-bg)", borderRadius: 9999 }}
+        style={{ background: "var(--navbar-bg)", borderRadius: 9999, willChange: "width" }}
       >
         <div className="absolute inset-0 pointer-events-none" style={{ borderRadius: 9999, border: "var(--navbar-border)", boxShadow: "var(--navbar-shadow)" }} />
         <NavButton icon={HomeIcon} label="Home" active={activePage === "home"} onClick={() => setActivePage("home")} {...sharedProps} />
