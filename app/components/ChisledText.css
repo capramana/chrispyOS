@@ -25,23 +25,23 @@
 /* ─── Dark mode ──────────────────────────────────────────── */
 
 .dark .text-chromed {
-  background-color: #090909;
+  background-color: #040404;
   color: transparent;
   text-shadow: -0.75px 2px 2px rgba(33, 33, 33, 0.85);
   -webkit-background-clip: text;
   -moz-background-clip: text;
-  -webkit-text-stroke: 0.75px rgba(118, 118, 118, 0.15);
+  -webkit-text-stroke: 0.75px rgba(98, 98, 98, 0.15);
   background-clip: text;
   paint-order: stroke fill;
 }
 
 .dark .text-chromed-sub {
-  background-color: #070707;
+  background-color: #020202;
   color: transparent;
-  text-shadow: -0.5px 0.5px 0.75px rgba(40, 40, 40, 0.8);
+  text-shadow: -0.5px 0.5px 0.75px rgba(35, 35, 35, 0.8);
   -webkit-background-clip: text;
   -moz-background-clip: text;
-  -webkit-text-stroke: 1px rgba(37, 37, 37, 0.15);
+  -webkit-text-stroke: 1px rgba(41, 41, 41, 0.15);
   background-clip: text;
   paint-order: stroke fill;
 }
