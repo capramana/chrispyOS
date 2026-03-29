@@ -41,7 +41,7 @@
   text-shadow: -0.5px 0.5px 0.75px rgba(35, 35, 35, 0.8);
   -webkit-background-clip: text;
   -moz-background-clip: text;
-  -webkit-text-stroke: 1px rgba(41, 41, 41, 0.15);
+  -webkit-text-stroke: 1px rgba(65, 65, 65, 0.15);
   background-clip: text;
   paint-order: stroke fill;
 }
