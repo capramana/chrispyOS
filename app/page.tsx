@@ -6,7 +6,7 @@ import Graffiti from "./components/Graffiti";
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen bg-[#F8F8F8] dark:bg-[#1E1E1E]">
+    <div className="relative min-h-screen bg-[#F8F8F8] dark:bg-[#202020]">
       {/* Top Left - City */}
       <div className="fixed top-12 left-12">
         <span className="transition-blur-corner inline-block font-mono text-base tracking-wide text-primary">new york, ny</span>
