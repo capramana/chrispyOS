@@ -41,8 +41,8 @@ function overlaps(
 }
 
 type PlacedBox = { top: number; bottom: number; left: number; right: number };
-
-type Bounds = { minLeft: number; maxLeft: number; minTop: number; maxTop: number };
+type Bounds    = { minLeft: number; maxLeft: number; minTop: number; maxTop: number };
+type Placement = { variantIdx: number; top: number; left: number; rotation: number; color: string; quadrant: number };
 
 function findPlacement(
   W: number,
@@ -130,7 +130,7 @@ function getQuadrantBounds(quadrant: number, W: number, H: number): Bounds {
   };
 }
 
-function pickAllPlacements(): { variantIdx: number; top: number; left: number; rotation: number; color: string }[] {
+function pickAllPlacements(): Placement[] {
   const n = SVG_VARIANTS.length;
 
   // Distribute variants evenly across 4 quadrants: base per quadrant, extra quadrants get +1
@@ -161,7 +161,7 @@ function pickAllPlacements(): { variantIdx: number; top: number; left: number; r
   const getColor = (i: number) => colorPool[i % colorPool.length];
 
   const placedBoxes: PlacedBox[] = [];
-  const results: { variantIdx: number; top: number; left: number; rotation: number; color: string }[] = [];
+  const results: Placement[] = [];
   let colorIdx = 0;
 
   for (let q = 0; q < 4; q++) {
@@ -177,7 +177,7 @@ function pickAllPlacements(): { variantIdx: number; top: number; left: number; r
         left:   left   - ROT_PAD_H,
         right:  left   + variant.w + ROT_PAD_H,
       });
-      results.push({ variantIdx, top, left, rotation, color: getColor(colorIdx++) });
+      results.push({ variantIdx, top, left, rotation, color: getColor(colorIdx++), quadrant: q });
     }
   }
 
@@ -185,7 +185,7 @@ function pickAllPlacements(): { variantIdx: number; top: number; left: number; r
 }
 
 export default function Graffiti() {
-  const [placements, setPlacements] = useState<{ variantIdx: number; top: number; left: number; rotation: number; color: string }[] | null>(null);
+  const [placements, setPlacements] = useState<Placement[] | null>(null);
   const [visible, setVisible] = useState(false);
   const [instant, setInstant] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -213,8 +213,51 @@ export default function Graffiti() {
       if (!visibleRef.current) return;
       if (resizeTimer) clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
-        setInstant(true);
-        setPlacements(pickAllPlacements());
+        setPlacements(prev => {
+          if (!prev) return prev;
+
+          // Separate compliant placements from those now out of bounds
+          const kept: Placement[]  = [];
+          const toFix: Placement[] = [];
+
+          for (const p of prev) {
+            const variant = SVG_VARIANTS[p.variantIdx];
+            const b = getQuadrantBounds(p.quadrant, variant.w, variant.h);
+            const valid = b.maxLeft >= b.minLeft && b.maxTop >= b.minTop &&
+                          p.left >= b.minLeft && p.left <= b.maxLeft &&
+                          p.top  >= b.minTop  && p.top  <= b.maxTop;
+            (valid ? kept : toFix).push(p);
+          }
+
+          if (toFix.length === 0) return prev; // nothing moved out of bounds
+
+          // Build collision list from already-kept placements
+          const placedBoxes: PlacedBox[] = kept.map(p => {
+            const v = SVG_VARIANTS[p.variantIdx];
+            return { top: p.top - ROT_PAD_V, bottom: p.top + v.h + ROT_PAD_V,
+                     left: p.left - ROT_PAD_H, right: p.left + v.w + ROT_PAD_H };
+          });
+
+          const result: Placement[] = [...kept];
+
+          for (const p of toFix) {
+            const variant   = SVG_VARIANTS[p.variantIdx];
+            const bounds    = getQuadrantBounds(p.quadrant, variant.w, variant.h);
+            const placement = findPlacement(variant.w, variant.h, placedBoxes, bounds);
+            if (placement) {
+              result.push({ ...p, top: placement.top, left: placement.left, rotation: placement.rotation });
+              placedBoxes.push({
+                top:    placement.top  - ROT_PAD_V,
+                bottom: placement.top  + variant.h + ROT_PAD_V,
+                left:   placement.left - ROT_PAD_H,
+                right:  placement.left + variant.w + ROT_PAD_H,
+              });
+            }
+            // else: quadrant too small — SVG is omitted
+          }
+
+          return result;
+        });
       }, 150);
     };
 
