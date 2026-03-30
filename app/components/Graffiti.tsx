@@ -49,7 +49,7 @@ function findPlacement(
   H: number,
   placedBoxes: PlacedBox[],
   bounds?: Bounds
-): { top: number; left: number; rotation: number } {
+): { top: number; left: number; rotation: number } | null {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
@@ -58,10 +58,8 @@ function findPlacement(
   const minTop  = bounds?.minTop  ?? ROT_PAD_V;
   const maxTop  = bounds?.maxTop  ?? (vh - H - ROT_PAD_V);
 
-  // If SVG doesn't fit within the quadrant, fall back to full screen
-  if (maxLeft < minLeft || maxTop < minTop) {
-    return findPlacement(W, H, placedBoxes);
-  }
+  // SVG doesn't fit within the given bounds — drop it
+  if (maxLeft < minLeft || maxTop < minTop) return null;
 
   const elementChecks = [
     { selector: "#main-heading",           buffer: 28 },
@@ -108,12 +106,8 @@ function findPlacement(
     if (valid) return { top, left, rotation: (Math.random() - 0.5) * 45 };
   }
 
-  // Fallback within bounds, skip collision checks
-  return {
-    top:  minTop  + Math.random() * (maxTop  - minTop),
-    left: minLeft + Math.random() * (maxLeft - minLeft),
-    rotation: (Math.random() - 0.5) * 45,
-  };
+  // 150 attempts exhausted — drop this SVG
+  return null;
 }
 
 // Quadrant indices: 0=TL, 1=TR, 2=BL, 3=BR
@@ -172,9 +166,11 @@ function pickAllPlacements(): { variantIdx: number; top: number; left: number; r
 
   for (let q = 0; q < 4; q++) {
     for (const variantIdx of assignments[q]) {
-      const variant = SVG_VARIANTS[variantIdx];
-      const bounds  = getQuadrantBounds(q, variant.w, variant.h);
-      const { top, left, rotation } = findPlacement(variant.w, variant.h, placedBoxes, bounds);
+      const variant  = SVG_VARIANTS[variantIdx];
+      const bounds   = getQuadrantBounds(q, variant.w, variant.h);
+      const placement = findPlacement(variant.w, variant.h, placedBoxes, bounds);
+      if (!placement) { colorIdx++; continue; } // doesn't fit — skip it
+      const { top, left, rotation } = placement;
       placedBoxes.push({
         top:    top    - ROT_PAD_V,
         bottom: top    + variant.h + ROT_PAD_V,
@@ -212,8 +208,19 @@ export default function Graffiti() {
       startTimer();
     };
 
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleResize = () => {
+      if (!visibleRef.current) return;
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        setInstant(true);
+        setPlacements(pickAllPlacements());
+      }, 150);
+    };
+
     startTimer();
     document.addEventListener("click", handleClick);
+    window.addEventListener("resize", handleResize);
 
     const observer = new MutationObserver(() => {
       const isDark = document.documentElement.classList.contains("dark");
@@ -231,8 +238,10 @@ export default function Graffiti() {
 
     return () => {
       document.removeEventListener("click", handleClick);
+      window.removeEventListener("resize", handleResize);
       observer.disconnect();
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (resizeTimer) clearTimeout(resizeTimer);
     };
   }, []);
 
