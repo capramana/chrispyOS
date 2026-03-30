@@ -42,13 +42,26 @@ function overlaps(
 
 type PlacedBox = { top: number; bottom: number; left: number; right: number };
 
+type Bounds = { minLeft: number; maxLeft: number; minTop: number; maxTop: number };
+
 function findPlacement(
   W: number,
   H: number,
-  placedBoxes: PlacedBox[]
+  placedBoxes: PlacedBox[],
+  bounds?: Bounds
 ): { top: number; left: number; rotation: number } {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
+
+  const minLeft = bounds?.minLeft ?? ROT_PAD_H;
+  const maxLeft = bounds?.maxLeft ?? (vw - W - ROT_PAD_H);
+  const minTop  = bounds?.minTop  ?? ROT_PAD_V;
+  const maxTop  = bounds?.maxTop  ?? (vh - H - ROT_PAD_V);
+
+  // If SVG doesn't fit within the quadrant, fall back to full screen
+  if (maxLeft < minLeft || maxTop < minTop) {
+    return findPlacement(W, H, placedBoxes);
+  }
 
   const elementChecks = [
     { selector: "#main-heading",           buffer: 28 },
@@ -59,8 +72,8 @@ function findPlacement(
   ];
 
   for (let attempt = 0; attempt < 150; attempt++) {
-    const left = ROT_PAD_H + Math.random() * (vw - W - ROT_PAD_H * 2);
-    const top  = ROT_PAD_V + Math.random() * (vh - H - ROT_PAD_V * 2);
+    const left = minLeft + Math.random() * (maxLeft - minLeft);
+    const top  = minTop  + Math.random() * (maxTop  - minTop);
 
     const gb: PlacedBox = {
       top:    top    - ROT_PAD_V,
@@ -71,7 +84,6 @@ function findPlacement(
 
     let valid = true;
 
-    // Check named UI elements
     for (const { selector, buffer } of elementChecks) {
       for (const el of document.querySelectorAll(selector)) {
         if (overlaps(gb, el.getBoundingClientRect(), buffer)) { valid = false; break; }
@@ -79,7 +91,6 @@ function findPlacement(
       if (!valid) break;
     }
 
-    // Check non-graffiti SVGs (12px buffer)
     if (valid) {
       for (const svg of document.querySelectorAll("svg:not([data-graffiti])")) {
         const r = svg.getBoundingClientRect();
@@ -88,7 +99,6 @@ function findPlacement(
       }
     }
 
-    // Check already-placed graffiti (16px buffer)
     if (valid) {
       for (const box of placedBoxes) {
         if (overlaps(gb, box, 16)) { valid = false; break; }
@@ -98,28 +108,84 @@ function findPlacement(
     if (valid) return { top, left, rotation: (Math.random() - 0.5) * 45 };
   }
 
-  // Fallback: unconstrained, skip other checks
+  // Fallback within bounds, skip collision checks
   return {
-    top:  ROT_PAD_V + Math.random() * (vh - H - ROT_PAD_V * 2),
-    left: ROT_PAD_H + Math.random() * (vw - W - ROT_PAD_H * 2),
+    top:  minTop  + Math.random() * (maxTop  - minTop),
+    left: minLeft + Math.random() * (maxLeft - minLeft),
     rotation: (Math.random() - 0.5) * 45,
   };
 }
 
-function pickAllPlacements(): { variantIdx: number; top: number; left: number; rotation: number; color: string }[] {
-  const colors = [...NEON_COLORS].sort(() => Math.random() - 0.5);
-  const placedBoxes: PlacedBox[] = [];
+// Quadrant indices: 0=TL, 1=TR, 2=BL, 3=BR
+function getQuadrantBounds(quadrant: number, W: number, H: number): Bounds {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const hw = vw / 2;
+  const hh = vh / 2;
 
-  return SVG_VARIANTS.map((variant, idx) => {
-    const { top, left, rotation } = findPlacement(variant.w, variant.h, placedBoxes);
-    placedBoxes.push({
-      top:    top    - ROT_PAD_V,
-      bottom: top    + variant.h + ROT_PAD_V,
-      left:   left   - ROT_PAD_H,
-      right:  left   + variant.w + ROT_PAD_H,
-    });
-    return { variantIdx: idx, top, left, rotation, color: colors[idx] };
-  });
+  const qLeft   = quadrant === 1 || quadrant === 3 ? hw : 0;
+  const qRight  = quadrant === 1 || quadrant === 3 ? vw : hw;
+  const qTop    = quadrant === 2 || quadrant === 3 ? hh : 0;
+  const qBottom = quadrant === 2 || quadrant === 3 ? vh : hh;
+
+  return {
+    minLeft: qLeft   + ROT_PAD_H,
+    maxLeft: qRight  - W - ROT_PAD_H,
+    minTop:  qTop    + ROT_PAD_V,
+    maxTop:  qBottom - H - ROT_PAD_V,
+  };
+}
+
+function pickAllPlacements(): { variantIdx: number; top: number; left: number; rotation: number; color: string }[] {
+  const n = SVG_VARIANTS.length;
+
+  // Distribute variants evenly across 4 quadrants: base per quadrant, extra quadrants get +1
+  const base  = Math.floor(n / 4);
+  const extra = n % 4;
+
+  // Shuffle quadrant order so the "extra" assignments rotate randomly
+  const quadrantOrder = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+  const quadrantCounts = [0, 0, 0, 0];
+  for (let q = 0; q < 4; q++) {
+    quadrantCounts[quadrantOrder[q]] = q < extra ? base + 1 : base;
+  }
+
+  // Shuffle variant order so quadrant assignment is random each time
+  const variantOrder = SVG_VARIANTS.map((_, i) => i).sort(() => Math.random() - 0.5);
+
+  // Assign variant indices to quadrants
+  const assignments: number[][] = [[], [], [], []];
+  let vi = 0;
+  for (let q = 0; q < 4; q++) {
+    for (let c = 0; c < quadrantCounts[q]; c++) {
+      assignments[q].push(variantOrder[vi++]);
+    }
+  }
+
+  // Shuffle and cycle colors
+  const colorPool = [...NEON_COLORS].sort(() => Math.random() - 0.5);
+  const getColor = (i: number) => colorPool[i % colorPool.length];
+
+  const placedBoxes: PlacedBox[] = [];
+  const results: { variantIdx: number; top: number; left: number; rotation: number; color: string }[] = [];
+  let colorIdx = 0;
+
+  for (let q = 0; q < 4; q++) {
+    for (const variantIdx of assignments[q]) {
+      const variant = SVG_VARIANTS[variantIdx];
+      const bounds  = getQuadrantBounds(q, variant.w, variant.h);
+      const { top, left, rotation } = findPlacement(variant.w, variant.h, placedBoxes, bounds);
+      placedBoxes.push({
+        top:    top    - ROT_PAD_V,
+        bottom: top    + variant.h + ROT_PAD_V,
+        left:   left   - ROT_PAD_H,
+        right:  left   + variant.w + ROT_PAD_H,
+      });
+      results.push({ variantIdx, top, left, rotation, color: getColor(colorIdx++) });
+    }
+  }
+
+  return results;
 }
 
 export default function Graffiti() {
