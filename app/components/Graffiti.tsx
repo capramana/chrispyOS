@@ -220,12 +220,15 @@ export default function Graffiti() {
           const kept: Placement[]  = [];
           const toFix: Placement[] = [];
 
+          // Allow 32px of overflow before counting an SVG as out-of-bounds,
+          // so minor window drags don't trigger unnecessary repositioning.
+          const TOLERANCE = 32;
           for (const p of prev) {
             const variant = SVG_VARIANTS[p.variantIdx];
             const b = getQuadrantBounds(p.quadrant, variant.w, variant.h);
             const valid = b.maxLeft >= b.minLeft && b.maxTop >= b.minTop &&
-                          p.left >= b.minLeft && p.left <= b.maxLeft &&
-                          p.top  >= b.minTop  && p.top  <= b.maxTop;
+                          p.left >= b.minLeft - TOLERANCE && p.left <= b.maxLeft + TOLERANCE &&
+                          p.top  >= b.minTop  - TOLERANCE && p.top  <= b.maxTop  + TOLERANCE;
             (valid ? kept : toFix).push(p);
           }
 
@@ -245,7 +248,9 @@ export default function Graffiti() {
             const bounds    = getQuadrantBounds(p.quadrant, variant.w, variant.h);
             const placement = findPlacement(variant.w, variant.h, placedBoxes, bounds);
             if (placement) {
-              result.push({ ...p, top: placement.top, left: placement.left, rotation: placement.rotation });
+              // Keep the same rotation — only the position changes, so the SVG
+              // looks identical, just moved. Avoids the glow appearing to change color.
+              result.push({ ...p, top: placement.top, left: placement.left });
               placedBoxes.push({
                 top:    placement.top  - ROT_PAD_V,
                 bottom: placement.top  + variant.h + ROT_PAD_V,
