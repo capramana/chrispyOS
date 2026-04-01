@@ -20,7 +20,7 @@ const SVG_VARIANTS: { w: number; h: number; viewBox: string; paths: React.ReactN
     paths: <CelinePaths />,
   },
   {
-    w: 168, h: 152, viewBox: "0 0 168 152",
+    w: 105, h: 96, viewBox: "0 0 105 96",
     paths: <FloraPaths />,
   },
 ];
@@ -195,6 +195,7 @@ export default function Graffiti() {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       if (!document.documentElement.classList.contains("dark")) return;
+      if (visibleRef.current) return; // already showing — never re-randomize colors
       setPlacements(pickAllPlacements());
       visibleRef.current = true;
       setVisible(true);
@@ -220,16 +221,17 @@ export default function Graffiti() {
           const kept: Placement[]  = [];
           const toFix: Placement[] = [];
 
-          // Allow 32px of overflow before counting an SVG as out-of-bounds,
-          // so minor window drags don't trigger unnecessary repositioning.
-          const TOLERANCE = 32;
+          // An SVG only needs repositioning if it's gone off-screen (plus edge padding).
+          // Quadrant boundary shifts alone don't count — the SVG is still visible.
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
           for (const p of prev) {
             const variant = SVG_VARIANTS[p.variantIdx];
-            const b = getQuadrantBounds(p.quadrant, variant.w, variant.h);
-            const valid = b.maxLeft >= b.minLeft && b.maxTop >= b.minTop &&
-                          p.left >= b.minLeft - TOLERANCE && p.left <= b.maxLeft + TOLERANCE &&
-                          p.top  >= b.minTop  - TOLERANCE && p.top  <= b.maxTop  + TOLERANCE;
-            (valid ? kept : toFix).push(p);
+            const onScreen = p.left >= ROT_PAD_H &&
+                             p.left + variant.w <= vw - ROT_PAD_H &&
+                             p.top  >= ROT_PAD_V &&
+                             p.top  + variant.h <= vh - ROT_PAD_V;
+            (onScreen ? kept : toFix).push(p);
           }
 
           if (toFix.length === 0) return prev; // nothing moved out of bounds
