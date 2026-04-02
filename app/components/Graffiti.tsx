@@ -228,17 +228,49 @@ export default function Graffiti() {
           const kept: Placement[]  = [];
           const toFix: Placement[] = [];
 
-          // An SVG only needs repositioning if it's gone off-screen (plus edge padding).
-          // Quadrant boundary shifts alone don't count — the SVG is still visible.
           const vw = window.innerWidth;
           const vh = window.innerHeight;
+
+          const uiChecks = [
+            { selector: "#main-heading",           buffer: 28 },
+            { selector: "#main-description",       buffer: 28 },
+            { selector: ".navbar-pill",            buffer: 20 },
+            { selector: ".transition-blur-corner", buffer: 20 },
+            { selector: ".transition-blur-logo",   buffer: 20 },
+          ];
+
           for (const p of prev) {
             const variant = SVG_VARIANTS[p.variantIdx];
-            const onScreen = p.left >= ROT_PAD_H &&
-                             p.left + variant.w <= vw - ROT_PAD_H &&
-                             p.top  >= ROT_PAD_V &&
-                             p.top  + variant.h <= vh - ROT_PAD_V;
-            (onScreen ? kept : toFix).push(p);
+
+            // Off-screen?
+            const offScreen = p.left < ROT_PAD_H ||
+                              p.left + variant.w > vw - ROT_PAD_H ||
+                              p.top  < ROT_PAD_V ||
+                              p.top  + variant.h > vh - ROT_PAD_V;
+            if (offScreen) { toFix.push(p); continue; }
+
+            // Overlapping a UI element or non-graffiti SVG?
+            const gb: PlacedBox = {
+              top:    p.top    - ROT_PAD_V,
+              bottom: p.top    + variant.h + ROT_PAD_V,
+              left:   p.left   - ROT_PAD_H,
+              right:  p.left   + variant.w + ROT_PAD_H,
+            };
+            let bad = false;
+            for (const { selector, buffer } of uiChecks) {
+              for (const el of document.querySelectorAll(selector)) {
+                if (overlaps(gb, el.getBoundingClientRect(), buffer)) { bad = true; break; }
+              }
+              if (bad) break;
+            }
+            if (!bad) {
+              for (const svg of document.querySelectorAll("svg:not([data-graffiti])")) {
+                const r = svg.getBoundingClientRect();
+                if (r.width === 0 && r.height === 0) continue;
+                if (overlaps(gb, r, 12)) { bad = true; break; }
+              }
+            }
+            (bad ? toFix : kept).push(p);
           }
 
           if (toFix.length === 0) return prev; // nothing moved out of bounds
