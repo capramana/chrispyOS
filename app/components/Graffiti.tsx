@@ -130,7 +130,7 @@ function getQuadrantBounds(quadrant: number, W: number, H: number): Bounds {
   };
 }
 
-function pickAllPlacements(): Placement[] {
+function pickAllPlacements(colorMap: Record<number, string>): Placement[] {
   const n = SVG_VARIANTS.length;
 
   // Distribute variants evenly across 4 quadrants: base per quadrant, extra quadrants get +1
@@ -156,20 +156,25 @@ function pickAllPlacements(): Placement[] {
     }
   }
 
-  // Shuffle and cycle colors
+  // Shuffle a fresh color pool for any variants without a persisted color
   const colorPool = [...NEON_COLORS].sort(() => Math.random() - 0.5);
-  const getColor = (i: number) => colorPool[i % colorPool.length];
+  let colorIdx = 0;
+  const getColor = (variantIdx: number) => {
+    if (colorMap[variantIdx] !== undefined) return colorMap[variantIdx];
+    const c = colorPool[colorIdx++ % colorPool.length];
+    colorMap[variantIdx] = c;
+    return c;
+  };
 
   const placedBoxes: PlacedBox[] = [];
   const results: Placement[] = [];
-  let colorIdx = 0;
 
   for (let q = 0; q < 4; q++) {
     for (const variantIdx of assignments[q]) {
-      const variant  = SVG_VARIANTS[variantIdx];
-      const bounds   = getQuadrantBounds(q, variant.w, variant.h);
+      const variant   = SVG_VARIANTS[variantIdx];
+      const bounds    = getQuadrantBounds(q, variant.w, variant.h);
       const placement = findPlacement(variant.w, variant.h, placedBoxes, bounds);
-      if (!placement) { colorIdx++; continue; } // doesn't fit — skip it
+      if (!placement) continue; // doesn't fit — skip it
       const { top, left, rotation } = placement;
       placedBoxes.push({
         top:    top    - ROT_PAD_V,
@@ -177,7 +182,7 @@ function pickAllPlacements(): Placement[] {
         left:   left   - ROT_PAD_H,
         right:  left   + variant.w + ROT_PAD_H,
       });
-      results.push({ variantIdx, top, left, rotation, color: getColor(colorIdx++), quadrant: q });
+      results.push({ variantIdx, top, left, rotation, color: getColor(variantIdx), quadrant: q });
     }
   }
 
@@ -190,13 +195,15 @@ export default function Graffiti() {
   const [instant, setInstant] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visibleRef = useRef(false);
+  // Persists color assignments across any re-invocation of pickAllPlacements().
+  // Cleared only when the user leaves dark mode, so colors never change on resize or HMR.
+  const colorMapRef = useRef<Record<number, string>>({});
 
   const startTimer = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       if (!document.documentElement.classList.contains("dark")) return;
-      if (visibleRef.current) return; // already showing — never re-randomize colors
-      setPlacements(pickAllPlacements());
+      setPlacements(pickAllPlacements(colorMapRef.current));
       visibleRef.current = true;
       setVisible(true);
     }, IDLE_DELAY);
@@ -276,6 +283,7 @@ export default function Graffiti() {
       const isDark = document.documentElement.classList.contains("dark");
       if (!isDark) {
         visibleRef.current = false;
+        colorMapRef.current = {}; // reset colors so next dark-mode session picks fresh ones
         setInstant(true);
         setVisible(false);
         if (timerRef.current) clearTimeout(timerRef.current);
