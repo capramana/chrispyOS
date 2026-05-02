@@ -23,7 +23,6 @@ export default function WorkExperience() {
       className="flex flex-col items-end"
       onMouseLeave={() => setHoveredEntry(null)}
     >
-      {/* Ramp */}
       <a
         href="https://ramp.com"
         target="_blank"
@@ -68,7 +67,6 @@ export default function WorkExperience() {
         </svg>
       </a>
 
-      {/* Ghost */}
       <a
         href="https://ghst.io/"
         target="_blank"

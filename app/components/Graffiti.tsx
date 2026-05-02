@@ -6,7 +6,6 @@ import CelinePaths from "./Graffiti art/CelinePaths";
 import FloraPaths from "./Graffiti art/FloraPaths";
 
 const IDLE_DELAY = 30000;
-// Extra padding to account for ±22.5° rotation expanding the visual bounding box
 const ROT_PAD_V = 16;
 const ROT_PAD_H = 16;
 
@@ -58,7 +57,6 @@ function findPlacement(
   const minTop  = bounds?.minTop  ?? ROT_PAD_V;
   const maxTop  = bounds?.maxTop  ?? (vh - H - ROT_PAD_V);
 
-  // SVG doesn't fit within the given bounds — drop it
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
   const elementChecks = [
@@ -106,11 +104,9 @@ function findPlacement(
     if (valid) return { top, left, rotation: (Math.random() - 0.5) * 45 };
   }
 
-  // 150 attempts exhausted — drop this SVG
   return null;
 }
 
-// Quadrant indices: 0=TL, 1=TR, 2=BL, 3=BR
 function getQuadrantBounds(quadrant: number, W: number, H: number): Bounds {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -133,21 +129,17 @@ function getQuadrantBounds(quadrant: number, W: number, H: number): Bounds {
 function pickAllPlacements(colorMap: Record<number, string>): Placement[] {
   const n = SVG_VARIANTS.length;
 
-  // Distribute variants evenly across 4 quadrants: base per quadrant, extra quadrants get +1
   const base  = Math.floor(n / 4);
   const extra = n % 4;
 
-  // Shuffle quadrant order so the "extra" assignments rotate randomly
   const quadrantOrder = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
   const quadrantCounts = [0, 0, 0, 0];
   for (let q = 0; q < 4; q++) {
     quadrantCounts[quadrantOrder[q]] = q < extra ? base + 1 : base;
   }
 
-  // Shuffle variant order so quadrant assignment is random each time
   const variantOrder = SVG_VARIANTS.map((_, i) => i).sort(() => Math.random() - 0.5);
 
-  // Assign variant indices to quadrants
   const assignments: number[][] = [[], [], [], []];
   let vi = 0;
   for (let q = 0; q < 4; q++) {
@@ -156,7 +148,6 @@ function pickAllPlacements(colorMap: Record<number, string>): Placement[] {
     }
   }
 
-  // Shuffle a fresh color pool for any variants without a persisted color
   const colorPool = [...NEON_COLORS].sort(() => Math.random() - 0.5);
   let colorIdx = 0;
   const getColor = (variantIdx: number) => {
@@ -174,7 +165,7 @@ function pickAllPlacements(colorMap: Record<number, string>): Placement[] {
       const variant   = SVG_VARIANTS[variantIdx];
       const bounds    = getQuadrantBounds(q, variant.w, variant.h);
       const placement = findPlacement(variant.w, variant.h, placedBoxes, bounds);
-      if (!placement) continue; // doesn't fit — skip it
+      if (!placement) continue;
       const { top, left, rotation } = placement;
       placedBoxes.push({
         top:    top    - ROT_PAD_V,
@@ -195,8 +186,6 @@ export default function Graffiti() {
   const [instant, setInstant] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visibleRef = useRef(false);
-  // Persists color assignments across any re-invocation of pickAllPlacements().
-  // Cleared only when the user leaves dark mode, so colors never change on resize or HMR.
   const colorMapRef = useRef<Record<number, string>>({});
 
   const startTimer = () => {
@@ -210,9 +199,8 @@ export default function Graffiti() {
   };
 
   useEffect(() => {
-    // Only clicks reset the idle timer — mouse movement is allowed
     const handleClick = () => {
-      if (visibleRef.current) return; // already showing, leave it
+      if (visibleRef.current) return;
       startTimer();
     };
 
@@ -224,7 +212,6 @@ export default function Graffiti() {
         setPlacements(prev => {
           if (!prev) return prev;
 
-          // Separate compliant placements from those now out of bounds
           const kept: Placement[]  = [];
           const toFix: Placement[] = [];
 
@@ -242,14 +229,12 @@ export default function Graffiti() {
           for (const p of prev) {
             const variant = SVG_VARIANTS[p.variantIdx];
 
-            // Off-screen?
             const offScreen = p.left < ROT_PAD_H ||
                               p.left + variant.w > vw - ROT_PAD_H ||
                               p.top  < ROT_PAD_V ||
                               p.top  + variant.h > vh - ROT_PAD_V;
             if (offScreen) { toFix.push(p); continue; }
 
-            // Overlapping a UI element or non-graffiti SVG?
             const gb: PlacedBox = {
               top:    p.top    - ROT_PAD_V,
               bottom: p.top    + variant.h + ROT_PAD_V,
@@ -273,9 +258,8 @@ export default function Graffiti() {
             (bad ? toFix : kept).push(p);
           }
 
-          if (toFix.length === 0) return prev; // nothing moved out of bounds
+          if (toFix.length === 0) return prev;
 
-          // Build collision list from already-kept placements
           const placedBoxes: PlacedBox[] = kept.map(p => {
             const v = SVG_VARIANTS[p.variantIdx];
             return { top: p.top - ROT_PAD_V, bottom: p.top + v.h + ROT_PAD_V,
@@ -289,8 +273,6 @@ export default function Graffiti() {
             const bounds    = getQuadrantBounds(p.quadrant, variant.w, variant.h);
             const placement = findPlacement(variant.w, variant.h, placedBoxes, bounds);
             if (placement) {
-              // Keep the same rotation — only the position changes, so the SVG
-              // looks identical, just moved. Avoids the glow appearing to change color.
               result.push({ ...p, top: placement.top, left: placement.left });
               placedBoxes.push({
                 top:    placement.top  - ROT_PAD_V,
@@ -299,7 +281,6 @@ export default function Graffiti() {
                 right:  placement.left + variant.w + ROT_PAD_H,
               });
             }
-            // else: quadrant too small — SVG is omitted
           }
 
           return result;
@@ -315,7 +296,7 @@ export default function Graffiti() {
       const isDark = document.documentElement.classList.contains("dark");
       if (!isDark) {
         visibleRef.current = false;
-        colorMapRef.current = {}; // reset colors so next dark-mode session picks fresh ones
+        colorMapRef.current = {};
         setInstant(true);
         setVisible(false);
         if (timerRef.current) clearTimeout(timerRef.current);

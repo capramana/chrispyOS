@@ -7,19 +7,16 @@ import Graffiti from "./components/Graffiti";
 export default function Home() {
   return (
     <div className="relative min-h-screen bg-[var(--background)]">
-      {/* Top Left - City */}
       <div className="fixed top-12 left-12">
         <span className="transition-blur-corner inline-block font-mono text-base tracking-wide text-primary">new york, ny</span>
       </div>
 
-      {/* Top Right - Work Experience */}
       <div className="fixed top-12 right-12">
         <div className="transition-blur-logo">
           <WorkExperience />
         </div>
       </div>
 
-      {/* Center Content */}
       <div className="flex min-h-screen items-center justify-center">
         <div>
           <h1 id="main-heading" className="transition-blur text-[40px] font-medium tracking-tight">
@@ -31,17 +28,14 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Bottom Left - Clock */}
       <div className="fixed bottom-12 left-12">
         <div className="transition-blur-corner">
           <Clock />
         </div>
       </div>
 
-      {/* Bottom Center - Navigation Bar */}
       <NavBar />
 
-      {/* Bottom Right - Social Handle */}
       <div className="fixed bottom-12 right-12">
         <a
           href="https://x.com/chrispramana"
@@ -53,7 +47,6 @@ export default function Home() {
         </a>
       </div>
 
-      {/* Graffiti - idle neon doodle (dark mode only) */}
       <Graffiti />
     </div>
   );

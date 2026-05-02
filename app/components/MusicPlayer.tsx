@@ -39,7 +39,6 @@ export default function MusicPlayer() {
     const delta = timestamp - lastTimeRef.current;
     lastTimeRef.current = timestamp;
 
-    // Rotate 360 degrees every 3 seconds (same as animate-spin-slow)
     setRotation((prev) => (prev + (delta / 3000) * 360) % 360);
 
     animationRef.current = requestAnimationFrame((t) =>
@@ -105,7 +104,6 @@ export default function MusicPlayer() {
       <audio ref={audioRef} src={track.src} />
 
       <div className="relative w-[116px] flex-shrink-0 h-9">
-        {/* Track info - fades out on hover */}
         <div
           className="absolute inset-0 flex flex-col text-left justify-center"
           style={{
@@ -120,7 +118,6 @@ export default function MusicPlayer() {
           <span className="text-xs truncate" style={{ color: "var(--color-secondary)" }}>{track.artist}</span>
         </div>
 
-        {/* Controls - fades in on hover */}
         <div
           className="absolute inset-0 flex items-center justify-center gap-2"
           style={{
@@ -129,7 +126,6 @@ export default function MusicPlayer() {
             transition: "opacity 0.125s ease, filter 0.125s ease",
           }}
         >
-          {/* Previous */}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -139,7 +135,6 @@ export default function MusicPlayer() {
             <SkipPrev width={16} height={16} strokeWidth={2} color="var(--color-primary)" fill="var(--color-primary)" />
           </button>
 
-          {/* Play/Pause */}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -154,7 +149,6 @@ export default function MusicPlayer() {
             )}
           </button>
 
-          {/* Next */}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -178,9 +172,7 @@ export default function MusicPlayer() {
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-amber-600 to-amber-800" />
         )}
-        {/* Inner outline */}
         <div className="absolute inset-0 rounded-full shadow-[inset_0_0_0_1.5px_rgba(198,198,200,0.75)]" />
-        {/* CD center */}
         <img
           src="/music/cd-center.svg"
           alt=""
