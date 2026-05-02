@@ -9,6 +9,6 @@ Next.js (App Router) personal single-page site: tab state lives in the navbar (n
 
 **Before large structural or styling changes, read [agents.md](agents.md)** for stack, layout pattern, theming, and per-component notes.
 
-**Theming:** Use CSS variables from `app/globals.css` for theme-aware colors, not hardcoded values. Where transparency matters during theme transitions, prefer **color-matched `rgba(..., 0)`** instead of `transparent` (see CLAUDE.md).
+**Theming:** Use CSS variables from `app/globals.css` for theme-aware colors, not hardcoded values. Where transparency matters during theme transitions, prefer **color-matched `rgba(..., 0)`** instead of `transparent` (see agents.md).
 
 **Styling:** Tailwind for layout/spacing; inline `style` for CSS variables and dynamic transforms; sibling `.css` only for complex effects (chiseled text, keyframes, neon).

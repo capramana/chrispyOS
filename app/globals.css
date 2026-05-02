@@ -80,9 +80,12 @@
 
 /* ─── Theme transitions ─────────────────────────────────────── */
 
-/* Color — applied globally */
+/* Theme color transitions — broad, but skip SVG internals (paths, defs, filters).
+   Those nodes don't need theme interpolation and were multiplying transition work. */
 @layer base {
-  *, *::before, *::after {
+  *:not(svg *),
+  *:not(svg *)::before,
+  *:not(svg *)::after {
     transition: background-color 0.275s ease, border-color 0.275s ease, color 0.275s ease;
   }
 }
