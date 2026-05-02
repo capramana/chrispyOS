@@ -27,6 +27,7 @@ export default function MusicPlayer() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const animationRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
+  const animateRef = useRef<(timestamp: number) => void>(() => {});
 
   const track = tracks[currentTrack];
 
@@ -41,8 +42,14 @@ export default function MusicPlayer() {
     // Rotate 360 degrees every 3 seconds (same as animate-spin-slow)
     setRotation((prev) => (prev + (delta / 3000) * 360) % 360);
 
-    animationRef.current = requestAnimationFrame(animate);
+    animationRef.current = requestAnimationFrame((t) =>
+      animateRef.current(t),
+    );
   }, []);
+
+  useEffect(() => {
+    animateRef.current = animate;
+  }, [animate]);
 
   const togglePlay = () => {
     if (audioRef.current) {
