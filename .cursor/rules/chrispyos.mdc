@@ -1,0 +1,14 @@
+---
+description: chrispyOS project context — read agents.md for full conventions
+alwaysApply: true
+---
+
+# chrispyOS
+
+Next.js (App Router) personal single-page site: tab state lives in the navbar (no real routes); interactive pieces use `"use client"`.
+
+**Before large structural or styling changes, read [agents.md](agents.md)** for stack, layout pattern, theming, and per-component notes.
+
+**Theming:** Use CSS variables from `app/globals.css` for theme-aware colors, not hardcoded values. Where transparency matters during theme transitions, prefer **color-matched `rgba(..., 0)`** instead of `transparent` (see CLAUDE.md).
+
+**Styling:** Tailwind for layout/spacing; inline `style` for CSS variables and dynamic transforms; sibling `.css` only for complex effects (chiseled text, keyframes, neon).

@@ -1,0 +1,4 @@
+# Dependencies and build output (reduce indexing noise)
+node_modules/
+.next/
+out/
