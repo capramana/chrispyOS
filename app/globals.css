@@ -80,8 +80,7 @@
 
 /* ─── Theme transitions ─────────────────────────────────────── */
 
-/* Theme color transitions — broad, but skip SVG internals (paths, defs, filters).
-   Those nodes don't need theme interpolation and were multiplying transition work. */
+/* Theme colors — omit SVG subtree */
 @layer base {
   *:not(svg *),
   *:not(svg *)::before,
