@@ -53,10 +53,70 @@ Each component that needs custom CSS has its own `.css` file alongside the `.tsx
 
 - **`NavBar.tsx`** — owns dark mode state; receives tab props from `HomePage`; Framer Motion layout animations for expand/collapse (spring: stiffness 1100, damping 60, mass 2)
 - **`HomePage.tsx`** — client shell: tab state and composes fixed layout + center content (`home`/`writing` hero vs `Vault`)
-- **`VaultArtifacts.tsx`** / **`VaultArtifact.tsx`** / **`vaultRects.ts`** — vault tab: draggable images on a fixed layer (`public/vault/artifact-1.png` … `artifact-7.png`), sized with shared **`maxWidth` / `maxHeight`** + `object-fit: contain` (`VAULT_FOOTPRINT`); stack priority + z-index: touch promotes to top unless the piece is **covered** by a higher stack sibling—then promotion waits until it **no longer overlaps** those blockers (see `deferredRef` in `VaultArtifacts.tsx`)
+- **`VaultArtifacts.tsx`** / **`VaultPictureStack.tsx`** / **`VaultArtifact.tsx`** / **`vaultRects.ts`** — vault tab: draggable stacks; **picture stacks** use Cambio-style Framer `layoutId` zoom (see **Cambio-style shared layout zoom** below). Other vault pieces use `VaultArtifact.tsx`. Stack priority + z-index: touch promotes to top unless the piece is **covered** by a higher stack sibling—then promotion waits until it **no longer overlaps** those blockers (see `deferredRef` in `VaultArtifacts.tsx`)
 - **`NavButton.tsx`** — icon swap animations with CSS keyframe sequences (sunrise/sunset metaphor for moon/sun)
 - **`ChisledText.tsx`** — metallic 3D text effect via `background-clip`, `text-stroke`, and layered `text-shadow`
 - **`Graffiti.tsx`** — dark-mode-only idle neon doodles; 30s idle timer; collision-detects against UI elements before placing SVGs
 - **`MusicPlayer.tsx`** — album art spins via `requestAnimationFrame` (360° per 3s); hover reveals playback controls
 - **`WorkExperience.tsx`** — cascading card reveal on hover with staggered opacity/transform transitions
+
+## Cambio-style shared layout zoom (vault → reference for other assets)
+
+This documents what worked (and what did not) while implementing a **Cambio-like** interaction: a small source tile morphs into a large “focused” tile using **Framer Motion** shared layout (`layoutId`) plus a **portalled** overlay. Primary implementation: `VaultPictureStack.tsx` (`VaultOverlayPortal`, grid, `createPortal`).
+
+### Core pattern
+
+1. **`LayoutGroup`** — Wrap every surface that participates in the same shared transition (e.g. the draggable stack root **and** the in-page gallery overlay shell). Give the group a **stable `id`** per stack so multiple stacks do not cross-wire `layoutId`s.
+
+2. **Stable `layoutId` strings** — One id per **logical asset**, not per React instance index, e.g. `` `vault-${stackId}-art-${assetId}` ``. Source (grid button) and destination (portal card) must use the **identical** string.
+
+3. **Matched timing** — Use the **same** `transition` (duration + ease) on the shared `motion` node **and** on the dimming backdrop so the fade tracks the morph (`VAULT_MORPH_DURATION_S` / `vaultMorphTransition`).
+
+4. **`createPortal(..., document.body)`** — Renders the zoom layer above **stacking context** / `overflow` issues from ancestors. Keep a **fixed** full-viewport shell with **horizontal bleed** past `100vw` if the in-page gallery uses `overflow-y: auto` (horizontal clip otherwise cuts the morphing card at the edges).
+
+5. **Invisible grid placeholder** — When an item is focused, the grid cell can render an **invisible** copy of the thumbnail (same footprint) so the grid does not reflow while the visible `layoutId` lives in the portal.
+
+### Z-index: zoom **out** (critical)
+
+When `focusAssetId` clears, the morphing tile **lost** lift and drew **under** neighbors.
+
+- **Cause**: Clearing both `liftAssetId` and `focusAssetId` immediately removed the “lifted” stacking for the tile that was still animating back into the grid.
+- **Fix**: On dismiss, set **`liftAssetId` to the exiting focused id**, then `setFocusAssetId(null)`. After **`VAULT_MORPH_MS`** (same as morph duration), clear `liftAssetId`. Use a **single timeout ref**; cancel it when opening a new focus or closing the whole overlay.
+- **Overlay shell**: Use elevated `z-index` while **`focusAssetId != null || liftAssetId != null`**, not only when focused—otherwise the whole gallery layer drops mid-morph.
+
+### Layout / CSS: why the zoomed card looked “stuck” at thumb size
+
+- **Flex default `flex-shrink: 1`** on the centered wrapper let the flex item **shrink below** the computed zoom dimensions.
+- **`max-w-full`** on `VaultArtifactCard` (stacked) then capped the card to that **shrunk** width.
+
+**Fix**: `shrink-0` on the zoom wrappers; **`clampToParent={false}`** on the portalled card so stacked mode **omits `max-w-full`** (thumbnails in the grid keep default `clampToParent`).
+
+### Zoom **size** math (what we simplified)
+
+- **`vaultFocusZoomSize`**: `scale = min(maxScale, capW/baseW, capH/baseH)` with viewport-derived caps (`~0.94` / `~0.92` of `innerWidth`/`innerHeight` minus padding). **`maxScale`** is often **not** the binding term; **`capH/baseH`** usually is for portrait-ish thumb slots (e.g. 140×175).
+- **Portrait vs landscape cap**: We used **`baseH > baseW`** on the **thumb slot** for `4.5` vs `6`. Using **intrinsic image** dimensions for that choice is possible but adds `onLoadingComplete` plumbing and still loses to viewport height caps unless you redesign the cap model.
+
+**What did not pay off** (removed from the codebase; do not reintroduce blindly):
+
+- Per-item `focusZoomMaxScale`, custom viewport fracs, or **ResizeObserver** on the overlay “usable rect” — user-visible size barely moved because **height / slot** still dominated, and **CSS** / flex were masking gains.
+- **`min(..., capW/cw, capH/ch)`** “content footprint” without tightening the **slot** in the same step — can imply a scale the **full mat** does not fit; keep slot and viewport constraints **one coherent `min()` chain** if you extend this.
+
+### Reuse checklist for books / text / other vault assets
+
+- [ ] One **`LayoutGroup`** id per family of shared elements.
+- [ ] Identical **`layoutId`** on source and destination `motion` wrappers only where morph should run.
+- [ ] Portal + backdrop + **aligned** transition durations.
+- [ ] **Lift + delayed clear** on dismiss so z-order survives the morph home.
+- [ ] **`shrink-0`** + avoid **`max-w-full`** (or equivalent) on the **large** destination so flex does not negate JS size.
+- [ ] Optional: invisible source placeholder so grid layout does not jump.
+- [ ] Test **Escape**, backdrop click, and **click another tile** while zoomed—all dismiss paths must run the same lift logic.
+
+### File map (pictures)
+
+| Piece | Role |
+| ----- | ---- |
+| `VaultPictureStack.tsx` | `LayoutGroup`, drag pile, expanded grid, `dismissVaultFocus`, portal `createPortal`, `vaultFocusZoomSize` |
+| `VaultOverlayPortal` | Backdrop + centered `motion.div` + `VaultArtifactCard` |
+| `VaultArtifactCard.tsx` | Mat + image; `clampToParent` for portal zoom |
+| `VaultArtifacts.tsx` | `PICTURE_ITEMS` catalog, `VaultPictureStack` wiring |
 
