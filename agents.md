@@ -19,15 +19,15 @@ npm run lint     # Run ESLint
 
 ## Architecture
 
-This is a single-page personal website. There are no actual routes — the navbar manages tab state (`home`, `writing`, `vault`) entirely client-side. All interactive components are `"use client"`.
+This is a single-page personal website. There are no actual routes — tab state (`home`, `writing`, `vault`) lives in `HomePage.tsx` and is passed into `NavBar`. Dark mode state stays local to `NavBar`. All interactive components are `"use client"`.
 
 **Layout pattern**: Fixed-position elements around a centered hero. Components are placed in corners/edges of the viewport (clock bottom-left, work experience top-right, social handle bottom-right, etc.).
 
-`**app/page.tsx`** composes all components. `**app/layout.tsx**` handles fonts and metadata.
+`app/page.tsx` renders `HomePage`. `app/layout.tsx` handles fonts and metadata.
 
 ## Theming (Dark Mode)
 
-Dark mode is toggled by adding/removing the `dark` class on `document.documentElement` (done in `NavBar.tsx`). Theme state is local to `NavBar` — it is not in a context or global store.
+Dark mode is toggled by adding/removing the `dark` class on `document.documentElement` (done in `NavBar.tsx`). Theme toggle state is local to `NavBar` — it is not in a context or global store.
 
 **CSS variables** in `globals.css` define all theme-aware tokens (`--background`, `--foreground`, `--color-primary`, `--color-secondary`, `--color-hushed`, `--music-player-bg`, `--music-player-border`, `--navbar-bg`, etc.). Light mode tokens live in `:root`, dark mode in `.dark`.
 
@@ -51,10 +51,12 @@ Each component that needs custom CSS has its own `.css` file alongside the `.tsx
 
 ## Key Components
 
-- `**NavBar.tsx`** — owns dark mode state and tab state; uses Framer Motion layout animations for expand/collapse (spring: stiffness 1100, damping 60, mass 2)
-- `**NavButton.tsx**` — icon swap animations with CSS keyframe sequences (sunrise/sunset metaphor for moon/sun)
-- `**ChisledText.tsx**` — metallic 3D text effect via `background-clip`, `text-stroke`, and layered `text-shadow`
-- `**Graffiti.tsx**` — dark-mode-only idle neon doodles; 30s idle timer; collision-detects against UI elements before placing SVGs
-- `**MusicPlayer.tsx**` — album art spins via `requestAnimationFrame` (360° per 3s); hover reveals playback controls
-- `**WorkExperience.tsx**` — cascading card reveal on hover with staggered opacity/transform transitions
+- **`NavBar.tsx`** — owns dark mode state; receives tab props from `HomePage`; Framer Motion layout animations for expand/collapse (spring: stiffness 1100, damping 60, mass 2)
+- **`HomePage.tsx`** — client shell: tab state and composes fixed layout + center content (`home`/`writing` hero vs `Vault`)
+- **`VaultArtifacts.tsx`** / **`VaultArtifact.tsx`** / **`vaultRects.ts`** — vault tab: draggable images on a fixed layer (`public/vault/artifact-1.png` … `artifact-7.png`), sized with shared **`maxWidth` / `maxHeight`** + `object-fit: contain` (`VAULT_FOOTPRINT`); stack priority + z-index: touch promotes to top unless the piece is **covered** by a higher stack sibling—then promotion waits until it **no longer overlaps** those blockers (see `deferredRef` in `VaultArtifacts.tsx`)
+- **`NavButton.tsx`** — icon swap animations with CSS keyframe sequences (sunrise/sunset metaphor for moon/sun)
+- **`ChisledText.tsx`** — metallic 3D text effect via `background-clip`, `text-stroke`, and layered `text-shadow`
+- **`Graffiti.tsx`** — dark-mode-only idle neon doodles; 30s idle timer; collision-detects against UI elements before placing SVGs
+- **`MusicPlayer.tsx`** — album art spins via `requestAnimationFrame` (360° per 3s); hover reveals playback controls
+- **`WorkExperience.tsx`** — cascading card reveal on hover with staggered opacity/transform transitions
 

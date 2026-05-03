@@ -3,17 +3,21 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HomeSimple as HomeIcon, Edit as JournalIcon, BookmarkBook as GridIcon, HalfMoon as MoonIcon, SunLight as SunIcon, MailOut as MailIcon, Filter as FilterIcon } from "iconoir-react";
+import type { NavPage } from "../types/nav-page";
 import MusicPlayer from "./MusicPlayer";
 import NavButton from "./NavButton";
-type Page = "home" | "writing" | "vault";
+
+type NavBarProps = {
+  activePage: NavPage;
+  onActivePageChange: (page: NavPage) => void;
+};
 
 const expandTransition  = { type: "spring" as const, stiffness: 1100, damping: 60, mass: 2 };
 const collapseTransition = { type: "tween" as const, ease: "easeInOut" as const, duration: 0.2 };
 
-export default function NavBar() {
+export default function NavBar({ activePage, onActivePageChange }: NavBarProps) {
   const [tooltipsReady, setTooltipsReady] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [activePage, setActivePage] = useState<Page>("home");
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showFilter = activePage === "writing" || activePage === "vault";
@@ -29,7 +33,7 @@ export default function NavBar() {
   const sharedProps = { tooltipsReady, onTooltipShown: () => setTooltipsReady(true), onTooltipReset: () => setTooltipsReady(false) };
 
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2" onMouseEnter={handleNavMouseEnter} onMouseLeave={handleNavMouseLeave}>
+    <div className="fixed bottom-8 left-1/2 z-[60] -translate-x-1/2" onMouseEnter={handleNavMouseEnter} onMouseLeave={handleNavMouseLeave}>
       <motion.div
         layout
         transition={showFilter ? expandTransition : collapseTransition}
@@ -37,11 +41,11 @@ export default function NavBar() {
         style={{ background: "var(--navbar-bg)", borderRadius: 9999, willChange: "width" }}
       >
         <div className="navbar-shadow-overlay absolute inset-0 pointer-events-none" style={{ borderRadius: 9999, border: "var(--navbar-border)", boxShadow: "var(--navbar-shadow)" }} />
-        <NavButton icon={HomeIcon} label="Home" active={activePage === "home"} onClick={() => setActivePage("home")} {...sharedProps} />
+        <NavButton icon={HomeIcon} label="Home" active={activePage === "home"} onClick={() => onActivePageChange("home")} {...sharedProps} />
         <div className="w-3 shrink-0" />
-        <NavButton icon={JournalIcon} label="Writing" active={activePage === "writing"} onClick={() => setActivePage("writing")} {...sharedProps} />
+        <NavButton icon={JournalIcon} label="Writing" active={activePage === "writing"} onClick={() => onActivePageChange("writing")} {...sharedProps} />
         <div className="w-3 shrink-0" />
-        <NavButton icon={GridIcon} label="Vault" active={activePage === "vault"} onClick={() => setActivePage("vault")} {...sharedProps} />
+        <NavButton icon={GridIcon} label="Vault" active={activePage === "vault"} onClick={() => onActivePageChange("vault")} {...sharedProps} />
         <div className="w-3 shrink-0" />
         <div className="mx-1 h-6 w-px bg-gray-200 dark:bg-[#444] shrink-0" />
 
