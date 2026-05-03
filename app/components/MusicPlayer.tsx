@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { SkipPrev, Play, Pause, SkipNext } from "iconoir-react";
 
@@ -164,21 +165,26 @@ export default function MusicPlayer() {
         style={{ transform: `rotate(${rotation}deg)` }}
       >
         {track.albumArt ? (
-          <img
+          <Image
             src={track.albumArt}
             alt={track.title}
-            className="w-full h-full object-cover"
+            width={40}
+            height={40}
+            className="h-full w-full object-cover"
+            draggable={false}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-amber-600 to-amber-800" />
         )}
         <div className="absolute inset-0 rounded-full shadow-[inset_0_0_0_1.5px_rgba(198,198,200,0.75)]" />
-        <img
+        <Image
           src="/music/cd-center.svg"
           alt=""
           width={16}
           height={16}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+          unoptimized
+          className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+          draggable={false}
         />
       </div>
       </div>

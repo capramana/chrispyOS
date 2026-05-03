@@ -14,8 +14,26 @@ const INITIAL_STACK: Record<string, number> = Object.fromEntries(
   STACK_IDS.map((id, i) => [id, i + 1]),
 ) as Record<string, number>;
 
-/** Bottom → top in the pile (last entry = top face, least tilt). */
+/**
+ * Full catalog for expand view. Collapsed preview uses the last `PREVIEW_CARD_COUNT`
+ * entries (Falcon → Jobs → Yeltsin, bottom → top).
+ */
 const PICTURE_ITEMS: VaultPictureItem[] = [
+  {
+    id: "picture-4",
+    src: "/vault/artifact-4.png",
+    alt: "Christopher Nolan filming Dunkirk, camera crane over water",
+  },
+  {
+    id: "picture-5",
+    src: "/vault/artifact-5.png",
+    alt: "Apollo astronaut and US flag on the Moon",
+  },
+  {
+    id: "picture-6",
+    src: "/vault/artifact-6.png",
+    alt: "Lee Sedol at the Go board during the AlphaGo match",
+  },
   {
     id: "picture-falcon-1",
     src: "/vault/artifact-1.png",
