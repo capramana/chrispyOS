@@ -15,8 +15,6 @@ type VaultArtifactProps = {
   initialTop: number;
   maxWidth: number;
   maxHeight: number;
-  /** Short description under the image (optional for now) */
-  caption?: string;
 };
 
 const TILT_MAX = 2;
@@ -38,7 +36,6 @@ export default function VaultArtifact({
   initialTop,
   maxWidth,
   maxHeight,
-  caption,
 }: VaultArtifactProps) {
   const [pos, setPos] = useState({ x: initialLeft, y: initialTop });
   const [tiltDeg, setTiltDeg] = useState(0);
@@ -283,7 +280,6 @@ export default function VaultArtifact({
         alt={alt}
         maxWidth={maxWidth}
         maxHeight={maxHeight}
-        caption={caption}
       />
     </div>
   );

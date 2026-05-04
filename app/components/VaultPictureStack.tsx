@@ -18,7 +18,10 @@ export type VaultPictureItem = {
   id: string;
   src: string;
   alt: string;
+  /** Passed into `VaultArtifactCard` on zoom (footer under the image). */
   caption?: string;
+  captionYear?: string;
+  captionUrl?: string;
   /** Override stack defaults for this print only (px, same semantics as `maxWidth` / `maxHeight` on the stack). */
   maxWidth?: number;
   maxHeight?: number;
@@ -181,7 +184,7 @@ function vaultFocusZoomSize(
   };
 }
 
-/** Portalled zoom + backdrop (Framer Motion, Cambio-style — not browser View Transitions). */
+/** Portalled zoom (Framer Motion shared `layoutId`; no dimming scrim — grid handles focus contrast). */
 function VaultOverlayPortal({
   stackId,
   focusAssetId,
@@ -201,7 +204,6 @@ function VaultOverlayPortal({
     focusAssetId != null
       ? (items.find((x) => x.id === focusAssetId) ?? null)
       : null;
-  const dimmed = item != null;
   let zoomW = maxWidth;
   let zoomH = maxHeight;
   if (item) {
@@ -226,22 +228,15 @@ function VaultOverlayPortal({
       className="pointer-events-none fixed top-0 bottom-0 left-[max(-5rem,calc(-10vw-12px))] right-[max(-5rem,calc(-10vw-12px))] isolate"
       style={{ zIndex: 200_000 }}
     >
-      <motion.div
-        className="absolute inset-0 bg-black/40 pointer-events-none"
-        initial={false}
-        animate={{ opacity: dimmed ? 1 : 0 }}
-        transition={vaultMorphTransition}
-        aria-hidden
-      />
       {item != null ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 sm:p-6">
           <div
             className="pointer-events-auto relative z-10 shrink-0 touch-auto overflow-visible"
             onPointerDown={(e) => e.stopPropagation()}
           >
-            <motion.div
+            <motion.span
               layoutId={vaultLayoutId(stackId, item.id)}
-              className="inline-block shrink-0 overflow-visible"
+              className="inline-block overflow-visible"
               transition={vaultMorphTransition}
             >
               <VaultArtifactCard
@@ -253,8 +248,10 @@ function VaultOverlayPortal({
                 maxWidth={zoomW}
                 maxHeight={zoomH}
                 caption={item.caption}
+                captionYear={item.captionYear}
+                captionUrl={item.captionUrl}
               />
-            </motion.div>
+            </motion.span>
           </div>
         </div>
       ) : null}
@@ -670,7 +667,6 @@ export default function VaultPictureStack({
                   alt={item.alt}
                   maxWidth={item.maxWidth ?? maxWidth}
                   maxHeight={item.maxHeight ?? maxHeight}
-                  caption={item.caption}
                 />
               </div>
             );
@@ -773,7 +769,6 @@ export default function VaultPictureStack({
                     alt={item.alt}
                     maxWidth={thumbW}
                     maxHeight={thumbH}
-                    caption={item.caption}
                   />
                 );
                 return (

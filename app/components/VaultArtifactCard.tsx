@@ -1,9 +1,14 @@
 import Image from "next/image";
+import { ArrowUpRight } from "iconoir-react";
 
 /** White mat inset on every side of the image (`variant="stacked"`). */
 export const VAULT_STACKED_MAT_PADDING_PX = 4;
-/** Corner radius on the outer mat and on the optimized image (`variant="stacked"`). */
-export const VAULT_STACKED_CORNER_RADIUS_PX = 4;
+/** Hairline border on stacked variant (one side, px). */
+export const VAULT_STACKED_BORDER_PX = 1;
+/** Corner radius on the outer white mat / card (`variant="stacked"`). */
+export const VAULT_STACKED_CORNER_RADIUS_PX = 8;
+/** Corner radius on the clipped picture area inside the mat (`variant="stacked"`). */
+export const VAULT_STACKED_IMAGE_CORNER_RADIUS_PX = 6;
 
 type VaultArtifactCardProps = {
   src: string;
@@ -12,7 +17,10 @@ type VaultArtifactCardProps = {
   maxHeight: number;
   /** Passed to `next/image` `sizes` (layout hint). Defaults for grid + zoomed vault use. */
   sizes?: string;
+  /** Optional footer under the image (vault zoom); width follows `maxWidth` like the original. */
   caption?: string;
+  captionYear?: string;
+  captionUrl?: string;
   /**
    * `stacked` — mat + hairline border for vault pile (`VAULT_STACKED_*` tokens).
    * Omit for flat mats used on standalone draggable artifacts.
@@ -34,6 +42,8 @@ export default function VaultArtifactCard({
   maxHeight,
   sizes: sizesProp,
   caption,
+  captionYear,
+  captionUrl,
   variant = "flat",
   layerShadow,
   clampToParent = true,
@@ -66,7 +76,9 @@ export default function VaultArtifactCard({
         padding: pad,
         backgroundColor: "#ffffff",
         borderRadius: r,
-        border: stacked ? "1px solid color-mix(in srgb, var(--foreground) 14%, transparent)" : undefined,
+        border: stacked
+          ? `${VAULT_STACKED_BORDER_PX}px solid color-mix(in srgb, var(--foreground) 14%, transparent)`
+          : undefined,
         overflow: stacked ? "hidden" : undefined,
         boxShadow: stacked && layerShadow ? layerShadow : undefined,
       }}
@@ -76,7 +88,7 @@ export default function VaultArtifactCard({
           className="pointer-events-none self-center leading-[0]"
           style={{
             overflow: "hidden",
-            borderRadius: r,
+            borderRadius: VAULT_STACKED_IMAGE_CORNER_RADIUS_PX,
             maxWidth,
           }}
         >
@@ -106,13 +118,53 @@ export default function VaultArtifactCard({
           sizes={sizes}
         />
       )}
-      {caption != null && caption !== "" ? (
-        <p
-          className="mt-2 text-center font-mono text-[11px] leading-snug text-secondary"
+      {stacked &&
+      ((caption != null && caption.trim() !== "") ||
+        (captionYear != null && captionYear.trim() !== "")) ? (
+        <div
+          className="mt-[4px] w-full min-w-0 font-mono text-[10px] leading-snug text-secondary"
           style={{ maxWidth }}
         >
-          {caption}
-        </p>
+          {(() => {
+            const hasUrl =
+              captionUrl != null && captionUrl.trim() !== "";
+            const rowClass =
+              "flex w-full min-w-0 items-start justify-between gap-x-[16px]";
+            const inner = (
+              <>
+                <div className="min-w-0 flex-1 text-left">
+                  {caption != null && caption.trim() !== "" ? (
+                    <p>{caption}</p>
+                  ) : null}
+                </div>
+                {captionYear != null && captionYear.trim() !== "" ? (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span>{captionYear}</span>
+                    <ArrowUpRight
+                      className={`h-[11px] w-[11px] shrink-0${hasUrl ? "" : " opacity-50"}`}
+                      width={11}
+                      height={11}
+                      strokeWidth={1.75}
+                      aria-hidden
+                    />
+                  </div>
+                ) : null}
+              </>
+            );
+            return hasUrl ? (
+              <a
+                href={captionUrl!.trim()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${rowClass} rounded-sm text-secondary no-underline underline-offset-2 hover:text-foreground hover:underline`}
+              >
+                {inner}
+              </a>
+            ) : (
+              <div className={rowClass}>{inner}</div>
+            );
+          })()}
+        </div>
       ) : null}
     </div>
   );

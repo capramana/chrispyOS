@@ -70,7 +70,7 @@ This documents what worked (and what did not) while implementing a **Cambio-like
 
 2. **Stable `layoutId` strings** — One id per **logical asset**, not per React instance index, e.g. `` `vault-${stackId}-art-${assetId}` ``. Source (grid button) and destination (portal card) must use the **identical** string.
 
-3. **Matched timing** — Use the **same** `transition` (duration + ease) on the shared `motion` node **and** on the dimming backdrop so the fade tracks the morph (`VAULT_MORPH_DURATION_S` / `vaultMorphTransition`).
+3. **Matched timing** — Use the **same** `transition` (duration + ease) on every shared `motion` node that should read as one gesture (`VAULT_MORPH_DURATION_S` / `vaultMorphTransition`). Optional: a portalled dim scrim synced to that tween; **pictures** skip the scrim and rely on **grid opacity** on non-focused tiles (`opacity-[0.32]`).
 
 4. **`createPortal(..., document.body)`** — Renders the zoom layer above **stacking context** / `overflow` issues from ancestors. Keep a **fixed** full-viewport shell with **horizontal bleed** past `100vw` if the in-page gallery uses `overflow-y: auto` (horizontal clip otherwise cuts the morphing card at the edges).
 
@@ -105,7 +105,7 @@ When `focusAssetId` clears, the morphing tile **lost** lift and drew **under** n
 
 - [ ] One **`LayoutGroup`** id per family of shared elements.
 - [ ] Identical **`layoutId`** on source and destination `motion` wrappers only where morph should run.
-- [ ] Portal + backdrop + **aligned** transition durations.
+- [ ] Portal layer + **aligned** transition durations on shared layout; optional dim scrim (pictures: grid-only dimming).
 - [ ] **Lift + delayed clear** on dismiss so z-order survives the morph home.
 - [ ] **`shrink-0`** + avoid **`max-w-full`** (or equivalent) on the **large** destination so flex does not negate JS size.
 - [ ] Optional: invisible source placeholder so grid layout does not jump.
