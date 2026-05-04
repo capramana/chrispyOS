@@ -53,7 +53,7 @@ Each component that needs custom CSS has its own `.css` file alongside the `.tsx
 
 - **`NavBar.tsx`** — owns dark mode state; receives tab props from `HomePage`; Framer Motion layout animations for expand/collapse (spring: stiffness 1100, damping 60, mass 2)
 - **`HomePage.tsx`** — client shell: tab state and composes fixed layout + center content (`home`/`writing` hero vs `Vault`)
-- **`VaultArtifacts.tsx`** / **`VaultPictureStack.tsx`** / **`VaultArtifact.tsx`** / **`vaultRects.ts`** — vault tab: draggable stacks; **picture stacks** use Cambio-style Framer `layoutId` zoom (see **Cambio-style shared layout zoom** below). Other vault pieces use `VaultArtifact.tsx`. Stack priority + z-index: touch promotes to top unless the piece is **covered** by a higher stack sibling—then promotion waits until it **no longer overlaps** those blockers (see `deferredRef` in `VaultArtifacts.tsx`)
+- **`VaultArtifacts.tsx`** / **`VaultPictureStack.tsx`** / **`VaultArtifact.tsx`** / **`vaultRects.ts`** — vault tab: draggable stacks; **picture stacks** use Cambio-style Framer `layoutId` zoom (see **Cambio-style shared layout zoom** and **Vault zoom captions** below). Zoom captions live on **`VaultArtifactCard`**, not as a separate portal block. Other vault pieces use `VaultArtifact.tsx`. Stack priority + z-index: touch promotes to top unless the piece is **covered** by a higher stack sibling—then promotion waits until it **no longer overlaps** those blockers (see `deferredRef` in `VaultArtifacts.tsx`)
 - **`NavButton.tsx`** — icon swap animations with CSS keyframe sequences (sunrise/sunset metaphor for moon/sun)
 - **`ChisledText.tsx`** — metallic 3D text effect via `background-clip`, `text-stroke`, and layered `text-shadow`
 - **`Graffiti.tsx`** — dark-mode-only idle neon doodles; 30s idle timer; collision-detects against UI elements before placing SVGs
@@ -116,7 +116,31 @@ When `focusAssetId` clears, the morphing tile **lost** lift and drew **under** n
 | Piece | Role |
 | ----- | ---- |
 | `VaultPictureStack.tsx` | `LayoutGroup`, drag pile, expanded grid, `dismissVaultFocus`, portal `createPortal`, `vaultFocusZoomSize` |
-| `VaultOverlayPortal` | Backdrop + centered `motion.div` + `VaultArtifactCard` |
-| `VaultArtifactCard.tsx` | Mat + image; `clampToParent` for portal zoom |
+| `VaultOverlayPortal` | Centered `motion.span` + `VaultArtifactCard` only (captions live **on** the card, not as a portal sibling) |
+| `VaultArtifactCard.tsx` | Mat + image + optional footer (`caption` / `captionYear` / `captionUrl`); `clampToParent` for portal zoom; stacked radii + padding tokens |
 | `VaultArtifacts.tsx` | `PICTURE_ITEMS` catalog, `VaultPictureStack` wiring |
+
+### Vault zoom captions (what worked vs. what failed)
+
+Zoom copy is easy to get wrong because **three different “widths”** exist at once:
+
+1. **`zoomW` / `zoomH`** from `vaultFocusZoomSize` — the **layout cap** passed into `next/image`.
+2. **Painted bitmap** — often smaller than `zoomW` when `object-fit: contain` is **height-limited** (`w-fit` card shrinks).
+3. **Outer mat** — image slot + `VAULT_STACKED_MAT_PADDING_PX` + border (`VAULT_STACKED_BORDER_PX`).
+
+**What worked (restored pattern):** render the caption **inside `VaultArtifactCard`**, below the image, in the same white column. Give the footer row **`style={{ maxWidth }}` using the same `maxWidth` prop as the image wrapper.** Then the text cannot be wider than the image slot by construction—no `ResizeObserver`, no second width model to disagree with Framer.
+
+**What failed (avoid reintroducing):**
+
+- **Portal-only caption** as a sibling under `layoutId` — easy to end up with **shrink-to-fit** columns where caption **min-content** widens the flex parent, or with widths derived from **`vaultStackedPrintOuterWidthPx(zoomW)`** while the real card is **narrower** (height-limited `contain`) → caption **bleeds** past the photo.
+- **`ResizeObserver` + `getBoundingClientRect` on `<img>`** during / after **`layoutId`** morph — layout boxes can lag **painted** size; caption followed a **thumbnail-width** rect and looked ~⅓ of the visible image.
+- **Any extra DOM node between `motion` and `VaultArtifactCard`** on one side of the morph but not the other — breaks shared layout projection; keep **grid and portal identical**: `motion.span.inline-block` → **card directly** (refs/observers attach to that `motion` node only if you must measure, and prefer in-card width first).
+
+**Layout / copy details that stuck:**
+
+- **`layoutId` host**: `motion.span` with `inline-block overflow-visible`, wrapping the card only (matches the grid cell).
+- **Links**: when `captionUrl` is set, the whole footer row is one `<a>`; **`gap-x-[16px]`** between left copy and year + `ArrowUpRight` (Iconoir).
+- **Spacing**: picture → caption vertical gap **`mt-[4px]`**; mat padding **`VAULT_STACKED_MAT_PADDING_PX`** (4px); outer mat radius **`VAULT_STACKED_CORNER_RADIUS_PX`** (8px); inner image clip radius **`VAULT_STACKED_IMAGE_CORNER_RADIUS_PX`** (6px).
+
+**`PICTURE_ITEMS` ordering:** `VaultPictureStack`’s collapsed preview uses the **last `PREVIEW_CARD_COUNT`** entries. New prints that should **not** change the preview pile must be inserted **earlier** in the array (e.g. before Falcon) so the tail stays e.g. Falcon → Jobs → Yeltsin.
 
