@@ -67,3 +67,15 @@ Same behavior as **`Expandable Stacked Div Prototype.html`**: `clamp`, `overlaps
 **`PICTURE_ITEMS` in `VaultArtifacts.tsx`:** only the first three entries match **`VIS`** in the collapsed pile—prepend if a new print should show there.
 
 **Zoom:** grid tile and modal share a `view-transition-name` with class `vault-cambio` (see `globals.css`). With zoom open, Escape or backdrop closes zoom only and leaves the pile expanded; otherwise backdrop collapses the gallery.
+
+- **`classifyGalleryAnchor`** — Still drives **`galleryOriginForAnchor`** only; the stack’s **center** can fall in the broad `nearCenter` zone even when the pile feels “on the left”; internal row math no longer depends on that for column alignment.
+
+### State (picture stack)
+
+- **`focusAssetId`** — Zoomed asset while the modal is “open”.
+- **`morphHandoffId`** — Exit handoff only: portal + grid `layoutId` stay paired after `focusAssetId` clears.
+- **`liftAssetId`** — Pointer-down “lift” under cursor and z-order hint; cleared with `morphHandoffId` after morph timeout. Not interchangeable with `morphHandoffId` for portal props.
+
+Pictures use **grid opacity** on non-focused tiles while zoomed (no extra dim scrim). **`vaultFocusZoomSize`**: `min(maxScale, capW/baseW, capH/baseH)`; portrait vs landscape **`maxScale`** from thumb aspect (`4.5` vs `6`).
+
+**`PICTURE_ITEMS`**: collapsed preview is the **last `PREVIEW_CARD_COUNT`** items; insert new prints earlier if the visible pile tail should stay the same.

@@ -20,7 +20,7 @@ const PICTURE_ITEMS: VaultPictureItem[] = [
     id: "picture-buffett-munger-2022",
     src: "/vault/artifact-buffett-munger-final-meeting-2022.png",
     alt: "Warren Buffett and Charlie Munger seated at a table with See's Candies boxes and microphones",
-    caption: "Buffett and Munger's final annual shareholder meeting",
+    caption: "Buffett and Munger's final shareholder meeting together",
     captionYear: "2022",
     captionUrl:
       "https://buffett.cnbc.com/video/2022/05/02/2022-annual-meeting-highlight-reel.html",
