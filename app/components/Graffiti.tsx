@@ -199,6 +199,8 @@ export default function Graffiti() {
   };
 
   useEffect(() => {
+    let alive = true;
+
     const handleClick = () => {
       if (visibleRef.current) return;
       startTimer();
@@ -209,6 +211,7 @@ export default function Graffiti() {
       if (!visibleRef.current) return;
       if (resizeTimer) clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
+        if (!alive) return;
         setPlacements(prev => {
           if (!prev) return prev;
 
@@ -308,6 +311,7 @@ export default function Graffiti() {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
 
     return () => {
+      alive = false;
       document.removeEventListener("click", handleClick);
       window.removeEventListener("resize", handleResize);
       observer.disconnect();

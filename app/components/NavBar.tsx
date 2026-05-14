@@ -23,6 +23,7 @@ export default function NavBar({ activePage, onActivePageChange }: NavBarProps) 
   const showFilter = activePage === "writing" || activePage === "vault";
 
   const handleNavMouseLeave = () => {
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
     resetTimerRef.current = setTimeout(() => setTooltipsReady(false), 300);
   };
 

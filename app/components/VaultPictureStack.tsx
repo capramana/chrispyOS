@@ -469,6 +469,14 @@ export default function VaultPictureStack({
     [id, registerNode],
   );
 
+  useLayoutEffect(() => {
+    const next = posForAnchorCenter(initialLeft, initialTop, maxWidth, maxHeight);
+    posRef.current = next;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync pile origin when parent anchor updates (resize)
+    setPos(next);
+    notifyPos.current();
+  }, [initialLeft, initialTop, maxWidth, maxHeight]);
+
   useEffect(() => {
     posRef.current = pos;
   }, [pos]);

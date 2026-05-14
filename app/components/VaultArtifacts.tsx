@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import VaultPictureStack, { type VaultPictureItem } from "./VaultPictureStack";
 import { rectsOverlap } from "./vaultRects";
 
@@ -100,13 +100,22 @@ function collectRects(
   return m;
 }
 
+function stackAnchor(): readonly [number, number] {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  return [Math.round(vw * 0.32), Math.round(vh * 0.38)] as const;
+}
+
 export default function VaultArtifacts() {
-  /** Viewport anchor for the picture pile (center of the stack, not top-left). */
-  const stackPosition = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    return [Math.round(vw * 0.32), Math.round(vh * 0.38)] as const;
+  const [stackPosition, setStackPosition] = useState<
+    readonly [number, number] | null
+  >(() => (typeof window !== "undefined" ? stackAnchor() : null));
+
+  useLayoutEffect(() => {
+    const sync = () => setStackPosition(stackAnchor());
+    sync();
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
   }, []);
 
   const nodesRef = useRef<Record<string, HTMLDivElement | null>>(
