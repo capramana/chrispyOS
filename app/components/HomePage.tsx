@@ -17,8 +17,7 @@ function HomeHero() {
       </h1>
       <p id="main-description" className="transition-blur mt-2 text-lg max-w-[460px]">
         <ChisledText sub>
-          aims to build a world of abundance. In this season, he's making capital more
-          efficient for businesses.
+          {`aims to build a world of abundance. In this season, he's making capital more efficient for businesses.`}
         </ChisledText>
       </p>
     </div>

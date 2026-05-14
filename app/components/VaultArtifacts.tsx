@@ -14,11 +14,15 @@ const INITIAL_STACK: Record<string, number> = Object.fromEntries(
   STACK_IDS.map((id, i) => [id, i + 1]),
 ) as Record<string, number>;
 
-/**
- * Full catalog for expand view. Collapsed preview uses the last `PREVIEW_CARD_COUNT`
- * entries (Falcon → Jobs → Yeltsin, bottom → top).
- */
+// Stacked visibility: first three items in this array match `VIS` in `VaultPictureStack` (prototype).
 const PICTURE_ITEMS: VaultPictureItem[] = [
+  {
+    id: "picture-buffett-munger-2022",
+    src: "/vault/artifact-buffett-munger-final-meeting-2022.png",
+    alt: "Warren Buffett and Charlie Munger seated at a table with See's Candies boxes and microphones",
+    caption: "Buffett and Munger's final annual shareholder meeting",
+    captionYear: "2022",
+  },
   {
     id: "picture-4",
     src: "/vault/artifact-4.png",
@@ -35,15 +39,6 @@ const PICTURE_ITEMS: VaultPictureItem[] = [
     captionYear: "1969",
     captionUrl:
       "https://www.nasa.gov/history/flag-day-flying-high-the-stars-and-stripes-in-space/",
-  },
-  {
-    id: "picture-skunk-xp80-circus",
-    src: "/vault/artifact-skunk-xp80.png",
-    alt: "Lockheed Skunk Works XP-80 nose section on a jig in front of a circus tent, 1943",
-    caption: "Skunk Works circus tent to build the XP-80",
-    captionYear: "1943",
-    captionUrl:
-      "https://www.lockheedmartin.com/en-us/who-we-are/business-areas/aeronautics/skunkworks/skunk-works-origin-story.html",
   },
   {
     id: "picture-6",

@@ -74,7 +74,6 @@ export default function RootLayout({
       <body
         className={`${zalandoSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* Cambio / Base UI: root isolation so portaled layers stack predictably above in-flow UI */}
         <div className="isolate">{children}</div>
         <AgentationWrapper />
       </body>
