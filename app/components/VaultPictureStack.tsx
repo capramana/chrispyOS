@@ -10,7 +10,8 @@ import {
   useState,
   type CSSProperties,
 } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
+import { ArrowUpRight } from "iconoir-react";
 
 export type VaultPictureItem = {
   id: string;
@@ -54,17 +55,17 @@ const PICTURE_MAT_OUTER_GROW_PX = 2 * PICTURE_MAT_PADDING_PX;
 /** Outer white frame (collapsed + expanded). */
 const PICTURE_MAT_OUTER_STYLE: CSSProperties = {
   boxSizing: "border-box",
-  padding: PICTURE_MAT_PADDING_PX,
+  padding: `${PICTURE_MAT_PADDING_PX}px`,
   backgroundColor: "#ffffff",
   lineHeight: 0,
-  borderRadius: PICTURE_MAT_OUTER_RADIUS_PX,
+  borderRadius: `${PICTURE_MAT_OUTER_RADIUS_PX}px`,
 };
 
 /** Inner clip for photo corners (inside the mat padding). */
 const PICTURE_MAT_INNER_STYLE: CSSProperties = {
   width: "100%",
   height: "100%",
-  borderRadius: PICTURE_MAT_INNER_RADIUS_PX,
+  borderRadius: `${PICTURE_MAT_INNER_RADIUS_PX}px`,
   overflow: "hidden",
   lineHeight: 0,
 };
@@ -80,6 +81,61 @@ const CARD_TRANSITION =
 
 /** Keep in sync with the `0.42s` motion in `CARD_TRANSITION` (collapse unmount delay). */
 const CARD_TRANSITION_MS = 420;
+
+const OVERLAY_BACKDROP_TRANSITION =
+  "opacity 0.42s cubic-bezier(0.34, 1.15, 0.64, 1), backdrop-filter 0.42s cubic-bezier(0.34, 1.15, 0.64, 1), -webkit-backdrop-filter 0.42s cubic-bezier(0.34, 1.15, 0.64, 1)";
+
+const ZOOM_GRID_LIFT_Z = 6000;
+const ZOOM_MODAL_Z = 6200;
+
+/** Close VT only — `globals.css` shortens `::view-transition-group(.vault-cambio)`. */
+const VAULT_PICTURE_VT_EXIT_CLASS = "vault-picture-vt-exit";
+
+type DocumentWithViewTransition = Document & {
+  startViewTransition?: (cb: () => void | Promise<void>) => {
+    finished: Promise<void>;
+    skipTransition: () => void;
+  };
+};
+
+function vaultPictureVtName(itemId: string) {
+  return `vault-pic-${itemId.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
+type ViewTransitionCss = CSSProperties & {
+  viewTransitionName?: string;
+  viewTransitionClass?: string;
+};
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function getDocumentViewTransition(): DocumentWithViewTransition | undefined {
+  if (typeof document === "undefined") return undefined;
+  return document as DocumentWithViewTransition;
+}
+
+function zoomOuterDisplaySize(
+  outerW: number,
+  outerH: number,
+  vw: number,
+  vh: number,
+): { w: number; h: number } {
+  const pad = 48;
+  const innerW = Math.max(1, outerW - PICTURE_MAT_OUTER_GROW_PX);
+  const innerH = Math.max(1, outerH - PICTURE_MAT_OUTER_GROW_PX);
+  const capInnerW = Math.max(80, vw - pad * 2 - PICTURE_MAT_OUTER_GROW_PX);
+  const capInnerH = Math.max(80, vh - pad * 2 - PICTURE_MAT_OUTER_GROW_PX);
+  const s = Math.min(capInnerW / innerW, capInnerH / innerH, 3);
+  const newInnerW = Math.max(1, Math.round(innerW * s));
+  const newInnerH = Math.max(1, Math.round(innerH * s));
+  return {
+    w: newInnerW + PICTURE_MAT_OUTER_GROW_PX,
+    h: newInnerH + PICTURE_MAT_OUTER_GROW_PX,
+  };
+}
 
 function stackOuterSize(maxWidth: number, maxHeight: number) {
   return {
@@ -117,9 +173,10 @@ function pictureDisplaySize(
   maxHeight: number,
   naturalW: number,
   naturalH: number,
+  respectItemCaps = true,
 ): { w: number; h: number } {
-  const mw = item.maxWidth ?? maxWidth;
-  const mh = item.maxHeight ?? maxHeight;
+  const mw = respectItemCaps ? (item.maxWidth ?? maxWidth) : maxWidth;
+  const mh = respectItemCaps ? (item.maxHeight ?? maxHeight) : maxHeight;
   if (naturalW <= 0 || naturalH <= 0) return { w: mw, h: mh };
   const s = Math.min(mw / naturalW, mh / naturalH, 1);
   return {
@@ -133,11 +190,13 @@ function VaultPictureMatInner({
   maxWidth,
   maxHeight,
   reportStackOuter,
+  respectItemCaps = true,
 }: {
   item: VaultPictureItem;
   maxWidth: number;
   maxHeight: number;
   reportStackOuter: (itemId: string, w: number, h: number) => void;
+  respectItemCaps?: boolean;
 }) {
   return (
     <div style={PICTURE_MAT_INNER_STYLE}>
@@ -156,6 +215,7 @@ function VaultPictureMatInner({
             maxHeight,
             el.naturalWidth,
             el.naturalHeight,
+            respectItemCaps,
           );
           reportStackOuter(
             item.id,
@@ -310,6 +370,10 @@ export default function VaultPictureStack({
    * `computeLayout`. Same elements as the HTML prototype; avoids mounting at final coords.
    */
   const [expandSpread, setExpandSpread] = useState(false);
+  const [backdropEntered, setBackdropEntered] = useState(false);
+  const [focusedZoomId, setFocusedZoomId] = useState<string | null>(null);
+  const [zoomLiftId, setZoomLiftId] = useState<string | null>(null);
+  const focusedZoomIdRef = useRef<string | null>(null);
   const [viewport, setViewport] = useState(() =>
     typeof window !== "undefined"
       ? { w: window.innerWidth, h: window.innerHeight }
@@ -334,6 +398,10 @@ export default function VaultPictureStack({
   );
   const notifyPos = useRef(onPositionChanged);
   const collapseCloseTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    focusedZoomIdRef.current = focusedZoomId;
+  }, [focusedZoomId]);
 
   const [stackOuterById, setStackOuterById] = useState<
     Record<string, { w: number; h: number }>
@@ -404,13 +472,15 @@ export default function VaultPictureStack({
     posRef.current = pos;
   }, [pos]);
 
-  /** After open: paint stack pose, then next frame flip to cluster (prototype `init` timing). */
+  /** After open: stack pose, then next frame cluster + scrim (prototype `init`). */
   useEffect(() => {
     if (!expanded) return;
     let alive = true;
     const id1 = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (alive) setExpandSpread(true);
+        if (!alive) return;
+        setExpandSpread(true);
+        setBackdropEntered(true);
       });
     });
     return () => {
@@ -504,6 +574,9 @@ export default function VaultPictureStack({
       clearTimeout(collapseCloseTimeoutRef.current);
       collapseCloseTimeoutRef.current = null;
     }
+    setBackdropEntered(false);
+    setFocusedZoomId(null);
+    setZoomLiftId(null);
     setExpandSpread(false);
     setExpanded(true);
   }, []);
@@ -514,11 +587,88 @@ export default function VaultPictureStack({
       collapseCloseTimeoutRef.current = null;
     }
     setExpandSpread(false);
+    setBackdropEntered(false);
+    setFocusedZoomId(null);
+    setZoomLiftId(null);
     collapseCloseTimeoutRef.current = window.setTimeout(() => {
       collapseCloseTimeoutRef.current = null;
       setExpanded(false);
     }, CARD_TRANSITION_MS);
   }, []);
+
+  const openVaultPictureZoom = useCallback((itemId: string) => {
+    if (prefersReducedMotion()) {
+      flushSync(() => {
+        setZoomLiftId(null);
+        setFocusedZoomId(itemId);
+      });
+      return;
+    }
+    flushSync(() => {
+      setZoomLiftId(itemId);
+    });
+    const doc = getDocumentViewTransition();
+    const runMorph = () => {
+      if (typeof doc?.startViewTransition === "function") {
+        doc.startViewTransition(() => {
+          flushSync(() => {
+            setFocusedZoomId(itemId);
+            setZoomLiftId(null);
+          });
+        });
+      } else {
+        flushSync(() => {
+          setFocusedZoomId(itemId);
+          setZoomLiftId(null);
+        });
+      }
+    };
+    requestAnimationFrame(() => {
+      requestAnimationFrame(runMorph);
+    });
+  }, []);
+
+  const closeVaultPictureZoom = useCallback(() => {
+    const id = focusedZoomIdRef.current;
+    if (id == null) return;
+    if (prefersReducedMotion()) {
+      flushSync(() => {
+        setFocusedZoomId(null);
+        setZoomLiftId(null);
+      });
+      return;
+    }
+    const doc = getDocumentViewTransition();
+    if (typeof doc?.startViewTransition === "function") {
+      document.documentElement.classList.add(VAULT_PICTURE_VT_EXIT_CLASS);
+      const vt = doc.startViewTransition(() => {
+        flushSync(() => {
+          setFocusedZoomId(null);
+          setZoomLiftId(id);
+        });
+      });
+      void vt.finished.finally(() => {
+        document.documentElement.classList.remove(VAULT_PICTURE_VT_EXIT_CLASS);
+        setZoomLiftId(null);
+      });
+    } else {
+      flushSync(() => {
+        setFocusedZoomId(null);
+        setZoomLiftId(id);
+      });
+      window.setTimeout(() => {
+        setZoomLiftId(null);
+      }, CARD_TRANSITION_MS);
+    }
+  }, []);
+
+  const onBackdropClick = useCallback(() => {
+    if (focusedZoomIdRef.current != null) {
+      closeVaultPictureZoom();
+    } else {
+      collapseStack();
+    }
+  }, [closeVaultPictureZoom, collapseStack]);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -637,14 +787,20 @@ export default function VaultPictureStack({
     const prevOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === "Escape") collapseStack();
+      if (ev.key === "Escape") {
+        if (focusedZoomIdRef.current != null) {
+          closeVaultPictureZoom();
+        } else {
+          collapseStack();
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => {
       document.documentElement.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKey);
     };
-  }, [expanded, collapseStack]);
+  }, [expanded, collapseStack, closeVaultPictureZoom]);
 
   useEffect(
     () => () => {
@@ -748,13 +904,17 @@ export default function VaultPictureStack({
                 type="button"
                 className="absolute inset-0 cursor-default appearance-none border-0 p-0 outline-none focus:outline-none"
                 style={{
+                  opacity: backdropEntered ? 1 : 0,
                   backgroundColor:
                     "color-mix(in srgb, var(--background) 10%, transparent)",
-                  WebkitBackdropFilter: "blur(2px)",
-                  backdropFilter: "blur(2px)",
+                  WebkitBackdropFilter: backdropEntered
+                    ? "blur(2px)"
+                    : "blur(0px)",
+                  backdropFilter: backdropEntered ? "blur(2px)" : "blur(0px)",
+                  transition: OVERLAY_BACKDROP_TRANSITION,
                 }}
                 aria-label="Close picture gallery"
-                onClick={collapseStack}
+                onClick={onBackdropClick}
               />
               {items.map((item, i) => {
                 const { w, h } = sizes[i]!;
@@ -786,6 +946,34 @@ export default function VaultPictureStack({
                     : isVis
                       ? 10 + vp
                       : 5;
+                const zTile =
+                  zoomLiftId === item.id ? ZOOM_GRID_LIFT_Z : zPortal;
+
+                if (useClusterPose && focusedZoomId === item.id) {
+                  return (
+                    <div
+                      key={item.id}
+                      className="fixed pointer-events-none"
+                      style={{
+                        left,
+                        top,
+                        width: w,
+                        height: h,
+                        zIndex: zPortal,
+                        visibility: "hidden",
+                      }}
+                      aria-hidden
+                    />
+                  );
+                }
+
+                const vtStyle: ViewTransitionCss | undefined =
+                  useClusterPose && focusedZoomId !== item.id
+                    ? {
+                        viewTransitionName: vaultPictureVtName(item.id),
+                        viewTransitionClass: "vault-cambio",
+                      }
+                    : undefined;
 
                 return (
                   <Fragment key={item.id}>
@@ -793,11 +981,12 @@ export default function VaultPictureStack({
                       className="fixed cursor-pointer select-none"
                       style={{
                         ...PICTURE_MAT_OUTER_STYLE,
+                        ...(vtStyle as CSSProperties),
                         left,
                         top,
                         width: w,
                         height: h,
-                        zIndex: zPortal,
+                        zIndex: zTile,
                         opacity,
                         transform,
                         boxShadow,
@@ -808,7 +997,11 @@ export default function VaultPictureStack({
                             ? "auto"
                             : "none",
                       }}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!useClusterPose) return;
+                        openVaultPictureZoom(item.id);
+                      }}
                     >
                       <VaultPictureMatInner
                         item={item}
@@ -820,6 +1013,108 @@ export default function VaultPictureStack({
                   </Fragment>
                 );
               })}
+              {focusedZoomId != null
+                ? (() => {
+                    const zi = items.findIndex((it) => it.id === focusedZoomId);
+                    const item = zi >= 0 ? items[zi]! : null;
+                    if (item == null) return null;
+                    const { w: ow, h: oh } = sizes[zi]!;
+                    const { w: zw, h: zh } = zoomOuterDisplaySize(
+                      ow,
+                      oh,
+                      viewport.w,
+                      viewport.h,
+                    );
+                    const innerCapW = zw - PICTURE_MAT_OUTER_GROW_PX;
+                    const innerCapH = zh - PICTURE_MAT_OUTER_GROW_PX;
+                    const vtName = vaultPictureVtName(item.id);
+                    const zoomLeft = (viewport.w - zw) / 2;
+                    const showFooter =
+                      (item.caption != null && item.caption.trim() !== "") ||
+                      (item.captionYear != null &&
+                        item.captionYear.trim() !== "");
+                    const link =
+                      item.captionUrl != null && item.captionUrl.trim() !== ""
+                        ? item.captionUrl.trim()
+                        : null;
+                    const captionReserve = showFooter ? 52 : 0;
+                    const zoomTop = Math.max(
+                      8,
+                      (viewport.h - zh - captionReserve) / 2,
+                    );
+                    const rowClass =
+                      "flex w-full min-w-0 items-start justify-between gap-x-[16px]";
+                    const footerInner = (
+                      <>
+                        <div className="min-w-0 flex-1 text-left">
+                          {item.caption != null && item.caption.trim() !== "" ? (
+                            <p>{item.caption.trim()}</p>
+                          ) : null}
+                        </div>
+                        {item.captionYear != null &&
+                        item.captionYear.trim() !== "" ? (
+                          <div className="flex shrink-0 items-center gap-1">
+                            <span>{item.captionYear.trim()}</span>
+                            <ArrowUpRight
+                              className={`h-[11px] w-[11px] shrink-0${link != null ? "" : " opacity-50"}`}
+                              width={11}
+                              height={11}
+                              strokeWidth={1.75}
+                              aria-hidden
+                            />
+                          </div>
+                        ) : null}
+                      </>
+                    );
+                    return (
+                      <div
+                        role="dialog"
+                        aria-label={item.alt}
+                        className="fixed inline-flex cursor-pointer select-none flex-col items-stretch leading-none"
+                        style={
+                          {
+                            ...PICTURE_MAT_OUTER_STYLE,
+                            viewTransitionName: vtName,
+                            viewTransitionClass: "vault-cambio",
+                            left: zoomLeft,
+                            top: zoomTop,
+                            width: zw,
+                            minHeight: zh,
+                            zIndex: ZOOM_MODAL_Z,
+                            boxShadow: "0 12px 40px rgba(0,0,0,0.35)",
+                            transition: "none",
+                          } as ViewTransitionCss
+                        }
+                        onClick={closeVaultPictureZoom}
+                      >
+                        <VaultPictureMatInner
+                          item={item}
+                          maxWidth={Math.max(1, innerCapW)}
+                          maxHeight={Math.max(1, innerCapH)}
+                          respectItemCaps={false}
+                          reportStackOuter={() => {}}
+                        />
+                        {showFooter ? (
+                          <div className="mt-[4px] w-full min-w-0 font-mono text-[10px] leading-snug text-secondary">
+                            {link != null ? (
+                              <a
+                                href={link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`${rowClass} rounded-sm text-secondary no-underline underline-offset-2 hover:text-foreground hover:underline`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {footerInner}
+                              </a>
+                            ) : (
+                              <div className={rowClass}>{footerInner}</div>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })()
+                : null}
             </div>,
             document.body,
           )

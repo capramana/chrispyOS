@@ -62,6 +62,8 @@ Each component that needs custom CSS has its own `.css` file alongside the `.tsx
 
 ## Vault picture stack (`VaultPictureStack.tsx`)
 
-Same behavior as **`Expandable Stacked Div Prototype.html`**: `clamp`, `overlaps`, `inBounds`, **`computeLayout`**, **`GAP` / `PAD`**, **`VIS`** (`[0, 1, 2]`) and **`ROTS`**, **`CARD_TRANSITION`**. Tap the pile to expand (portaled cards + backdrop); backdrop click or Escape collapses. White mat frames around `<img>`; no Framer `layoutId` morph.
+Same behavior as **`Expandable Stacked Div Prototype.html`**: `clamp`, `overlaps`, `inBounds`, **`computeLayout`**, **`GAP` / `PAD`**, **`VIS`** (`[0, 1, 2]`) and **`ROTS`**, **`CARD_TRANSITION`**. Tap the pile to expand (portaled cards + backdrop). White mat frames around `<img>`; no Framer `layoutId` morph. Escape collapses the gallery when no image is zoomed (see **Zoom**).
 
 **`PICTURE_ITEMS` in `VaultArtifacts.tsx`:** only the first three entries match **`VIS`** in the collapsed pile—prepend if a new print should show there.
+
+**Zoom:** grid tile and modal share a `view-transition-name` with class `vault-cambio` (see `globals.css`). With zoom open, Escape or backdrop closes zoom only and leaves the pile expanded; otherwise backdrop collapses the gallery.
