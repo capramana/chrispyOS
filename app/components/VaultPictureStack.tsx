@@ -52,11 +52,12 @@ const PICTURE_MAT_OUTER_RADIUS_PX =
 
 const PICTURE_MAT_OUTER_GROW_PX = 2 * PICTURE_MAT_PADDING_PX;
 
-/** Outer white frame (collapsed + expanded). */
+/** Vault picture mat outer (`--vault-picture-mat-*` in `globals.css`). */
 const PICTURE_MAT_OUTER_STYLE: CSSProperties = {
   boxSizing: "border-box",
   padding: `${PICTURE_MAT_PADDING_PX}px`,
-  backgroundColor: "#ffffff",
+  background: "var(--vault-picture-mat-bg)",
+  border: "var(--vault-picture-mat-border)",
   lineHeight: 0,
   borderRadius: `${PICTURE_MAT_OUTER_RADIUS_PX}px`,
 };
@@ -876,7 +877,7 @@ export default function VaultPictureStack({
                       ? `rotate(${ROTS[vp]}deg)`
                       : "rotate(0deg) scale(0.88)",
                     boxShadow: isVis
-                      ? `0 ${2 + vp * 2}px ${8 + vp * 4}px rgba(0,0,0,0.32)`
+                      ? `0 ${2 + vp * 2}px ${8 + vp * 4}px rgba(0,0,0,0.32), var(--vault-picture-mat-shadow)`
                       : "none",
                     transition: CARD_TRANSITION,
                   }}
@@ -936,9 +937,9 @@ export default function VaultPictureStack({
                     : "rotate(0deg) scale(0.88)";
                 const opacity = useClusterPose ? 1 : isVis ? 1 : 0;
                 const boxShadow = useClusterPose
-                  ? "0 4px 18px rgba(0,0,0,0.24)"
+                  ? `0 4px 18px rgba(0,0,0,0.24), var(--vault-picture-mat-shadow)`
                   : isVis
-                    ? `0 ${2 + vp * 2}px ${8 + vp * 4}px rgba(0,0,0,0.32)`
+                    ? `0 ${2 + vp * 2}px ${8 + vp * 4}px rgba(0,0,0,0.32), var(--vault-picture-mat-shadow)`
                     : "none";
                 const zPortal =
                   useClusterPose && slotIdx >= 0
@@ -1081,7 +1082,7 @@ export default function VaultPictureStack({
                             width: zw,
                             minHeight: zh,
                             zIndex: ZOOM_MODAL_Z,
-                            boxShadow: "0 12px 40px rgba(0,0,0,0.35)",
+                            boxShadow: `0 12px 40px rgba(0,0,0,0.35), var(--vault-picture-mat-shadow)`,
                             transition: "none",
                           } as ViewTransitionCss
                         }
