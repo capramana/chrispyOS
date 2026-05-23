@@ -1,0 +1,80 @@
+.wip-sticker-root {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  perspective: 1000px;
+  perspective-origin: center top;
+}
+
+.wip-sticker-wrap {
+  --wip-rot-start: -25deg;
+  --wip-rot-end: -15deg;
+  width: min(12.5vw, 140px);
+  aspect-ratio: 2400 / 1702;
+  transform-style: preserve-3d;
+  position: relative;
+  transform-origin: center center;
+  animation: wip-sticker-settle 500ms both;
+  filter: url("#wip-sticker-light");
+}
+
+@keyframes wip-sticker-settle {
+  from {
+    transform: rotate(var(--wip-rot-start));
+  }
+  to {
+    transform: rotate(var(--wip-rot-end));
+  }
+}
+
+.wip-sticker-wrap::before,
+.wip-sticker-wrap::after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  background: center / cover url("/wip-sticker.png");
+}
+
+.wip-sticker-wrap::before {
+  animation: wip-sticker-unfold-front 500ms both;
+}
+
+@keyframes wip-sticker-unfold-front {
+  from {
+    clip-path: inset(0 80% 0 0);
+  }
+  50%,
+  to {
+    clip-path: inset(0 0% 0 0);
+  }
+}
+
+.wip-sticker-wrap::after {
+  filter: brightness(0.2);
+  transform: rotateY(-180deg);
+  animation: wip-sticker-unfold-back 500ms both;
+}
+
+@keyframes wip-sticker-unfold-back {
+  from {
+    clip-path: inset(0 0 0 20%);
+    transform-origin: 20% 0;
+    transform: rotateY(-180deg);
+  }
+  50%,
+  to {
+    clip-path: inset(0 0 0 100%);
+    transform-origin: 100% 0;
+    transform: rotateY(-180deg);
+  }
+}
+
+.wip-sticker-filter-def {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}

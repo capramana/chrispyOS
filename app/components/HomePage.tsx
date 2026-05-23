@@ -8,6 +8,7 @@ import WorkExperience from "./WorkExperience";
 import ChisledText from "./ChisledText";
 import Graffiti from "./Graffiti";
 import VaultArtifacts from "./VaultArtifacts";
+import WorkInProgressSticker from "./WorkInProgressSticker";
 
 function HomeHero() {
   return (
@@ -44,6 +45,10 @@ export default function HomePage() {
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <HomeHero />
       </div>
+
+      {(activePage === "writing" || activePage === "vault") && (
+        <WorkInProgressSticker />
+      )}
 
       {activePage === "vault" && <VaultArtifacts />}
 

@@ -2,13 +2,20 @@
 
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import VaultPictureStack, { type VaultPictureItem } from "./VaultPictureStack";
-import { rectsOverlap } from "./vaultRects";
+import {
+  pickRandomVaultCenter,
+  reclampVaultCenter,
+  rectsOverlap,
+  vaultStackBounds,
+} from "./vaultRects";
+import { boxFromTopLeft, registerSpawnPeer } from "./uiPlacement";
 
 /** ~half prior on-screen envelope; portrait hits height, landscape hits width first */
 const VAULT_FOOTPRINT = { maxWidth: 140, maxHeight: 175 } as const;
 
 /** One draggable entity per stack type (pictures, books, text, …). */
 const STACK_IDS = ["stack-pictures"] as const;
+const VAULT_SPAWN_PEER_ID = "vault-pictures";
 
 const INITIAL_STACK: Record<string, number> = Object.fromEntries(
   STACK_IDS.map((id, i) => [id, i + 1]),
@@ -100,22 +107,46 @@ function collectRects(
   return m;
 }
 
-function stackAnchor(): readonly [number, number] {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  return [Math.round(vw * 0.32), Math.round(vh * 0.38)] as const;
-}
-
 export default function VaultArtifacts() {
+  const stackPositionRef = useRef<readonly [number, number] | null>(null);
   const [stackPosition, setStackPosition] = useState<
     readonly [number, number] | null
-  >(() => (typeof window !== "undefined" ? stackAnchor() : null));
+  >(null);
 
   useLayoutEffect(() => {
-    const sync = () => setStackPosition(stackAnchor());
+    const unregister = registerSpawnPeer(VAULT_SPAWN_PEER_ID, () => {
+      const p = stackPositionRef.current;
+      if (!p) return null;
+      const { w, h } = vaultStackBounds(
+        VAULT_FOOTPRINT.maxWidth,
+        VAULT_FOOTPRINT.maxHeight,
+      );
+      return boxFromTopLeft(p[0] - w / 2, p[1] - h / 2, w, h);
+    });
+
+    const sync = () => {
+      const { w, h } = vaultStackBounds(
+        VAULT_FOOTPRINT.maxWidth,
+        VAULT_FOOTPRINT.maxHeight,
+      );
+      setStackPosition((prev) => {
+        if (!prev) {
+          const next = pickRandomVaultCenter(w, h, VAULT_SPAWN_PEER_ID);
+          stackPositionRef.current = next;
+          return next;
+        }
+        const next = reclampVaultCenter(prev[0], prev[1], w, h);
+        if (next[0] === prev[0] && next[1] === prev[1]) return prev;
+        stackPositionRef.current = next;
+        return next;
+      });
+    };
     sync();
     window.addEventListener("resize", sync);
-    return () => window.removeEventListener("resize", sync);
+    return () => {
+      unregister();
+      window.removeEventListener("resize", sync);
+    };
   }, []);
 
   const nodesRef = useRef<Record<string, HTMLDivElement | null>>(

@@ -4,6 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import JosephinePaths from "./Graffiti art/JosephinePaths";
 import CelinePaths from "./Graffiti art/CelinePaths";
 import FloraPaths from "./Graffiti art/FloraPaths";
+import {
+  boxesOverlapBuffered,
+  GRAFFITI_SPAWN_CHECKS,
+} from "./uiPlacement";
 
 const IDLE_DELAY = 30000;
 const ROT_PAD_V = 16;
@@ -26,19 +30,6 @@ const SVG_VARIANTS: { w: number; h: number; viewBox: string; paths: React.ReactN
 
 const NEON_COLORS = ["#FF6B9D", "#00F5FF", "#7B2FFF", "#FFE600", "#00FF88"];
 
-function overlaps(
-  gb: { top: number; bottom: number; left: number; right: number },
-  r: { top: number; bottom: number; left: number; right: number },
-  buffer: number
-) {
-  return (
-    gb.left   < r.right  + buffer &&
-    gb.right  > r.left   - buffer &&
-    gb.top    < r.bottom + buffer &&
-    gb.bottom > r.top    - buffer
-  );
-}
-
 type PlacedBox = { top: number; bottom: number; left: number; right: number };
 type Bounds    = { minLeft: number; maxLeft: number; minTop: number; maxTop: number };
 type Placement = { variantIdx: number; top: number; left: number; rotation: number; color: string; quadrant: number };
@@ -59,14 +50,6 @@ function findPlacement(
 
   if (maxLeft < minLeft || maxTop < minTop) return null;
 
-  const elementChecks = [
-    { selector: "#main-heading",           buffer: 28 },
-    { selector: "#main-description",       buffer: 28 },
-    { selector: ".navbar-pill",            buffer: 20 },
-    { selector: ".transition-blur-corner", buffer: 20 },
-    { selector: ".transition-blur-logo",   buffer: 20 },
-  ];
-
   for (let attempt = 0; attempt < 150; attempt++) {
     const left = minLeft + Math.random() * (maxLeft - minLeft);
     const top  = minTop  + Math.random() * (maxTop  - minTop);
@@ -80,9 +63,9 @@ function findPlacement(
 
     let valid = true;
 
-    for (const { selector, buffer } of elementChecks) {
+    for (const { selector, buffer } of GRAFFITI_SPAWN_CHECKS) {
       for (const el of document.querySelectorAll(selector)) {
-        if (overlaps(gb, el.getBoundingClientRect(), buffer)) { valid = false; break; }
+        if (boxesOverlapBuffered(gb, el.getBoundingClientRect(), buffer)) { valid = false; break; }
       }
       if (!valid) break;
     }
@@ -91,13 +74,13 @@ function findPlacement(
       for (const svg of document.querySelectorAll("svg:not([data-graffiti])")) {
         const r = svg.getBoundingClientRect();
         if (r.width === 0 && r.height === 0) continue;
-        if (overlaps(gb, r, 12)) { valid = false; break; }
+        if (boxesOverlapBuffered(gb, r, 12)) { valid = false; break; }
       }
     }
 
     if (valid) {
       for (const box of placedBoxes) {
-        if (overlaps(gb, box, 16)) { valid = false; break; }
+        if (boxesOverlapBuffered(gb, box, 16)) { valid = false; break; }
       }
     }
 
@@ -221,14 +204,6 @@ export default function Graffiti() {
           const vw = window.innerWidth;
           const vh = window.innerHeight;
 
-          const uiChecks = [
-            { selector: "#main-heading",           buffer: 28 },
-            { selector: "#main-description",       buffer: 28 },
-            { selector: ".navbar-pill",            buffer: 20 },
-            { selector: ".transition-blur-corner", buffer: 20 },
-            { selector: ".transition-blur-logo",   buffer: 20 },
-          ];
-
           for (const p of prev) {
             const variant = SVG_VARIANTS[p.variantIdx];
 
@@ -245,9 +220,9 @@ export default function Graffiti() {
               right:  p.left   + variant.w + ROT_PAD_H,
             };
             let bad = false;
-            for (const { selector, buffer } of uiChecks) {
+            for (const { selector, buffer } of GRAFFITI_SPAWN_CHECKS) {
               for (const el of document.querySelectorAll(selector)) {
-                if (overlaps(gb, el.getBoundingClientRect(), buffer)) { bad = true; break; }
+                if (boxesOverlapBuffered(gb, el.getBoundingClientRect(), buffer)) { bad = true; break; }
               }
               if (bad) break;
             }
@@ -255,7 +230,7 @@ export default function Graffiti() {
               for (const svg of document.querySelectorAll("svg:not([data-graffiti])")) {
                 const r = svg.getBoundingClientRect();
                 if (r.width === 0 && r.height === 0) continue;
-                if (overlaps(gb, r, 12)) { bad = true; break; }
+                if (boxesOverlapBuffered(gb, r, 12)) { bad = true; break; }
               }
             }
             (bad ? toFix : kept).push(p);

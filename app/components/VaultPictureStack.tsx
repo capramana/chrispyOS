@@ -11,6 +11,7 @@ import {
   type CSSProperties,
 } from "react";
 import { createPortal, flushSync } from "react-dom";
+import { clampVaultPosition, VAULT_PILE_MARGIN_PX } from "./vaultRects";
 import { ArrowUpRight } from "iconoir-react";
 
 export type VaultPictureItem = {
@@ -38,9 +39,6 @@ type VaultPictureStackProps = {
 };
 
 /** Space around nominal card size for translate + rotation (symmetric about pile center) */
-const PILE_MARGIN_PX = 54;
-
-/** Mat padding on each side of the photo inside the white frame (total +2× per axis). */
 const PICTURE_MAT_PADDING_PX = 4;
 
 /** Corner radius on the photo (inner clip). */
@@ -142,8 +140,8 @@ function stackOuterSize(maxWidth: number, maxHeight: number) {
   return {
     effW: maxWidth,
     effH: maxHeight,
-    innerW: maxWidth + 2 * PILE_MARGIN_PX + PICTURE_MAT_OUTER_GROW_PX,
-    innerH: maxHeight + 2 * PILE_MARGIN_PX + PICTURE_MAT_OUTER_GROW_PX,
+    innerW: maxWidth + 2 * VAULT_PILE_MARGIN_PX + PICTURE_MAT_OUTER_GROW_PX,
+    innerH: maxHeight + 2 * VAULT_PILE_MARGIN_PX + PICTURE_MAT_OUTER_GROW_PX,
   };
 }
 
@@ -231,7 +229,7 @@ function VaultPictureMatInner({
 
 // ── Prototype (Expandable Stacked Div Prototype.html) ───────────────────────
 
-function clamp(v: number, lo: number, hi: number): number {
+function clampRange(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
@@ -293,8 +291,8 @@ function computeLayout(
     let candidates: { x: number; y: number }[] = [];
 
     if (placed.length === 0) {
-      const x = clamp(ax - w / 2, PAD, sceneW - PAD - w);
-      const y = clamp(ay - h / 2, PAD, sceneH - PAD - h);
+      const x = clampRange(ax - w / 2, PAD, sceneW - PAD - w);
+      const y = clampRange(ay - h / 2, PAD, sceneH - PAD - h);
       candidates = [{ x, y }];
     } else {
       for (const p of placed) {
@@ -506,16 +504,6 @@ export default function VaultPictureStack({
     setGliding(false);
   }, []);
 
-  const clamp = useCallback((x: number, y: number, w: number, h: number) => {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const margin = 8;
-    return {
-      x: Math.min(Math.max(margin, x), Math.max(margin, vw - w - margin)),
-      y: Math.min(Math.max(margin, y), Math.max(margin, vh - h - margin)),
-    };
-  }, []);
-
   const startGlide = useCallback(
     (vx: number, vy: number) => {
       if (Math.hypot(vx, vy) < GLIDE_SPEED_MIN) {
@@ -551,7 +539,7 @@ export default function VaultPictureStack({
         const p = posRef.current;
         const nx = p.x + gvx * dtMs;
         const ny = p.y + gvy * dtMs;
-        const c = clamp(nx, ny, w, h);
+        const c = clampVaultPosition(nx, ny, w, h);
         if (c.x !== nx) gvx = 0;
         if (c.y !== ny) gvy = 0;
         gvx *= friction;
@@ -575,7 +563,7 @@ export default function VaultPictureStack({
 
       glideRafRef.current = requestAnimationFrame(tick);
     },
-    [cancelGlide, clamp],
+    [cancelGlide],
   );
 
   const expandStack = useCallback(() => {
@@ -734,7 +722,7 @@ export default function VaultPictureStack({
 
       const nx = e.clientX - d.offsetX;
       const ny = e.clientY - d.offsetY;
-      const c = clamp(nx, ny, d.width, d.height);
+      const c = clampVaultPosition(nx, ny, d.width, d.height);
       posRef.current = c;
       setPos((p) => (c.x !== p.x || c.y !== p.y ? c : p));
       notifyPos.current();
@@ -746,7 +734,7 @@ export default function VaultPictureStack({
         ),
       );
     },
-    [clamp],
+    [],
   );
 
   const endDrag = useCallback(
@@ -781,7 +769,8 @@ export default function VaultPictureStack({
       const rect = el.getBoundingClientRect();
       sizeRef.current = { w: rect.width, h: rect.height };
       setPos((p) => {
-        const c = clamp(p.x, p.y, rect.width, rect.height);
+        const c = clampVaultPosition(p.x, p.y, rect.width, rect.height);
+        if (c.x === p.x && c.y === p.y) return p;
         posRef.current = c;
         return c;
       });
@@ -789,7 +778,7 @@ export default function VaultPictureStack({
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [clamp]);
+  }, []);
 
   useEffect(() => {
     if (!expanded) return;

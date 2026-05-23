@@ -127,12 +127,12 @@ export default function MusicPlayer() {
     }
     lastTimeRef.current = null;
     a.load();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset disc + playing UI on track change
     setRotation(0);
 
     const shouldPlay = playOnLoadRef.current;
     playOnLoadRef.current = false;
     if (!shouldPlay) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync UI when track changes
       setIsPlaying(false);
       return;
     }
