@@ -18,6 +18,12 @@ const tracks: Track[] = [
     src: "/music/songs/Carlos(Freddit2B).mp3",
     albumArt: "/music/covers/carlos.jpg",
   },
+  {
+    title: "Valentina (Tokyo)",
+    artist: "Fred again..",
+    src: "/music/songs/Valentina(Tokyo).m4a",
+    albumArt: "/music/covers/valentina.png",
+  },
 ];
 
 const ink = {
@@ -35,6 +41,8 @@ export default function MusicPlayer() {
   const animationRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
   const animateRef = useRef<(t: number) => void>(() => {});
+  const playOnLoadRef = useRef(false);
+  const trackLoadIdRef = useRef(0);
 
   const track = tracks[currentTrack]!;
 
@@ -50,44 +58,68 @@ export default function MusicPlayer() {
     animateRef.current = animate;
   }, [animate]);
 
-  const togglePlay = () => {
+  const stopPlayback = useCallback(() => {
+    const a = audioRef.current;
+    if (a) a.pause();
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    lastTimeRef.current = null;
+    setIsPlaying(false);
+  }, []);
+
+  const beginPlayback = useCallback(
+    (a: HTMLAudioElement, loadId: number) => {
+      void a.play()
+        .then(() => {
+          if (loadId !== trackLoadIdRef.current) return;
+          setIsPlaying(true);
+          animationRef.current = requestAnimationFrame(animate);
+        })
+        .catch(() => {
+          if (loadId !== trackLoadIdRef.current) return;
+          setIsPlaying(false);
+        });
+    },
+    [animate],
+  );
+
+  const startPlayback = useCallback(() => {
     const a = audioRef.current;
     if (!a) return;
-    if (isPlaying) {
-      a.pause();
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      lastTimeRef.current = null;
-    } else {
-      a.play();
-      animationRef.current = requestAnimationFrame(animate);
-    }
-    setIsPlaying(!isPlaying);
+    beginPlayback(a, trackLoadIdRef.current);
+  }, [beginPlayback]);
+
+  const skipTrack = (delta: -1 | 1) => {
+    playOnLoadRef.current = true;
+    setCurrentTrack((i) => (i + delta + tracks.length) % tracks.length);
+  };
+
+  const togglePlay = () => {
+    if (isPlaying) stopPlayback();
+    else startPlayback();
   };
 
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
     const onEnd = () => {
-      setIsPlaying(false);
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      lastTimeRef.current = null;
+      stopPlayback();
     };
     a.addEventListener("ended", onEnd);
     return () => {
       a.removeEventListener("ended", onEnd);
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, []);
+  }, [stopPlayback]);
 
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
+
+    const loadId = ++trackLoadIdRef.current;
+
     a.pause();
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
@@ -95,10 +127,26 @@ export default function MusicPlayer() {
     }
     lastTimeRef.current = null;
     a.load();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync UI when track changes
-    setIsPlaying(false);
     setRotation(0);
-  }, [track.src]);
+
+    const shouldPlay = playOnLoadRef.current;
+    playOnLoadRef.current = false;
+    if (!shouldPlay) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync UI when track changes
+      setIsPlaying(false);
+      return;
+    }
+
+    const tryPlay = () => {
+      if (loadId !== trackLoadIdRef.current) return;
+      beginPlayback(a, loadId);
+    };
+
+    if (a.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) tryPlay();
+    else a.addEventListener("canplay", tryPlay, { once: true });
+
+    return () => a.removeEventListener("canplay", tryPlay);
+  }, [track.src, beginPlayback]);
 
   const fade = (show: boolean) => ({
     opacity: show ? 1 : 0,
@@ -132,11 +180,10 @@ export default function MusicPlayer() {
             <button
               type="button"
               aria-label="Previous track"
-              disabled={currentTrack <= 0}
-              className="rounded-full p-1 transition-transform hover:scale-125 disabled:cursor-not-allowed disabled:opacity-35"
+              className="rounded-full p-1 transition-transform hover:scale-125"
               onClick={(e) => {
                 e.stopPropagation();
-                if (currentTrack > 0) setCurrentTrack((i) => i - 1);
+                skipTrack(-1);
               }}
             >
               <SkipPrev width={16} height={16} {...ink} />
@@ -163,11 +210,10 @@ export default function MusicPlayer() {
             <button
               type="button"
               aria-label="Next track"
-              disabled={currentTrack >= tracks.length - 1}
-              className="rounded-full p-1 transition-transform hover:scale-125 disabled:cursor-not-allowed disabled:opacity-35"
+              className="rounded-full p-1 transition-transform hover:scale-125"
               onClick={(e) => {
                 e.stopPropagation();
-                if (currentTrack < tracks.length - 1) setCurrentTrack((i) => i + 1);
+                skipTrack(1);
               }}
             >
               <SkipNext width={16} height={16} {...ink} />
