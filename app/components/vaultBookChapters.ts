@@ -30,7 +30,7 @@ export const VAULT_BOOK_CHAPTERS: VaultBookChapter[] = [
       { label: "b.", title: "How to Succeed in Mr. Beast Production", href: "https://cdn.prod.website-files.com/6623b7720b009050313e701c/66ede69453b7bbadcd2f05a8_How-To-Succeed-At-MrBeast-Production%20(2).pdf" },
       { label: "c.", title: "The New World", href: "https://colossus.com/article/joshua-kushner-thrive-new-world/" },
       { label: "d.", title: "Berkshire Hathaway Inc. (2022)", href: "https://www.berkshirehathaway.com/letters/2022ltr.pdf" },
-      { label: "e.", title: "Apple top 100 leaked email", href: "https://www.documentcloud.org/documents/1104620-steve-jobs-email-in-apple-samsung-case/?mode=document#document/p4/a153008" },
+      { label: "e.", title: "Apple top 100 leaked email", href: "https://www.documentcloud.org/documents/1104620-steve-jobs-email-in-apple-samsung-case/" },
       { label: "f.", title: "Palantir\u2019s Weirdest Book Recommendation", href: "https://substack.com/home/post/p-175106819" },
     ],
   },
