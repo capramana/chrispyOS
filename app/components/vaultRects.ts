@@ -7,6 +7,12 @@ export const VAULT_PILE_MARGIN_PX = 54;
 const VAULT_MAT_OUTER_GROW_PX = 8;
 const VIEWPORT_MARGIN_PX = 8;
 
+export const VAULT_ARTIFACT_Z_BASE = 46;
+
+export function vaultOverlayZIndex(artifactZ: number) {
+  return 70 + (artifactZ - VAULT_ARTIFACT_Z_BASE);
+}
+
 export const WIP_STICKER_MAX_WIDTH_PX = 140;
 const WIP_STICKER_ASPECT = 1702 / 2400;
 
@@ -24,6 +30,19 @@ export function vaultStackBounds(maxWidth: number, maxHeight: number) {
     w: maxWidth + 2 * VAULT_PILE_MARGIN_PX + VAULT_MAT_OUTER_GROW_PX,
     h: maxHeight + 2 * VAULT_PILE_MARGIN_PX + VAULT_MAT_OUTER_GROW_PX,
   };
+}
+
+export const VAULT_BOOK_SIZE = { w: 300, h: 400 } as const;
+
+const VAULT_BOOK_CLOSED_SCALE = 0.5;
+const VAULT_BOOK_FOOTPRINT_PAD_PX = 50;
+
+export function vaultBookBounds() {
+  const w =
+    Math.ceil(VAULT_BOOK_SIZE.w * VAULT_BOOK_CLOSED_SCALE) +
+    VAULT_BOOK_FOOTPRINT_PAD_PX;
+  const h = Math.ceil(VAULT_BOOK_SIZE.h * VAULT_BOOK_CLOSED_SCALE);
+  return { w, h };
 }
 
 export function wipStickerBounds() {

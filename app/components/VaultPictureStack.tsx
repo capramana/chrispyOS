@@ -11,8 +11,9 @@ import {
   type CSSProperties,
 } from "react";
 import { createPortal, flushSync } from "react-dom";
-import { clampVaultPosition, VAULT_PILE_MARGIN_PX } from "./vaultRects";
+import { clampVaultPosition, VAULT_PILE_MARGIN_PX, vaultOverlayZIndex } from "./vaultRects";
 import { ArrowUpRight } from "iconoir-react";
+import { useClientMounted } from "./useClientMounted";
 
 export type VaultPictureItem = {
   id: string;
@@ -28,9 +29,7 @@ export type VaultPictureItem = {
 type VaultPictureStackProps = {
   id: string;
   zIndex: number;
-  registerNode: (id: string, el: HTMLDivElement | null) => void;
   onInteractionStart: (id: string) => void;
-  onPositionChanged: () => void;
   items: VaultPictureItem[];
   initialLeft: number;
   initialTop: number;
@@ -346,9 +345,7 @@ const TAP_MOVE_THRESHOLD_PX = 10;
 export default function VaultPictureStack({
   id,
   zIndex,
-  registerNode,
   onInteractionStart,
-  onPositionChanged,
   items,
   initialLeft,
   initialTop,
@@ -378,6 +375,7 @@ export default function VaultPictureStack({
       ? { w: window.innerWidth, h: window.innerHeight }
       : { w: 1200, h: 800 },
   );
+  const mounted = useClientMounted();
 
   const pointerStartRef = useRef({ x: 0, y: 0 });
   const dragCommittedRef = useRef(false);
@@ -395,7 +393,6 @@ export default function VaultPictureStack({
   const posRef = useRef(
     posForAnchorCenter(initialLeft, initialTop, maxWidth, maxHeight),
   );
-  const notifyPos = useRef(onPositionChanged);
   const collapseCloseTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -447,9 +444,9 @@ export default function VaultPictureStack({
     maxHeight,
   ]);
 
-  useLayoutEffect(() => {
-    notifyPos.current = onPositionChanged;
-  }, [onPositionChanged]);
+  const setRootRef = useCallback((node: HTMLDivElement | null) => {
+    elRef.current = node;
+  }, []);
 
   useLayoutEffect(() => {
     const sync = () =>
@@ -459,20 +456,11 @@ export default function VaultPictureStack({
     return () => window.removeEventListener("resize", sync);
   }, []);
 
-  const setRootRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      elRef.current = node;
-      registerNode(id, node);
-    },
-    [id, registerNode],
-  );
-
   useLayoutEffect(() => {
     const next = posForAnchorCenter(initialLeft, initialTop, maxWidth, maxHeight);
     posRef.current = next;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync pile origin when parent anchor updates (resize)
     setPos(next);
-    notifyPos.current();
   }, [initialLeft, initialTop, maxWidth, maxHeight]);
 
   useEffect(() => {
@@ -546,7 +534,6 @@ export default function VaultPictureStack({
         gvy *= friction;
         posRef.current = c;
         setPos(c);
-        notifyPos.current();
 
         setTiltDeg(Math.max(-TILT_MAX, Math.min(TILT_MAX, gvx * 0.028)));
 
@@ -554,7 +541,6 @@ export default function VaultPictureStack({
           glideRafRef.current = null;
           setGliding(false);
           setTiltDeg(0);
-          notifyPos.current();
           return;
         }
 
@@ -725,7 +711,6 @@ export default function VaultPictureStack({
       const c = clampVaultPosition(nx, ny, d.width, d.height);
       posRef.current = c;
       setPos((p) => (c.x !== p.x || c.y !== p.y ? c : p));
-      notifyPos.current();
 
       setTiltDeg(
         Math.max(
@@ -751,11 +736,9 @@ export default function VaultPictureStack({
       }
       if (wasTap && !expanded) {
         expandStack();
-        notifyPos.current();
         return;
       }
       startGlide(vx, vy);
-      notifyPos.current();
     },
     [expanded, expandStack, startGlide],
   );
@@ -774,7 +757,6 @@ export default function VaultPictureStack({
         posRef.current = c;
         return c;
       });
-      notifyPos.current();
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -819,84 +801,89 @@ export default function VaultPictureStack({
     ay: pos.y + innerH / 2,
   };
 
+  const collapsedPile = (
+    <div
+      ref={setRootRef}
+      className="vault-artifact touch-none select-none outline-none focus:outline-none"
+      style={{
+        position: "fixed",
+        left: pos.x,
+        top: pos.y,
+        display: "inline-block",
+        lineHeight: 0,
+        zIndex,
+        cursor: dragging ? "grabbing" : "grab",
+        filter: "drop-shadow(0 16px 28px rgba(0,0,0,0.08))",
+        transform,
+        transformOrigin: "center center",
+        visibility: expanded ? "hidden" : "visible",
+        pointerEvents: expanded ? "none" : "auto",
+        transition: motionActive
+          ? "none"
+          : "transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)",
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onLostPointerCapture={endDrag}
+    >
+      <div
+        className="relative isolate overflow-visible"
+        style={{
+          width: innerW,
+          height: innerH,
+        }}
+      >
+        {items.map((item, i) => {
+          const { w, h } = sizes[i]!;
+          const vp = VIS.indexOf(i);
+          const isVis = vp !== -1;
+          return (
+            <Fragment key={item.id}>
+              <div
+                className="absolute block select-none"
+                style={{
+                  ...PICTURE_MAT_OUTER_STYLE,
+                  left: ax - pos.x - w / 2,
+                  top: ay - pos.y - h / 2,
+                  width: w,
+                  height: h,
+                  zIndex: isVis ? 10 + vp : 5,
+                  opacity: isVis ? 1 : 0,
+                  pointerEvents: isVis ? "auto" : "none",
+                  transform: isVis
+                    ? `rotate(${ROTS[vp]}deg)`
+                    : "rotate(0deg) scale(0.88)",
+                  boxShadow: isVis
+                    ? `0 ${2 + vp * 2}px ${8 + vp * 4}px rgba(0,0,0,0.32), var(--vault-picture-mat-shadow)`
+                    : "none",
+                  transition: CARD_TRANSITION,
+                }}
+              >
+                <VaultPictureMatInner
+                  item={item}
+                  maxWidth={maxWidth}
+                  maxHeight={maxHeight}
+                  reportStackOuter={reportStackOuter}
+                />
+              </div>
+            </Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
     <>
-      <div
-        ref={setRootRef}
-        className="vault-artifact touch-none select-none outline-none focus:outline-none"
-        style={{
-          position: "fixed",
-          left: pos.x,
-          top: pos.y,
-          display: expanded ? "none" : "inline-block",
-          lineHeight: 0,
-          zIndex,
-          cursor: dragging ? "grabbing" : "grab",
-          filter: "drop-shadow(0 16px 28px rgba(0,0,0,0.08))",
-          transform,
-          transformOrigin: "center center",
-          pointerEvents: expanded ? "none" : "auto",
-          transition: motionActive
-            ? "none"
-            : "transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)",
-        }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onLostPointerCapture={endDrag}
-      >
-        <div
-          className="relative isolate overflow-visible"
-          style={{
-            width: innerW,
-            height: innerH,
-          }}
-        >
-          {items.map((item, i) => {
-            const { w, h } = sizes[i]!;
-            const vp = VIS.indexOf(i);
-            const isVis = vp !== -1;
-            return (
-              <Fragment key={item.id}>
-                <div
-                  className="absolute block select-none"
-                  style={{
-                    ...PICTURE_MAT_OUTER_STYLE,
-                    left: ax - pos.x - w / 2,
-                    top: ay - pos.y - h / 2,
-                    width: w,
-                    height: h,
-                    zIndex: isVis ? 10 + vp : 5,
-                    opacity: isVis ? 1 : 0,
-                    pointerEvents: isVis ? "auto" : "none",
-                    transform: isVis
-                      ? `rotate(${ROTS[vp]}deg)`
-                      : "rotate(0deg) scale(0.88)",
-                    boxShadow: isVis
-                      ? `0 ${2 + vp * 2}px ${8 + vp * 4}px rgba(0,0,0,0.32), var(--vault-picture-mat-shadow)`
-                      : "none",
-                    transition: CARD_TRANSITION,
-                  }}
-                >
-                  <VaultPictureMatInner
-                    item={item}
-                    maxWidth={maxWidth}
-                    maxHeight={maxHeight}
-                    reportStackOuter={reportStackOuter}
-                  />
-                </div>
-              </Fragment>
-            );
-          })}
-        </div>
-      </div>
+      {mounted ? createPortal(collapsedPile, document.body) : collapsedPile}
 
       {expanded
         ? createPortal(
             <div
               className="fixed inset-0 touch-none"
-              style={{ zIndex: Math.max(zIndex, 70) }}
+              style={{ zIndex: vaultOverlayZIndex(zIndex) }}
             >
               <button
                 type="button"

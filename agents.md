@@ -53,7 +53,7 @@ Each component that needs custom CSS has its own `.css` file alongside the `.tsx
 
 - **`NavBar.tsx`** — owns dark mode state; receives tab props from `HomePage`; Framer Motion layout animations for expand/collapse (spring: stiffness 1100, damping 60, mass 2)
 - **`HomePage.tsx`** — client shell: tab state and composes fixed layout + center content (`home`/`writing` hero vs `Vault`)
-- **`VaultArtifacts.tsx`** / **`VaultPictureStack.tsx`** / **`VaultArtifact.tsx`** / **`vaultRects.ts`** — vault tab: draggable stacks; picture stacks follow **`Expandable Stacked Div Prototype.html`** (`computeLayout`, portaled expand). `VaultArtifactCard` is for non-picture artifacts; picture captions live only on `VaultPictureItem` data while stacked. Touch promotes a stack unless it is covered by a higher sibling (`deferredRef` in `VaultArtifacts.tsx`).
+- **`VaultArtifacts.tsx`** / **`VaultPictureStack.tsx`** / **`VaultBook.tsx`** / **`VaultArtifact.tsx`** / **`vaultRects.ts`** — vault tab: draggable stacks; picture stacks follow **`Expandable Stacked Div Prototype.html`** (`computeLayout`, portaled expand). `VaultBook` is a separate draggable 3D book with open/close overlay. Touch or open promotes an artifact to the top z-index (`VaultArtifacts.tsx`). `VaultArtifactCard` is for non-picture artifacts; picture captions live only on `VaultPictureItem` data while stacked.
 - **`NavButton.tsx`** — icon swap animations with CSS keyframe sequences (sunrise/sunset metaphor for moon/sun)
 - **`ChisledText.tsx`** — metallic 3D text effect via `background-clip`, `text-stroke`, and layered `text-shadow`
 - **`Graffiti.tsx`** — dark-mode-only idle neon doodles; 30s idle timer; collision-detects against UI elements before placing SVGs

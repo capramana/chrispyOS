@@ -1,0 +1,149 @@
+.vault-book-root {
+  --vault-book-spine: #1b1d5b;
+  --vault-book-cover: hsl(0, 0%, 10%);
+  --vault-book-page: hsl(0, 0%, 90%);
+  --vault-book-underline: hsla(0, 0%, 25%, 0.4);
+  --vault-book-paper: #efebe3;
+}
+
+.vault-book {
+  height: 400px;
+  width: 300px;
+  min-width: 300px;
+  flex-shrink: 0;
+  position: relative;
+  transform-style: preserve-3d;
+  perspective: 1200px;
+  transform: scale(0.5) translateZ(0);
+  transform-origin: center center;
+}
+
+.vault-book__spine {
+  height: 100%;
+  left: 0;
+  top: 0;
+  position: absolute;
+  background: var(--vault-book-spine);
+  transform-origin: 0 50%;
+  width: 12px;
+  transform: translate3d(0, 0, -13px);
+}
+
+.vault-book__page {
+  position: absolute;
+  left: 1px;
+  top: 50%;
+  border-radius: 0 12px 12px 0;
+  height: 376px;
+  width: 282px;
+  transform-origin: 0% 50%;
+  transform-style: preserve-3d;
+}
+
+.vault-book__half {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+.vault-book__half--front {
+  backface-visibility: hidden;
+  border-radius: 0 12px 12px 0;
+  transform: rotateY(0deg) translate3d(0, 0, 0.5px);
+}
+
+.vault-book__half--back {
+  border-radius: 12px 0 0 12px;
+  transform: rotateY(180deg) translate3d(0, 0, 1px);
+}
+
+.vault-book__cover {
+  border-radius: 0 12px 12px 0;
+  height: 400px;
+  width: 300px;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  background: var(--vault-book-cover);
+  transform-style: preserve-3d;
+}
+
+.vault-book__cover--front {
+  transform-origin: 0 50%;
+}
+
+.vault-book__cover--back {
+  transform-origin: 0 50%;
+}
+
+.vault-book__page--inner {
+  top: 4px;
+  right: 4px;
+  bottom: 4px;
+  left: 1px;
+  width: auto;
+  height: auto;
+}
+
+.vault-book__page:not(.vault-book__cover) .vault-book__half:not(.vault-book-paper) {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 1rem,
+      var(--vault-book-underline) 1rem calc(1rem + 1px),
+      transparent calc(1rem + 1px)
+    )
+    0 1rem / 100% 100% no-repeat,
+    var(--vault-book-page);
+}
+
+.vault-book-paper {
+  background: var(--vault-book-paper-texture),
+    var(--vault-book-paper);
+  background-size: cover;
+  background-position: center;
+}
+
+.vault-book-cover-gradient {
+  position: absolute;
+  inset: 0;
+  border-radius: 0 12px 12px 0;
+  overflow: hidden;
+  background: radial-gradient(
+    ellipse 104.84% 79.67% at 69.33% 26.47% in oklab,
+    oklab(47.5% 0.01 -0.11) 0%,
+    oklab(45.9% 0.009 -0.105) 14.17%,
+    48.94%,
+    oklab(23.2% 0.008 -0.093) 100%
+  );
+}
+
+.vault-book-subchapter {
+  display: flex;
+  gap: 2px;
+  font-size: 8px;
+  line-height: 12px;
+  font-weight: 300;
+  color: #040404;
+  text-decoration: none;
+  align-items: center;
+}
+
+.vault-book-subchapter:hover {
+  text-decoration: underline;
+}
+
+.vault-book-subchapter__arrow {
+  opacity: 0;
+  margin-left: 2px;
+  transition: opacity 0.15s ease;
+}
+
+.vault-book-subchapter:hover .vault-book-subchapter__arrow {
+  opacity: 1;
+}

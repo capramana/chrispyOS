@@ -2,20 +2,31 @@
 
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import VaultPictureStack, { type VaultPictureItem } from "./VaultPictureStack";
+import VaultBook from "./VaultBook";
 import {
   pickRandomVaultCenter,
   reclampVaultCenter,
-  rectsOverlap,
+  VAULT_ARTIFACT_Z_BASE,
+  vaultBookBounds,
   vaultStackBounds,
 } from "./vaultRects";
 import { boxFromTopLeft, registerSpawnPeer } from "./uiPlacement";
 
-/** ~half prior on-screen envelope; portrait hits height, landscape hits width first */
-const VAULT_FOOTPRINT = { maxWidth: 140, maxHeight: 175 } as const;
-
 /** One draggable entity per stack type (pictures, books, text, …). */
-const STACK_IDS = ["stack-pictures"] as const;
-const VAULT_SPAWN_PEER_ID = "vault-pictures";
+const STACK_IDS = ["stack-pictures", "stack-books"] as const;
+
+const STACK_SPAWN_PEER: Record<(typeof STACK_IDS)[number], string> = {
+  "stack-pictures": "vault-pictures",
+  "stack-books": "vault-book",
+};
+
+const PICTURE_FOOTPRINT = { maxWidth: 140, maxHeight: 175 } as const;
+
+function stackBounds(stackId: (typeof STACK_IDS)[number]) {
+  return stackId === "stack-pictures"
+    ? vaultStackBounds(PICTURE_FOOTPRINT.maxWidth, PICTURE_FOOTPRINT.maxHeight)
+    : vaultBookBounds();
+}
 
 const INITIAL_STACK: Record<string, number> = Object.fromEntries(
   STACK_IDS.map((id, i) => [id, i + 1]),
@@ -96,132 +107,68 @@ const PICTURE_ITEMS: VaultPictureItem[] = [
   },
 ];
 
-function collectRects(
-  nodes: Record<string, HTMLDivElement | null>,
-): Map<string, DOMRect> {
-  const m = new Map<string, DOMRect>();
-  for (const id of STACK_IDS) {
-    const el = nodes[id];
-    if (el) m.set(id, el.getBoundingClientRect());
-  }
-  return m;
-}
-
 export default function VaultArtifacts() {
-  const stackPositionRef = useRef<readonly [number, number] | null>(null);
-  const [stackPosition, setStackPosition] = useState<
-    readonly [number, number] | null
-  >(null);
+  const stackPositionsRef = useRef<
+    Partial<Record<(typeof STACK_IDS)[number], readonly [number, number]>>
+  >({});
+  const [stackPositions, setStackPositions] = useState<
+    Partial<Record<(typeof STACK_IDS)[number], readonly [number, number]>>
+  >({});
 
   useLayoutEffect(() => {
-    const unregister = registerSpawnPeer(VAULT_SPAWN_PEER_ID, () => {
-      const p = stackPositionRef.current;
-      if (!p) return null;
-      const { w, h } = vaultStackBounds(
-        VAULT_FOOTPRINT.maxWidth,
-        VAULT_FOOTPRINT.maxHeight,
-      );
-      return boxFromTopLeft(p[0] - w / 2, p[1] - h / 2, w, h);
-    });
+    const unregister = STACK_IDS.map((stackId) =>
+      registerSpawnPeer(STACK_SPAWN_PEER[stackId], () => {
+        const p = stackPositionsRef.current[stackId];
+        if (!p) return null;
+        const { w, h } = stackBounds(stackId);
+        return boxFromTopLeft(p[0] - w / 2, p[1] - h / 2, w, h);
+      }),
+    );
 
     const sync = () => {
-      const { w, h } = vaultStackBounds(
-        VAULT_FOOTPRINT.maxWidth,
-        VAULT_FOOTPRINT.maxHeight,
-      );
-      setStackPosition((prev) => {
-        if (!prev) {
-          const next = pickRandomVaultCenter(w, h, VAULT_SPAWN_PEER_ID);
-          stackPositionRef.current = next;
-          return next;
+      setStackPositions((prev) => {
+        let changed = false;
+        const next = { ...prev };
+
+        for (const stackId of STACK_IDS) {
+          const { w, h } = stackBounds(stackId);
+          const peerId = STACK_SPAWN_PEER[stackId];
+          const current = prev[stackId];
+
+          if (!current) {
+            const picked = pickRandomVaultCenter(w, h, peerId);
+            next[stackId] = picked;
+            stackPositionsRef.current[stackId] = picked;
+            changed = true;
+            continue;
+          }
+
+          const reclamped = reclampVaultCenter(current[0], current[1], w, h);
+          if (reclamped[0] !== current[0] || reclamped[1] !== current[1]) {
+            next[stackId] = reclamped;
+            stackPositionsRef.current[stackId] = reclamped;
+            changed = true;
+          }
         }
-        const next = reclampVaultCenter(prev[0], prev[1], w, h);
-        if (next[0] === prev[0] && next[1] === prev[1]) return prev;
-        stackPositionRef.current = next;
-        return next;
+
+        return changed ? next : prev;
       });
     };
+
     sync();
     window.addEventListener("resize", sync);
     return () => {
-      unregister();
+      for (const off of unregister) off();
       window.removeEventListener("resize", sync);
     };
   }, []);
 
-  const nodesRef = useRef<Record<string, HTMLDivElement | null>>(
-    Object.fromEntries(STACK_IDS.map((id) => [id, null])) as Record<
-      string,
-      HTMLDivElement | null
-    >,
-  );
-  const stackRef = useRef<Record<string, number>>({ ...INITIAL_STACK });
   const [stack, setStack] = useState(INITIAL_STACK);
   const seqRef = useRef(STACK_IDS.length + 1);
-  const deferredRef = useRef(new Map<string, Set<string>>());
 
-  useLayoutEffect(() => {
-    stackRef.current = stack;
-  }, [stack]);
-
-  const promote = useCallback((id: string) => {
+  const onInteractionStart = useCallback((id: string) => {
     const n = seqRef.current++;
     setStack((s) => ({ ...s, [id]: n }));
-  }, []);
-
-  const tryReleaseDeferred = useCallback(
-    (id: string) => {
-      const blocked = deferredRef.current.get(id);
-      if (!blocked || blocked.size === 0) return;
-      const rects = collectRects(nodesRef.current);
-      const ra = rects.get(id);
-      if (!ra) return;
-      for (const b of blocked) {
-        const rb = rects.get(b);
-        if (rb && rectsOverlap(ra, rb)) return;
-      }
-      deferredRef.current.delete(id);
-      promote(id);
-    },
-    [promote],
-  );
-
-  const retryAllDeferred = useCallback(() => {
-    for (const id of [...deferredRef.current.keys()]) {
-      tryReleaseDeferred(id);
-    }
-  }, [tryReleaseDeferred]);
-
-  const onInteractionStart = useCallback(
-    (id: string) => {
-      const rects = collectRects(nodesRef.current);
-      const ra = rects.get(id);
-      if (!ra) return;
-      const st = stackRef.current;
-      const blocked = new Set<string>();
-      for (const other of STACK_IDS) {
-        if (other === id) continue;
-        const rb = rects.get(other);
-        if (!rb) continue;
-        if (!rectsOverlap(ra, rb)) continue;
-        if ((st[other] ?? 0) > (st[id] ?? 0)) blocked.add(other);
-      }
-      if (blocked.size === 0) {
-        deferredRef.current.delete(id);
-        promote(id);
-      } else {
-        deferredRef.current.set(id, blocked);
-      }
-    },
-    [promote],
-  );
-
-  useLayoutEffect(() => {
-    retryAllDeferred();
-  }, [stack, retryAllDeferred]);
-
-  const registerNode = useCallback((id: string, el: HTMLDivElement | null) => {
-    nodesRef.current[id] = el;
   }, []);
 
   const zFor = useCallback(
@@ -229,27 +176,40 @@ export default function VaultArtifacts() {
       const sorted = [...STACK_IDS].sort(
         (a, b) => (stack[a] ?? 0) - (stack[b] ?? 0),
       );
-      return 46 + sorted.indexOf(stackId);
+      return VAULT_ARTIFACT_Z_BASE + sorted.indexOf(stackId);
     },
     [stack],
   );
 
-  if (!stackPosition) return null;
+  if (!stackPositions["stack-pictures"] || !stackPositions["stack-books"]) {
+    return null;
+  }
 
-  const [left, top] = stackPosition;
+  const [pictureLeft, pictureTop] = stackPositions["stack-pictures"];
+  const [bookLeft, bookTop] = stackPositions["stack-books"];
+  const { w: bookW, h: bookH } = vaultBookBounds();
 
   return (
-    <VaultPictureStack
-      id="stack-pictures"
-      zIndex={zFor("stack-pictures")}
-      registerNode={registerNode}
-      onInteractionStart={onInteractionStart}
-      onPositionChanged={retryAllDeferred}
-      items={PICTURE_ITEMS}
-      initialLeft={left}
-      initialTop={top}
-      maxWidth={VAULT_FOOTPRINT.maxWidth}
-      maxHeight={VAULT_FOOTPRINT.maxHeight}
-    />
+    <>
+      <VaultPictureStack
+        id="stack-pictures"
+        zIndex={zFor("stack-pictures")}
+        onInteractionStart={onInteractionStart}
+        items={PICTURE_ITEMS}
+        initialLeft={pictureLeft}
+        initialTop={pictureTop}
+        maxWidth={PICTURE_FOOTPRINT.maxWidth}
+        maxHeight={PICTURE_FOOTPRINT.maxHeight}
+      />
+      <VaultBook
+        id="stack-books"
+        zIndex={zFor("stack-books")}
+        onInteractionStart={onInteractionStart}
+        initialLeft={bookLeft}
+        initialTop={bookTop}
+        footprintW={bookW}
+        footprintH={bookH}
+      />
+    </>
   );
 }
