@@ -87,7 +87,7 @@ export const VAULT_CARTRIDGE_ITEMS: VaultCartridgeItem[] = [
     alt: "How to Take Over the World cartridge",
     videos: [
       "https://www.youtube.com/embed/Lb4IcGF5iTQ",
-      "https://www.youtube.com/embed/ZF5pB7l9zEI",
+      "https://www.youtube.com/embed/nFOC-cgIWaY",
       "https://www.youtube.com/embed/tnBQmEqBCY0",
       "https://www.youtube.com/embed/sYMqVwsewSg",
       "https://www.youtube.com/embed/U_g-fBfPOF8",

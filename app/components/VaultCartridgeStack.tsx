@@ -640,6 +640,7 @@ export default function VaultCartridgeStack({
         className={`vault-gameboy-panel${panelVisible ? " vault-gameboy-panel--visible" : ""}`}
         style={{ left: layout.panelX, top: layout.panelY }}
         aria-label="Game Boy Advance SP"
+        onClick={collapseStack}
       >
         <div className="vault-gameboy-panel__inner">
           <div className="vault-gameboy-shell" aria-hidden />
