@@ -3,29 +3,34 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import VaultPictureStack, { type VaultPictureItem } from "./VaultPictureStack";
 import VaultBook from "./VaultBook";
+import VaultCartridgeStack from "./VaultCartridgeStack";
 import {
   pickRandomVaultCenter,
   reclampVaultCenter,
   VAULT_ARTIFACT_Z_BASE,
   vaultBookBounds,
+  vaultCartridgeBounds,
   vaultStackBounds,
 } from "./vaultRects";
 import { boxFromTopLeft, registerSpawnPeer } from "./uiPlacement";
 
 /** One draggable entity per stack type (pictures, books, text, …). */
-const STACK_IDS = ["stack-pictures", "stack-books"] as const;
+const STACK_IDS = ["stack-pictures", "stack-books", "stack-cartridges"] as const;
 
 const STACK_SPAWN_PEER: Record<(typeof STACK_IDS)[number], string> = {
   "stack-pictures": "vault-pictures",
   "stack-books": "vault-book",
+  "stack-cartridges": "vault-cartridges",
 };
 
 const PICTURE_FOOTPRINT = { maxWidth: 140, maxHeight: 175 } as const;
 
 function stackBounds(stackId: (typeof STACK_IDS)[number]) {
-  return stackId === "stack-pictures"
-    ? vaultStackBounds(PICTURE_FOOTPRINT.maxWidth, PICTURE_FOOTPRINT.maxHeight)
-    : vaultBookBounds();
+  if (stackId === "stack-pictures") {
+    return vaultStackBounds(PICTURE_FOOTPRINT.maxWidth, PICTURE_FOOTPRINT.maxHeight);
+  }
+  if (stackId === "stack-books") return vaultBookBounds();
+  return vaultCartridgeBounds();
 }
 
 const INITIAL_STACK: Record<string, number> = Object.fromEntries(
@@ -181,13 +186,19 @@ export default function VaultArtifacts() {
     [stack],
   );
 
-  if (!stackPositions["stack-pictures"] || !stackPositions["stack-books"]) {
+  if (
+    !stackPositions["stack-pictures"] ||
+    !stackPositions["stack-books"] ||
+    !stackPositions["stack-cartridges"]
+  ) {
     return null;
   }
 
   const [pictureLeft, pictureTop] = stackPositions["stack-pictures"];
   const [bookLeft, bookTop] = stackPositions["stack-books"];
+  const [cartridgeLeft, cartridgeTop] = stackPositions["stack-cartridges"];
   const { w: bookW, h: bookH } = vaultBookBounds();
+  const { w: cartridgeW, h: cartridgeH } = vaultCartridgeBounds();
 
   return (
     <>
@@ -209,6 +220,15 @@ export default function VaultArtifacts() {
         initialTop={bookTop}
         footprintW={bookW}
         footprintH={bookH}
+      />
+      <VaultCartridgeStack
+        id="stack-cartridges"
+        zIndex={zFor("stack-cartridges")}
+        onInteractionStart={onInteractionStart}
+        initialLeft={cartridgeLeft}
+        initialTop={cartridgeTop}
+        footprintW={cartridgeW}
+        footprintH={cartridgeH}
       />
     </>
   );

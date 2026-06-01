@@ -2,6 +2,11 @@ import {
   boxFromTopLeft,
   fitsSpawnPlacement,
 } from "./uiPlacement";
+import {
+  CARTRIDGE_CARD_H,
+  CARTRIDGE_CARD_W,
+  CARTRIDGE_FAN_SCALE,
+} from "./vaultCartridgeLayout";
 
 export const VAULT_PILE_MARGIN_PX = 54;
 const VAULT_MAT_OUTER_GROW_PX = 8;
@@ -43,6 +48,19 @@ export function vaultBookBounds() {
     VAULT_BOOK_FOOTPRINT_PAD_PX;
   const h = Math.ceil(VAULT_BOOK_SIZE.h * VAULT_BOOK_CLOSED_SCALE);
   return { w, h };
+}
+
+const VAULT_CARTRIDGE_SCATTER_PAD = { w: 90, h: 70 };
+
+export function vaultCartridgeBounds() {
+  return {
+    w:
+      Math.ceil(CARTRIDGE_CARD_W * CARTRIDGE_FAN_SCALE) +
+      VAULT_CARTRIDGE_SCATTER_PAD.w,
+    h:
+      Math.ceil(CARTRIDGE_CARD_H * CARTRIDGE_FAN_SCALE) +
+      VAULT_CARTRIDGE_SCATTER_PAD.h,
+  };
 }
 
 export function wipStickerBounds() {
