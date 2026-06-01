@@ -7,7 +7,7 @@
 }
 
 .vault-book {
-  height: 400px;
+  height: var(--vault-book-h);
   width: 300px;
   min-width: 300px;
   flex-shrink: 0;
@@ -19,14 +19,19 @@
 }
 
 .vault-book__spine {
-  height: 100%;
-  left: 0;
-  top: 0;
   position: absolute;
-  background: var(--vault-book-spine);
-  transform-origin: 0 50%;
-  width: 12px;
-  transform: translate3d(0, 0, -13px);
+  top: 0;
+  left: calc(-1 * var(--vault-book-spine-w));
+  width: var(--vault-book-spine-w);
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    in oklab 90deg,
+    oklab(37.4% 0.009 -0.119) 29.93%,
+    oklab(18.5% 0.005 -0.066) 101.21%
+  );
+  box-shadow: rgba(0, 0, 0, 0.4) 0 0 calc(var(--vault-book-h) * 4 / 987);
 }
 
 .vault-book__page {
@@ -64,7 +69,7 @@
 
 .vault-book__cover {
   border-radius: 0 12px 12px 0;
-  height: 400px;
+  height: var(--vault-book-h);
   width: 300px;
   position: absolute;
   top: 50%;
@@ -112,6 +117,7 @@
 .vault-book-cover-gradient {
   position: absolute;
   inset: 0;
+  z-index: 1;
   border-radius: 0 12px 12px 0;
   overflow: hidden;
   background: radial-gradient(

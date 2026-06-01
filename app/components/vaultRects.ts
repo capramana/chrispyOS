@@ -61,12 +61,14 @@ export function vaultStackBounds(maxWidth: number, maxHeight: number) {
 
 export const VAULT_BOOK_SIZE = { w: 300, h: 400 } as const;
 
+export const VAULT_BOOK_SPINE_W = Math.round((VAULT_BOOK_SIZE.w * 40) / 750);
+
 const VAULT_BOOK_CLOSED_SCALE = 0.5;
 const VAULT_BOOK_FOOTPRINT_PAD_PX = 50;
 
 export function vaultBookBounds() {
   const w =
-    Math.ceil(VAULT_BOOK_SIZE.w * VAULT_BOOK_CLOSED_SCALE) +
+    Math.ceil((VAULT_BOOK_SIZE.w + VAULT_BOOK_SPINE_W) * VAULT_BOOK_CLOSED_SCALE) +
     VAULT_BOOK_FOOTPRINT_PAD_PX;
   const h = Math.ceil(VAULT_BOOK_SIZE.h * VAULT_BOOK_CLOSED_SCALE);
   return { w, h };

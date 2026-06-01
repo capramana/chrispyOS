@@ -10,7 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "iconoir-react";
-import { clampVaultPosition, VAULT_BOOK_SIZE, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
+import { clampVaultPosition, VAULT_BOOK_SIZE, VAULT_BOOK_SPINE_W, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
 import {
   VAULT_BOOK_CHAPTERS,
   VAULT_BOOK_PAPER_TEXTURE,
@@ -412,7 +412,7 @@ export default function VaultBook({
     "--vault-book-paper-texture": `url("${VAULT_BOOK_PAPER_TEXTURE}")`,
   } as React.CSSProperties;
 
-  const shellStyle: React.CSSProperties = {
+  const shellStyle = {
     position: "fixed",
     left: pos.x,
     top: pos.y,
@@ -431,7 +431,9 @@ export default function VaultBook({
     transition: motionActive
       ? "none"
       : "left 0.8s cubic-bezier(0.45, 0, 0.55, 1), top 0.8s cubic-bezier(0.45, 0, 0.55, 1), transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)",
-  };
+    "--vault-book-spine-w": `${VAULT_BOOK_SPINE_W}px`,
+    "--vault-book-h": `${VAULT_BOOK_SIZE.h}px`,
+  } as React.CSSProperties;
 
   const bookShell = (
     <div
@@ -466,8 +468,6 @@ export default function VaultBook({
             : undefined
         }
       >
-        <div className="vault-book__spine" aria-hidden />
-
         <div
           className="vault-book__page vault-book__cover vault-book__cover--back"
           style={{
@@ -558,6 +558,7 @@ export default function VaultBook({
           transition={{ duration: 0.8, ease: [0.45, 0, 0.55, 1] }}
         >
           <div className="vault-book__half vault-book__half--front">
+            <div className="vault-book__spine" aria-hidden />
             <div className="vault-book-cover-gradient">
               <div className="absolute left-[25px] top-[18px] flex flex-col gap-2">
                 <div className="h-1 w-[5.5vmin] shrink-0 bg-[#fdf7e7]" />
