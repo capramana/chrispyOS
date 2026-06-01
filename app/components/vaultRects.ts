@@ -14,6 +14,9 @@ const VIEWPORT_MARGIN_PX = 8;
 
 export const VAULT_ARTIFACT_Z_BASE = 46;
 
+/** Above collapsed vault piles (portaled to body), below expand overlays. */
+export const VAULT_NAV_Z_INDEX = 65;
+
 export function vaultOverlayZIndex(artifactZ: number) {
   return 70 + (artifactZ - VAULT_ARTIFACT_Z_BASE);
 }

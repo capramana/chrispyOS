@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { HomeSimple as HomeIcon, Edit as JournalIcon, BookmarkBook as GridIcon, HalfMoon as MoonIcon, SunLight as SunIcon, MailOut as MailIcon, Filter as FilterIcon } from "iconoir-react";
 import type { NavPage } from "../types/nav-page";
 import MusicPlayer from "./MusicPlayer";
 import NavButton from "./NavButton";
+import { useClientMounted } from "./useClientMounted";
+import { VAULT_NAV_Z_INDEX } from "./vaultRects";
 
 type NavBarProps = {
   activePage: NavPage;
@@ -16,6 +19,7 @@ const expandTransition  = { type: "spring" as const, stiffness: 1100, damping: 6
 const collapseTransition = { type: "tween" as const, ease: "easeInOut" as const, duration: 0.2 };
 
 export default function NavBar({ activePage, onActivePageChange }: NavBarProps) {
+  const mounted = useClientMounted();
   const [tooltipsReady, setTooltipsReady] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -33,8 +37,13 @@ export default function NavBar({ activePage, onActivePageChange }: NavBarProps) 
 
   const sharedProps = { tooltipsReady, onTooltipShown: () => setTooltipsReady(true), onTooltipReset: () => setTooltipsReady(false) };
 
-  return (
-    <div className="fixed bottom-8 left-1/2 z-[60] -translate-x-1/2" onMouseEnter={handleNavMouseEnter} onMouseLeave={handleNavMouseLeave}>
+  const bar = (
+    <div
+      className="fixed bottom-8 left-1/2 -translate-x-1/2"
+      style={{ zIndex: VAULT_NAV_Z_INDEX }}
+      onMouseEnter={handleNavMouseEnter}
+      onMouseLeave={handleNavMouseLeave}
+    >
       <motion.div
         layout
         transition={showFilter ? expandTransition : collapseTransition}
@@ -81,4 +90,6 @@ export default function NavBar({ activePage, onActivePageChange }: NavBarProps) 
       </motion.div>
     </div>
   );
+
+  return mounted ? createPortal(bar, document.body) : bar;
 }

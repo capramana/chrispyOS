@@ -110,7 +110,7 @@ export const VAULT_CARTRIDGE_ITEMS: VaultCartridgeItem[] = [
   {
     id: "deakins",
     src: "/vault/cartridges/cartridge9.png",
-    alt: "Deakins cartridge",
+    alt: "Team Deakins cartridge",
     videos: "https://www.youtube.com/embed/8n4bCLN3l9M",
   },
   {
