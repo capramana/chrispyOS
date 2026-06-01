@@ -11,7 +11,7 @@ import {
   type CSSProperties,
 } from "react";
 import { createPortal, flushSync } from "react-dom";
-import { clampVaultPosition, VAULT_PILE_MARGIN_PX, vaultOverlayZIndex } from "./vaultRects";
+import { clampVaultPosition, VAULT_PILE_MARGIN_PX, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
 import { ArrowUpRight } from "iconoir-react";
 import { useClientMounted } from "./useClientMounted";
 
@@ -79,9 +79,6 @@ const CARD_TRANSITION =
 
 /** Keep in sync with the `0.42s` motion in `CARD_TRANSITION` (collapse unmount delay). */
 const CARD_TRANSITION_MS = 420;
-
-const OVERLAY_BACKDROP_TRANSITION =
-  "opacity 0.42s cubic-bezier(0.34, 1.15, 0.64, 1), backdrop-filter 0.42s cubic-bezier(0.34, 1.15, 0.64, 1), -webkit-backdrop-filter 0.42s cubic-bezier(0.34, 1.15, 0.64, 1)";
 
 const ZOOM_GRID_LIFT_Z = 6000;
 const ZOOM_MODAL_Z = 6200;
@@ -887,17 +884,8 @@ export default function VaultPictureStack({
             >
               <button
                 type="button"
-                className="absolute inset-0 cursor-default appearance-none border-0 p-0 outline-none focus:outline-none"
-                style={{
-                  opacity: backdropEntered ? 1 : 0,
-                  backgroundColor:
-                    "color-mix(in srgb, var(--background) 10%, transparent)",
-                  WebkitBackdropFilter: backdropEntered
-                    ? "blur(2px)"
-                    : "blur(0px)",
-                  backdropFilter: backdropEntered ? "blur(2px)" : "blur(0px)",
-                  transition: OVERLAY_BACKDROP_TRANSITION,
-                }}
+                className={VAULT_OVERLAY_BACKDROP_BUTTON_CLASS}
+                style={vaultOverlayBackdropStyle(backdropEntered)}
                 aria-label="Close picture gallery"
                 onClick={onBackdropClick}
               />

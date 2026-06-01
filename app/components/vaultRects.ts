@@ -18,6 +18,25 @@ export function vaultOverlayZIndex(artifactZ: number) {
   return 70 + (artifactZ - VAULT_ARTIFACT_Z_BASE);
 }
 
+export const VAULT_OVERLAY_BACKDROP_COLOR =
+  "color-mix(in srgb, var(--background) 25%, transparent)";
+
+export const VAULT_OVERLAY_BACKDROP_TRANSITION =
+  "opacity 0.42s cubic-bezier(0.34, 1.15, 0.64, 1), backdrop-filter 0.42s cubic-bezier(0.34, 1.15, 0.64, 1), -webkit-backdrop-filter 0.42s cubic-bezier(0.34, 1.15, 0.64, 1)";
+
+export const VAULT_OVERLAY_BACKDROP_BUTTON_CLASS =
+  "absolute inset-0 cursor-default appearance-none border-0 p-0 outline-none focus:outline-none";
+
+export function vaultOverlayBackdropStyle(visible: boolean) {
+  return {
+    opacity: visible ? 1 : 0,
+    backgroundColor: VAULT_OVERLAY_BACKDROP_COLOR,
+    WebkitBackdropFilter: visible ? "blur(4px)" : "blur(0px)",
+    backdropFilter: visible ? "blur(4px)" : "blur(0px)",
+    transition: VAULT_OVERLAY_BACKDROP_TRANSITION,
+  };
+}
+
 export const WIP_STICKER_MAX_WIDTH_PX = 140;
 const WIP_STICKER_ASPECT = 1702 / 2400;
 

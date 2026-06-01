@@ -9,7 +9,7 @@ export const CARTRIDGE_ANIM_MS = 650;
 export const CARTRIDGE_PANEL_W = 310;
 export const CARTRIDGE_PANEL_H = 553;
 export const CARTRIDGE_PANEL_GAP_MOBILE = 40;
-export const CARTRIDGE_PANEL_GAP_DESKTOP = 64;
+export const CARTRIDGE_PANEL_GAP_DESKTOP = 80;
 export const CARTRIDGE_MOBILE_BREAKPOINT = 768;
 export const CARTRIDGE_VISIBLE_FAN = 3;
 

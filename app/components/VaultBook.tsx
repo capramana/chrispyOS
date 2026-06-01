@@ -10,7 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "iconoir-react";
-import { clampVaultPosition, VAULT_BOOK_SIZE, vaultOverlayZIndex } from "./vaultRects";
+import { clampVaultPosition, VAULT_BOOK_SIZE, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
 import {
   VAULT_BOOK_CHAPTERS,
   VAULT_BOOK_PAPER_TEXTURE,
@@ -36,9 +36,6 @@ const GLIDE_VELOCITY_SCALE = 0.38;
 const GLIDE_VELOCITY_CAP = 0.28;
 const FRICTION_PER_MS = 0.0052;
 const GLIDE_STOP = 0.1;
-
-const OVERLAY_BACKDROP_TRANSITION =
-  "opacity 0.42s cubic-bezier(0.34, 1.15, 0.64, 1), backdrop-filter 0.42s cubic-bezier(0.34, 1.15, 0.64, 1), -webkit-backdrop-filter 0.42s cubic-bezier(0.34, 1.15, 0.64, 1)";
 
 function randomSpawnRotation() {
   const sign = Math.random() < 0.5 ? -1 : 1;
@@ -645,16 +642,9 @@ export default function VaultBook({
       {open && (
         <button
           type="button"
-          className="absolute inset-0 cursor-default appearance-none border-0 p-0 outline-none focus:outline-none"
+          className={VAULT_OVERLAY_BACKDROP_BUTTON_CLASS}
           style={{
-            opacity: backdropEntered ? 1 : 0,
-            backgroundColor:
-              "color-mix(in srgb, var(--background) 10%, transparent)",
-            WebkitBackdropFilter: backdropEntered
-              ? "blur(2px)"
-              : "blur(0px)",
-            backdropFilter: backdropEntered ? "blur(2px)" : "blur(0px)",
-            transition: OVERLAY_BACKDROP_TRANSITION,
+            ...vaultOverlayBackdropStyle(backdropEntered),
             pointerEvents: "auto",
           }}
           aria-label="Close book"

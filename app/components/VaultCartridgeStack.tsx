@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { clampVaultPosition, vaultOverlayZIndex } from "./vaultRects";
+import { clampVaultPosition, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
 import {
   pickCartridgeEmbed,
   VAULT_CARTRIDGE_ITEMS,
@@ -54,9 +54,6 @@ const GLIDE_VELOCITY_CAP = 0.28;
 const FRICTION_PER_MS = 0.0052;
 const GLIDE_STOP = 0.1;
 const GAMEBOY_BOOT_DELAY_MS = 300;
-
-const OVERLAY_BACKDROP_TRANSITION =
-  "opacity 0.42s cubic-bezier(0.34, 1.15, 0.64, 1), backdrop-filter 0.42s cubic-bezier(0.34, 1.15, 0.64, 1), -webkit-backdrop-filter 0.42s cubic-bezier(0.34, 1.15, 0.64, 1)";
 
 function posFromAnchor(cx: number, cy: number, w: number, h: number) {
   return { x: cx - w / 2, y: cy - h / 2 };
@@ -509,10 +506,10 @@ export default function VaultCartridgeStack({
 
     const onWheel = (e: WheelEvent) => {
       if (mobile) {
-        scrollPosRef.current +=
+        scrollPosRef.current -=
           (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * 0.8;
       } else {
-        scrollPosRef.current += e.deltaY * 0.8;
+        scrollPosRef.current -= e.deltaY * 0.8;
       }
     };
 
@@ -529,7 +526,7 @@ export default function VaultCartridgeStack({
       if (!pt) return;
       const cur = mobile ? pt.clientX : pt.clientY;
       const delta = cur - scrollDragStartRef.current;
-      scrollPosRef.current -= delta * 2;
+      scrollPosRef.current += delta * 2;
       scrollDragStartRef.current = cur;
     };
 
@@ -630,48 +627,44 @@ export default function VaultCartridgeStack({
     <div
       className="fixed inset-0 touch-none"
       style={{ zIndex: vaultOverlayZIndex(zIndex) }}
-      onClick={collapseStack}
     >
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          opacity: backdropEntered ? 1 : 0,
-          backgroundColor: "color-mix(in srgb, var(--background) 10%, transparent)",
-          WebkitBackdropFilter: backdropEntered ? "blur(2px)" : "blur(0px)",
-          backdropFilter: backdropEntered ? "blur(2px)" : "blur(0px)",
-          transition: OVERLAY_BACKDROP_TRANSITION,
-        }}
-        aria-hidden
+      <button
+        type="button"
+        className={VAULT_OVERLAY_BACKDROP_BUTTON_CLASS}
+        style={vaultOverlayBackdropStyle(backdropEntered)}
+        aria-label="Close cartridge gallery"
+        onClick={collapseStack}
       />
 
       <div
         className={`vault-gameboy-panel${panelVisible ? " vault-gameboy-panel--visible" : ""}`}
         style={{ left: layout.panelX, top: layout.panelY }}
         aria-label="Game Boy Advance SP"
-        onClick={(e) => e.stopPropagation()}
       >
-        <div className="vault-gameboy-shell" aria-hidden />
-        <div className="vault-gameboy-screen">
-          <div className="vault-gameboy-media">
-            {mediaKey === "boot" ? (
-              <video
-                key="boot"
-                src={VAULT_GBA_BOOT_VIDEO}
-                autoPlay
-                playsInline
-                muted
-              />
-            ) : null}
-            {mediaKey === "youtube" && youtubeEmbed ? (
-              <iframe
-                key={youtubeEmbed}
-                src={youtubeEmbed}
-                title="YouTube video player"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-              />
-            ) : null}
+        <div className="vault-gameboy-panel__inner">
+          <div className="vault-gameboy-shell" aria-hidden />
+          <div className="vault-gameboy-screen">
+            <div className="vault-gameboy-media">
+              {mediaKey === "boot" ? (
+                <video
+                  key="boot"
+                  src={VAULT_GBA_BOOT_VIDEO}
+                  autoPlay
+                  playsInline
+                  muted
+                />
+              ) : null}
+              {mediaKey === "youtube" && youtubeEmbed ? (
+                <iframe
+                  key={youtubeEmbed}
+                  src={youtubeEmbed}
+                  title="YouTube video player"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                />
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
@@ -703,7 +696,6 @@ export default function VaultCartridgeStack({
                   pointerEvents: collapsing ? "none" : "auto",
                   transitionDelay: heroMotion ? `${delay}ms` : "0ms",
                 }}
-                onClick={(e) => e.stopPropagation()}
               >
                 <CartridgeImage src={item.src} alt={item.alt} />
               </div>
@@ -737,8 +729,7 @@ export default function VaultCartridgeStack({
                   pointerEvents: "auto",
                 }}
                 aria-pressed={isSelected}
-                onClick={(e) => {
-                  e.stopPropagation();
+                onClick={() => {
                   setSelectedCartridgeIdx(cardIdx);
                   playCartridgeVideo(cardIdx);
                 }}
