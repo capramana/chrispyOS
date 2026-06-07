@@ -84,7 +84,7 @@ const CARD_TRANSITION_MS = 420;
 const ZOOM_GRID_LIFT_Z = 6000;
 const ZOOM_MODAL_Z = 6200;
 
-/** Close VT only — `globals.css` shortens `::view-transition-group(.vault-cambio)`. */
+const VAULT_PICTURE_VT_ACTIVE_CLASS = "vault-picture-vt-active";
 const VAULT_PICTURE_VT_EXIT_CLASS = "vault-picture-vt-exit";
 
 type DocumentWithViewTransition = Document & {
@@ -111,6 +111,42 @@ function prefersReducedMotion(): boolean {
 function getDocumentViewTransition(): DocumentWithViewTransition | undefined {
   if (typeof document === "undefined") return undefined;
   return document as DocumentWithViewTransition;
+}
+
+const vaultPictureVt = { n: 0, exit: 0 };
+
+function syncVaultPictureVtClasses() {
+  const root = document.documentElement;
+  if (vaultPictureVt.n === 0) {
+    root.classList.remove(VAULT_PICTURE_VT_ACTIVE_CLASS, VAULT_PICTURE_VT_EXIT_CLASS);
+    return;
+  }
+  root.classList.add(VAULT_PICTURE_VT_ACTIVE_CLASS);
+  root.classList.toggle(VAULT_PICTURE_VT_EXIT_CLASS, vaultPictureVt.exit > 0);
+}
+
+function runVaultPictureViewTransition(
+  update: () => void,
+  {
+    exit = false,
+    onFinished,
+  }: { exit?: boolean; onFinished?: () => void } = {},
+): ReturnType<NonNullable<DocumentWithViewTransition["startViewTransition"]>> | null {
+  const doc = getDocumentViewTransition();
+  if (typeof doc?.startViewTransition !== "function") return null;
+  vaultPictureVt.n++;
+  if (exit) vaultPictureVt.exit++;
+  syncVaultPictureVtClasses();
+  const vt = doc.startViewTransition(() => {
+    flushSync(update);
+  });
+  void vt.finished.finally(() => {
+    vaultPictureVt.n = Math.max(0, vaultPictureVt.n - 1);
+    if (exit) vaultPictureVt.exit = Math.max(0, vaultPictureVt.exit - 1);
+    syncVaultPictureVtClasses();
+    onFinished?.();
+  });
+  return vt;
 }
 
 function zoomOuterDisplaySize(
@@ -590,21 +626,12 @@ export default function VaultPictureStack({
     flushSync(() => {
       setZoomLiftId(itemId);
     });
-    const doc = getDocumentViewTransition();
+    const applyZoom = () => {
+      setFocusedZoomId(itemId);
+      setZoomLiftId(null);
+    };
     const runMorph = () => {
-      if (typeof doc?.startViewTransition === "function") {
-        doc.startViewTransition(() => {
-          flushSync(() => {
-            setFocusedZoomId(itemId);
-            setZoomLiftId(null);
-          });
-        });
-      } else {
-        flushSync(() => {
-          setFocusedZoomId(itemId);
-          setZoomLiftId(null);
-        });
-      }
+      if (!runVaultPictureViewTransition(applyZoom)) flushSync(applyZoom);
     };
     requestAnimationFrame(() => {
       requestAnimationFrame(runMorph);
@@ -621,20 +648,14 @@ export default function VaultPictureStack({
       });
       return;
     }
-    const doc = getDocumentViewTransition();
-    if (typeof doc?.startViewTransition === "function") {
-      document.documentElement.classList.add(VAULT_PICTURE_VT_EXIT_CLASS);
-      const vt = doc.startViewTransition(() => {
-        flushSync(() => {
-          setFocusedZoomId(null);
-          setZoomLiftId(id);
-        });
-      });
-      void vt.finished.finally(() => {
-        document.documentElement.classList.remove(VAULT_PICTURE_VT_EXIT_CLASS);
-        setZoomLiftId(null);
-      });
-    } else {
+    const vt = runVaultPictureViewTransition(
+      () => {
+        setFocusedZoomId(null);
+        setZoomLiftId(id);
+      },
+      { exit: true, onFinished: () => setZoomLiftId(null) },
+    );
+    if (!vt) {
       flushSync(() => {
         setFocusedZoomId(null);
         setZoomLiftId(id);

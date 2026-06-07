@@ -425,8 +425,11 @@ export default function VaultBook({
   const shellTransition = motionActive
     ? "none"
     : positionAnimating
-      ? "left 0.8s cubic-bezier(0.45, 0, 0.55, 1), top 0.8s cubic-bezier(0.45, 0, 0.55, 1), transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)"
-      : "transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)";
+      ? "left 0.8s cubic-bezier(0.45, 0, 0.55, 1), top 0.8s cubic-bezier(0.45, 0, 0.55, 1)"
+      : undefined;
+  const poseTransition = motionActive
+    ? "none"
+    : "transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)";
   const overlayActive = open || animBusy;
   const paperStyle = {
     "--vault-book-paper-texture": `url("${VAULT_BOOK_PAPER_TEXTURE}")`,
@@ -438,16 +441,9 @@ export default function VaultBook({
     top: pos.y,
     width: footprintW,
     height: footprintH,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
     overflow: "visible",
     zIndex: overlayActive ? undefined : zIndex,
     cursor: open ? "default" : dragging ? "grabbing" : "grab",
-    filter:
-      "drop-shadow(0 10px 18px rgba(0,0,0,0.2)) drop-shadow(0 22px 40px rgba(0,0,0,0.3))",
-    transform: shellTransform,
-    transformOrigin: "center center",
     transition: shellTransition,
     "--vault-book-spine-w": `${VAULT_BOOK_SPINE_W}px`,
     "--vault-book-h": `${VAULT_BOOK_SIZE.h}px`,
@@ -465,30 +461,38 @@ export default function VaultBook({
       onPointerCancel={endDrag}
       onLostPointerCapture={endDrag}
     >
-      <motion.div
-        className="vault-book"
+      <div
+        className="vault-book-shell-pose"
         style={{
-          transformStyle: "preserve-3d",
-          transformOrigin: open ? "0% 50%" : "center center",
+          transform: shellTransform,
+          transition: poseTransition,
         }}
-        initial={{ scale: closedScale }}
-        animate={{ scale: open ? openScale : closedScale }}
-        transition={{
-          scale: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-        }}
-        onClick={
-          open
-            ? (e) => {
-                if (suppressCloseClickRef.current) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  return;
-                }
-                closeBook();
-              }
-            : undefined
-        }
       >
+        <div className="vault-book-shell-lit">
+          <motion.div
+            className="vault-book"
+            style={{
+              transformStyle: "preserve-3d",
+              transformOrigin: open ? "0% 50%" : "center center",
+            }}
+            initial={{ scale: closedScale }}
+            animate={{ scale: open ? openScale : closedScale }}
+            transition={{
+              scale: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+            }}
+            onClick={
+              open
+                ? (e) => {
+                    if (suppressCloseClickRef.current) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      return;
+                    }
+                    closeBook();
+                  }
+                : undefined
+            }
+          >
         <div
           className="vault-book__page vault-book__cover vault-book__cover--back"
           style={{
@@ -646,7 +650,9 @@ export default function VaultBook({
             </div>
           </div>
         </motion.div>
-      </motion.div>
+        </motion.div>
+        </div>
+      </div>
     </div>
   );
 
