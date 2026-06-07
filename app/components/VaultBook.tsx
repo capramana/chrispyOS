@@ -10,7 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "iconoir-react";
-import { clampVaultPosition, VAULT_BOOK_SIZE, VAULT_BOOK_SPINE_W, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultBookOpenLayout, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
+import { clampVaultDragPosition, clampVaultPosition, VAULT_BOOK_SIZE, VAULT_BOOK_SPINE_W, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultBookOpenLayout, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
 import {
   VAULT_BOOK_CHAPTERS,
   VAULT_BOOK_PAPER_TEXTURE,
@@ -192,7 +192,7 @@ export default function VaultBook({
       setAnimBusy(false);
       animBusyTimeoutRef.current = null;
     }, 900);
-  }, [animBusy, open, storeClosedAnchor, footprintW, footprintH, openScale]);
+  }, [animBusy, open, storeClosedAnchor, footprintW, footprintH]);
 
   const closeBook = useCallback(() => {
     if (!open) return;
@@ -244,7 +244,7 @@ export default function VaultBook({
         const p = posRef.current;
         const nx = p.x + gvx * dtMs;
         const ny = p.y + gvy * dtMs;
-        const c = clampVaultPosition(nx, ny, footprintW, footprintH);
+        const c = clampVaultDragPosition(nx, ny, w, h);
         if (c.x !== nx) gvx = 0;
         if (c.y !== ny) gvy = 0;
         gvx *= friction;
@@ -267,7 +267,7 @@ export default function VaultBook({
 
       glideRafRef.current = requestAnimationFrame(tick);
     },
-    [cancelGlide, footprintW, footprintH, storeClosedAnchor],
+    [cancelGlide, storeClosedAnchor],
   );
 
   const onPointerDown = useCallback(
@@ -307,7 +307,10 @@ export default function VaultBook({
         e.clientY - pointerStartRef.current.y,
       ) >= TAP_MOVE_THRESHOLD_PX
     ) {
-      dragCommittedRef.current = true;
+      if (!dragCommittedRef.current) {
+        dragCommittedRef.current = true;
+        userMovedRef.current = true;
+      }
     }
     const now = performance.now();
     const dtMs = now - lastPointerRef.current.time;
@@ -323,14 +326,14 @@ export default function VaultBook({
 
     const nx = e.clientX - d.offsetX;
     const ny = e.clientY - d.offsetY;
-    const c = clampVaultPosition(nx, ny, footprintW, footprintH);
+    const c = clampVaultDragPosition(nx, ny, d.width, d.height);
     posRef.current = c;
     setPos((p) => (c.x !== p.x || c.y !== p.y ? c : p));
 
     setTiltDeg(
       Math.max(-TILT_MAX, Math.min(TILT_MAX, velocityRef.current.vx * 0.042)),
     );
-  }, [footprintW, footprintH]);
+  }, []);
 
   const endDrag = useCallback(
     (e: React.PointerEvent) => {
@@ -416,8 +419,14 @@ export default function VaultBook({
   }, [open]);
 
   const motionActive = dragging || gliding;
+  const positionAnimating = open || animBusy;
   const shellRotDeg = open ? 0 : restRotDeg + tiltDeg;
   const shellTransform = `rotate(${shellRotDeg.toFixed(2)}deg) scale(${dragging ? 1.02 : 1})`;
+  const shellTransition = motionActive
+    ? "none"
+    : positionAnimating
+      ? "left 0.8s cubic-bezier(0.45, 0, 0.55, 1), top 0.8s cubic-bezier(0.45, 0, 0.55, 1), transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)"
+      : "transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)";
   const overlayActive = open || animBusy;
   const paperStyle = {
     "--vault-book-paper-texture": `url("${VAULT_BOOK_PAPER_TEXTURE}")`,
@@ -439,9 +448,7 @@ export default function VaultBook({
       "drop-shadow(0 10px 18px rgba(0,0,0,0.2)) drop-shadow(0 22px 40px rgba(0,0,0,0.3))",
     transform: shellTransform,
     transformOrigin: "center center",
-    transition: motionActive
-      ? "none"
-      : "left 0.8s cubic-bezier(0.45, 0, 0.55, 1), top 0.8s cubic-bezier(0.45, 0, 0.55, 1), transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)",
+    transition: shellTransition,
     "--vault-book-spine-w": `${VAULT_BOOK_SPINE_W}px`,
     "--vault-book-h": `${VAULT_BOOK_SIZE.h}px`,
   } as React.CSSProperties;

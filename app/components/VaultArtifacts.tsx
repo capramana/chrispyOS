@@ -86,6 +86,12 @@ function commitStacks(
   for (const id of STACK_IDS) ref.current[id] = placed[id];
 }
 
+function readInitialStackPositions(): StackPositions {
+  if (typeof window === "undefined") return {};
+  const placed = placeAllStacks(stackItems(window.innerWidth));
+  return placed ?? {};
+}
+
 const INITIAL_STACK: Record<string, number> = Object.fromEntries(
   STACK_IDS.map((id, i) => [id, i + 1]),
 ) as Record<string, number>;
@@ -171,10 +177,18 @@ export default function VaultArtifacts() {
       ? { w: window.innerWidth, h: window.innerHeight }
       : { w: 1200, h: 800 },
   );
-  const stackPositionsRef = useRef<StackPositions>({});
-  const [stackPositions, setStackPositions] = useState<StackPositions>({});
+  const [stackPositions, setStackPositions] = useState<StackPositions>(
+    readInitialStackPositions,
+  );
+  const stackPositionsRef = useRef<StackPositions>(stackPositions);
 
   useLayoutEffect(() => {
+    if (stacksComplete(stackPositions)) {
+      commitStacks(
+        stackPositionsRef,
+        stackPositions as Record<(typeof STACK_IDS)[number], StackPosition>,
+      );
+    }
     const unregister = STACK_IDS.map((stackId) =>
       registerSpawnPeer(STACK_SPAWN_PEER[stackId], () => {
         const p = stackPositionsRef.current[stackId];
@@ -234,18 +248,12 @@ export default function VaultArtifacts() {
     };
 
     sync();
-    let outerRaf = 0;
-    let innerRaf = 0;
-    outerRaf = requestAnimationFrame(() => {
-      innerRaf = requestAnimationFrame(sync);
-    });
     window.addEventListener("resize", sync);
     return () => {
-      cancelAnimationFrame(outerRaf);
-      cancelAnimationFrame(innerRaf);
       for (const off of unregister) off();
       window.removeEventListener("resize", sync);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [stack, setStack] = useState(INITIAL_STACK);

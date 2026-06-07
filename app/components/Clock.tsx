@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-export default function Clock() {
+export default function Clock({ className }: { className?: string }) {
   const [time, setTime] = useState<string>("");
 
   useEffect(() => {
@@ -21,7 +21,9 @@ export default function Clock() {
   }, []);
 
   return (
-    <span className="font-mono text-[15px] tracking-wide text-primary">
+    <span
+      className={`font-mono text-[15px] tracking-wide text-primary${className ? ` ${className}` : ""}`}
+    >
       {time}
     </span>
   );

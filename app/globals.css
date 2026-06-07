@@ -16,6 +16,8 @@
   --music-player-bg: linear-gradient(to top right, #EFEFEF 25%, #F7F7F7 100%);
   --music-player-border: #EAEAEA;
   --navbar-pill-height: 4.1875rem;
+  --site-corner-text-shadow: 0 0 2.5px rgba(248, 248, 248, 0.14), 0 2px 8px rgba(248, 248, 248, 0.1);
+  --site-corner-logo-shadow: drop-shadow(0 0 2.5px rgba(248, 248, 248, 0.14)) drop-shadow(0 2px 8px rgba(248, 248, 248, 0.1));
 }
 
 .dark {
@@ -34,6 +36,8 @@
   --music-player-bg: linear-gradient(to top right, #2D2D32 25%, #302F34 100%) padding-box,
                      linear-gradient(to top, rgba(65,65,65,0) 0%, rgba(65,65,65,1) 100%) border-box;
   --music-player-border: rgba(234, 234, 234, 0);
+  --site-corner-text-shadow: 0 0 2.5px rgba(248, 248, 248, 0.65), 0 2px 8px rgba(248, 248, 248, 0.45);
+  --site-corner-logo-shadow: drop-shadow(0 0 2.5px rgba(248, 248, 248, 0.65)) drop-shadow(0 2px 8px rgba(248, 248, 248, 0.45));
 }
 
 .dark .navbar-pill {
@@ -110,6 +114,16 @@
 }
 .theme-transitioning .transition-blur-corner {
   filter: blur(1px);
+}
+
+.site-corner-artifact-shadow-text {
+  text-shadow: var(--site-corner-text-shadow);
+  transition: text-shadow 0.275s ease;
+}
+
+.site-corner-artifact-shadow-logo svg {
+  filter: var(--site-corner-logo-shadow);
+  transition: filter 0.275s ease;
 }
 
 /* Blur — logo */

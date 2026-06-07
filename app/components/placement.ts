@@ -35,14 +35,22 @@ export type PlaceOptions = {
   margin?: number;
   gap?: number;
   step?: number;
+  randomAttempts?: number;
 };
+
+function shuffleInPlace<T>(arr: T[]) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
 
 export function placeRectangles(
   items: readonly SizedItem[],
   viewportW: number,
   viewportH: number,
   blocked: readonly Rect[],
-  { margin = 16, gap = 8, step = 16 }: PlaceOptions = {},
+  { margin = 16, gap = 8, step = 16, randomAttempts = 80 }: PlaceOptions = {},
 ): Map<string, { x: number; y: number }> {
   const sorted = [...items].sort((a, b) => b.w * b.h - a.w * a.h);
   const placed: Rect[] = [];
@@ -63,6 +71,15 @@ export function placeRectangles(
     };
 
     let pos: { x: number; y: number } | null = null;
+
+    for (let i = 0; i < randomAttempts; i++) {
+      pos = tryAt(
+        minX + Math.random() * (maxX - minX),
+        minY + Math.random() * (maxY - minY),
+      );
+      if (pos) break;
+    }
+
     const midX = Math.round((minX + maxX) / 2);
     const midY = Math.round((minY + maxY) / 2);
     const anchors: [number, number][] = [
@@ -75,10 +92,13 @@ export function placeRectangles(
       [minX, midY],
       [maxX, midY],
     ];
+    shuffleInPlace(anchors);
 
-    for (const [x, y] of anchors) {
-      pos = tryAt(x, y);
-      if (pos) break;
+    if (!pos) {
+      for (const [x, y] of anchors) {
+        pos = tryAt(x, y);
+        if (pos) break;
+      }
     }
 
     if (!pos) {

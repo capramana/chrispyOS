@@ -31,6 +31,13 @@ export function spawnElementChecks(heroBuffer: number): SpawnElementCheck[] {
 export const VAULT_SPAWN_CHECKS = spawnElementChecks(HERO_SPAWN_BUFFER_PX);
 export const GRAFFITI_SPAWN_CHECKS = spawnElementChecks(GRAFFITI_HERO_BUFFER_PX);
 
+export function eventTargetWithin(
+  target: EventTarget | null,
+  selector: string,
+) {
+  return target instanceof Element && target.closest(selector) != null;
+}
+
 export function boxFromTopLeft(
   x: number,
   y: number,

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { NavPage } from "../types/nav-page";
-import Clock from "./Clock";
 import Graffiti from "./Graffiti";
 import NavBar from "./NavBar";
 import ChisledText from "./ChisledText";
@@ -15,6 +14,7 @@ import {
   TITLE_SIZE,
 } from "./heroCopy";
 import SiteHeader from "./SiteHeader";
+import SiteFooter from "./SiteFooter";
 import { useIsDark } from "./useIsDark";
 import VaultArtifacts from "./VaultArtifacts";
 import WorkInProgressSticker from "./WorkInProgressSticker";
@@ -83,24 +83,9 @@ export default function HomePage() {
 
       {activePage === "vault" && <VaultArtifacts />}
 
-      <div className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-12 hidden h-[var(--navbar-pill-height)] items-center md:flex" data-site-footer-corner>
-        <div className="transition-blur-corner">
-          <Clock />
-        </div>
-      </div>
+      <SiteFooter />
 
       <NavBar activePage={activePage} onActivePageChange={setActivePage} />
-
-      <div className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-12 hidden h-[var(--navbar-pill-height)] items-center md:flex" data-site-footer-corner>
-        <a
-          href="https://x.com/chrispramana"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="transition-blur-corner block font-mono text-base tracking-wide text-primary hover:underline"
-        >
-          @chrispramana
-        </a>
-      </div>
 
       <Graffiti />
     </div>

@@ -11,8 +11,9 @@ import {
   type CSSProperties,
 } from "react";
 import { createPortal, flushSync } from "react-dom";
-import { clampVaultPosition, VAULT_PILE_MARGIN_PX, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
+import { VAULT_PILE_MARGIN_PX, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex, vaultPictureDragClamp } from "./vaultRects";
 import { ArrowUpRight } from "iconoir-react";
+import { eventTargetWithin } from "./uiPlacement";
 import { useClientMounted } from "./useClientMounted";
 
 export type VaultPictureItem = {
@@ -387,6 +388,7 @@ export default function VaultPictureStack({
   const lastPointerRef = useRef({ x: 0, y: 0, time: 0 });
   const glideRafRef = useRef<number | null>(null);
   const elRef = useRef<HTMLDivElement | null>(null);
+  const userMovedRef = useRef(false);
   const posRef = useRef(
     posForAnchorCenter(initialLeft, initialTop, maxWidth, maxHeight),
   );
@@ -454,6 +456,7 @@ export default function VaultPictureStack({
   }, []);
 
   useLayoutEffect(() => {
+    if (userMovedRef.current) return;
     const next = posForAnchorCenter(initialLeft, initialTop, maxWidth, maxHeight);
     posRef.current = next;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync pile origin when parent anchor updates (resize)
@@ -524,7 +527,7 @@ export default function VaultPictureStack({
         const p = posRef.current;
         const nx = p.x + gvx * dtMs;
         const ny = p.y + gvy * dtMs;
-        const c = clampVaultPosition(nx, ny, w, h);
+        const c = vaultPictureDragClamp(nx, ny, maxWidth, maxHeight);
         if (c.x !== nx) gvx = 0;
         if (c.y !== ny) gvy = 0;
         gvx *= friction;
@@ -546,7 +549,7 @@ export default function VaultPictureStack({
 
       glideRafRef.current = requestAnimationFrame(tick);
     },
-    [cancelGlide],
+    [cancelGlide, maxWidth, maxHeight],
   );
 
   const expandStack = useCallback(() => {
@@ -654,6 +657,7 @@ export default function VaultPictureStack({
     (e: React.PointerEvent) => {
       if (e.button !== 0) return;
       if (expanded) return;
+      if (!eventTargetWithin(e.target, "[data-vault-pile-card]")) return;
       const el = elRef.current;
       if (!el) return;
       cancelGlide();
@@ -689,7 +693,10 @@ export default function VaultPictureStack({
           e.clientY - pointerStartRef.current.y,
         ) >= TAP_MOVE_THRESHOLD_PX
       ) {
-        dragCommittedRef.current = true;
+        if (!dragCommittedRef.current) {
+          dragCommittedRef.current = true;
+          userMovedRef.current = true;
+        }
       }
       const now = performance.now();
       const dtMs = now - lastPointerRef.current.time;
@@ -705,7 +712,7 @@ export default function VaultPictureStack({
 
       const nx = e.clientX - d.offsetX;
       const ny = e.clientY - d.offsetY;
-      const c = clampVaultPosition(nx, ny, d.width, d.height);
+      const c = vaultPictureDragClamp(nx, ny, maxWidth, maxHeight);
       posRef.current = c;
       setPos((p) => (c.x !== p.x || c.y !== p.y ? c : p));
 
@@ -716,7 +723,7 @@ export default function VaultPictureStack({
         ),
       );
     },
-    [],
+    [maxWidth, maxHeight],
   );
 
   const endDrag = useCallback(
@@ -749,7 +756,7 @@ export default function VaultPictureStack({
       const rect = el.getBoundingClientRect();
       sizeRef.current = { w: rect.width, h: rect.height };
       setPos((p) => {
-        const c = clampVaultPosition(p.x, p.y, rect.width, rect.height);
+        const c = vaultPictureDragClamp(p.x, p.y, maxWidth, maxHeight);
         if (c.x === p.x && c.y === p.y) return p;
         posRef.current = c;
         return c;
@@ -757,7 +764,7 @@ export default function VaultPictureStack({
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, []);
+  }, [maxWidth, maxHeight]);
 
   useEffect(() => {
     if (!expanded) return;
@@ -809,12 +816,12 @@ export default function VaultPictureStack({
         display: "inline-block",
         lineHeight: 0,
         zIndex,
-        cursor: dragging ? "grabbing" : "grab",
+        cursor: dragging || gliding ? "grabbing" : "default",
         filter: "drop-shadow(0 16px 28px rgba(0,0,0,0.08))",
         transform,
         transformOrigin: "center center",
         visibility: expanded ? "hidden" : "visible",
-        pointerEvents: expanded ? "none" : "auto",
+        pointerEvents: dragging || gliding ? "auto" : "none",
         transition: motionActive
           ? "none"
           : "transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)",
@@ -830,6 +837,7 @@ export default function VaultPictureStack({
         style={{
           width: innerW,
           height: innerH,
+          pointerEvents: "none",
         }}
       >
         {items.map((item, i) => {
@@ -839,6 +847,7 @@ export default function VaultPictureStack({
           return (
             <Fragment key={item.id}>
               <div
+                data-vault-pile-card={isVis ? "" : undefined}
                 className="absolute block select-none"
                 style={{
                   ...PICTURE_MAT_OUTER_STYLE,
@@ -849,6 +858,7 @@ export default function VaultPictureStack({
                   zIndex: isVis ? 10 + vp : 5,
                   opacity: isVis ? 1 : 0,
                   pointerEvents: isVis ? "auto" : "none",
+                  cursor: isVis ? (dragging ? "grabbing" : "grab") : "default",
                   transform: isVis
                     ? `rotate(${ROTS[vp]}deg)`
                     : "rotate(0deg) scale(0.88)",

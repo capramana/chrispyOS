@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { clampVaultPosition, vaultCartridgeFanScale, vaultCollapsedScale, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
+import { vaultCartridgeFanScale, vaultCartridgeDragClamp, vaultCollapsedScale, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
 import {
   pickCartridgeEmbed,
   VAULT_CARTRIDGE_ITEMS,
@@ -34,6 +34,7 @@ import {
   isCartridgeMobile,
 } from "./vaultCartridgeLayout";
 import { useClientMounted } from "./useClientMounted";
+import { eventTargetWithin } from "./uiPlacement";
 import "./VaultCartridgeStack.css";
 
 type VaultCartridgeStackProps = {
@@ -214,7 +215,7 @@ export default function VaultCartridgeStack({
   );
 
   useEffect(() => {
-    if (!(repPhase && expanded && needsScroll && !collapsing)) return;
+    if (!(expanded && needsScroll && !collapsing)) return;
 
     let alive = true;
     let innerRaf = 0;
@@ -230,7 +231,7 @@ export default function VaultCartridgeStack({
       if (innerRaf) cancelAnimationFrame(innerRaf);
       setScrollFadesShown(false);
     };
-  }, [repPhase, expanded, needsScroll, collapsing]);
+  }, [expanded, needsScroll, collapsing]);
 
   const clearExpandTimer = useCallback(() => {
     if (expandTimerRef.current !== null) {
@@ -416,7 +417,7 @@ export default function VaultCartridgeStack({
         const p = posRef.current;
         const nx = p.x + gvx * dtMs;
         const ny = p.y + gvy * dtMs;
-        const c = clampVaultPosition(nx, ny, footprintW, footprintH);
+        const c = vaultCartridgeDragClamp(nx, ny, viewport.w, footprintW, footprintH);
         if (c.x !== nx) gvx = 0;
         if (c.y !== ny) gvy = 0;
         gvx *= friction;
@@ -436,12 +437,13 @@ export default function VaultCartridgeStack({
 
       glideRafRef.current = requestAnimationFrame(tick);
     },
-    [cancelGlide, footprintW, footprintH],
+    [cancelGlide, footprintW, footprintH, viewport.w],
   );
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (e.button !== 0 || expanded) return;
+      if (!eventTargetWithin(e.target, ".vault-cartridge-card")) return;
       const el = elRef.current;
       if (!el) return;
       cancelGlide();
@@ -476,7 +478,10 @@ export default function VaultCartridgeStack({
           e.clientY - pointerStartRef.current.y,
         ) >= TAP_MOVE_THRESHOLD_PX
       ) {
-        dragCommittedRef.current = true;
+        if (!dragCommittedRef.current) {
+          dragCommittedRef.current = true;
+          userMovedRef.current = true;
+        }
       }
       const now = performance.now();
       const dtMs = now - lastPointerRef.current.time;
@@ -492,11 +497,11 @@ export default function VaultCartridgeStack({
 
       const nx = e.clientX - d.offsetX;
       const ny = e.clientY - d.offsetY;
-      const c = clampVaultPosition(nx, ny, footprintW, footprintH);
+      const c = vaultCartridgeDragClamp(nx, ny, viewport.w, footprintW, footprintH);
       posRef.current = c;
       setPos((p) => (c.x !== p.x || c.y !== p.y ? c : p));
     },
-    [footprintW, footprintH],
+    [footprintW, footprintH, viewport.w],
   );
 
   const endDrag = useCallback(
@@ -511,7 +516,6 @@ export default function VaultCartridgeStack({
         expandStack();
         return;
       }
-      userMovedRef.current = true;
       startGlide(vx, vy);
     },
     [expanded, expandStack, startGlide],
@@ -662,11 +666,11 @@ export default function VaultCartridgeStack({
         height: footprintH,
         zIndex,
         overflow: "visible",
-        cursor: dragging ? "grabbing" : "grab",
+        cursor: dragging || gliding ? "grabbing" : "default",
         transform: shellTransform,
         transformOrigin: "center center",
         visibility: expanded ? "hidden" : "visible",
-        pointerEvents: expanded ? "none" : "auto",
+        pointerEvents: dragging || gliding ? "auto" : "none",
         transition: motionActive
           ? "none"
           : "transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)",
@@ -689,6 +693,8 @@ export default function VaultCartridgeStack({
               transform: `rotate(${s.rotate}deg) scale(${fanScale})`,
               zIndex: CARTRIDGE_VISIBLE_FAN - i,
               opacity: 1,
+              pointerEvents: "auto",
+              cursor: dragging || gliding ? "grabbing" : "grab",
             }}
           >
             <CartridgeImage src={item.src} alt={item.alt} />

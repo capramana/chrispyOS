@@ -156,6 +156,70 @@ export function wipStickerBounds() {
   return { w, h };
 }
 
+export function clampVaultDragPosition(x: number, y: number, w: number, h: number) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  return {
+    x: Math.min(Math.max(0, x), Math.max(0, vw - w)),
+    y: Math.min(Math.max(0, y), Math.max(0, vh - h)),
+  };
+}
+
+export function clampVaultDragShellPosition(
+  shellX: number,
+  shellY: number,
+  contentW: number,
+  contentH: number,
+  contentInsetX: number,
+  contentInsetY: number,
+) {
+  const c = clampVaultDragPosition(
+    shellX + contentInsetX,
+    shellY + contentInsetY,
+    contentW,
+    contentH,
+  );
+  return { x: c.x - contentInsetX, y: c.y - contentInsetY };
+}
+
+export function vaultPictureDragClamp(
+  shellX: number,
+  shellY: number,
+  maxWidth: number,
+  maxHeight: number,
+) {
+  const innerW = maxWidth + 2 * VAULT_PILE_MARGIN_PX + VAULT_MAT_OUTER_GROW_PX;
+  const innerH = maxHeight + 2 * VAULT_PILE_MARGIN_PX + VAULT_MAT_OUTER_GROW_PX;
+  return clampVaultDragShellPosition(
+    shellX,
+    shellY,
+    maxWidth,
+    maxHeight,
+    (innerW - maxWidth) / 2,
+    (innerH - maxHeight) / 2,
+  );
+}
+
+export function vaultCartridgeDragClamp(
+  shellX: number,
+  shellY: number,
+  viewportW: number,
+  footprintW: number,
+  footprintH: number,
+) {
+  const fanScale = vaultCartridgeFanScale(viewportW);
+  const fanCardW = CARTRIDGE_CARD_W * fanScale;
+  const fanCardH = CARTRIDGE_CARD_H * fanScale;
+  return clampVaultDragShellPosition(
+    shellX,
+    shellY,
+    fanCardW,
+    fanCardH,
+    footprintW / 2 - fanCardW / 2,
+    footprintH / 2 - fanCardH / 2,
+  );
+}
+
 export function clampVaultPosition(x: number, y: number, w: number, h: number) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
