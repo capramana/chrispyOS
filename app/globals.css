@@ -145,26 +145,31 @@ body {
   font-family: var(--font-zalando-sans), sans-serif;
 }
 
-/* Vault picture zoom — `view-transition-class: vault-cambio` */
+/* Vault picture Cambio — morph `.vault-cambio` only; freeze root snapshot. */
 @supports (view-transition-name: none) {
   ::view-transition-group(.vault-cambio) {
+    z-index: 2;
     animation-duration: 0.42s;
     animation-timing-function: cubic-bezier(0.34, 1.15, 0.64, 1);
   }
 
   html.vault-picture-vt-active ::view-transition-group(root) {
+    z-index: 1;
     animation: none;
-  }
-
-  html.vault-picture-vt-active ::view-transition-image-pair(root) {
-    isolation: auto;
   }
 
   html.vault-picture-vt-active ::view-transition-old(root),
   html.vault-picture-vt-active ::view-transition-new(root) {
     animation: none;
     mix-blend-mode: normal;
-    display: block;
+  }
+
+  html.vault-picture-vt-active:not(.vault-picture-vt-exit) ::view-transition-new(root),
+  html.vault-picture-vt-active.vault-picture-vt-exit ::view-transition-old(root) {
+    display: none;
+  }
+
+  html.vault-picture-vt-active.vault-picture-vt-exit ::view-transition-new(root) {
     opacity: 1;
   }
 

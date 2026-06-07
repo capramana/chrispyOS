@@ -128,8 +128,7 @@
   );
 }
 
-.vault-book:not(.vault-book--open) .vault-book-cover-gradient,
-.vault-book--open .vault-book__page--inner .vault-book__half--front {
+.vault-book:not(.vault-book--open) .vault-book-cover-gradient {
   box-shadow: var(--vault-artifact-box-shadow);
 }
 

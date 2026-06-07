@@ -28,6 +28,7 @@ import {
   cartridgeExpandedXY,
   cartridgeGroupLayout,
   cartridgeHeroAnimMs,
+  cartridgeHeroShouldStagger,
   cartridgeNeedsScroll,
   cartridgeRepCardPos,
   cartridgeScatterFixedPos,
@@ -64,6 +65,51 @@ function posFromAnchor(cx: number, cy: number, w: number, h: number) {
 
 function lerp(a: number, b: number, t: number) {
   return a * (1 - t) + b * t;
+}
+
+function bindCartridgeFilterRepaint(root: ParentNode | null): () => void {
+  if (!root) return () => {};
+
+  const imgs = root.querySelectorAll<HTMLImageElement>(
+    ".vault-cartridge-card__inner img",
+  );
+  if (imgs.length === 0) return () => {};
+
+  let cancelled = false;
+  const cleanups: (() => void)[] = [];
+
+  const repaint = () => {
+    if (cancelled) return;
+    requestAnimationFrame(() => {
+      if (cancelled) return;
+      for (const img of imgs) img.style.setProperty("-webkit-filter", "opacity(1)");
+      void imgs[0]?.offsetHeight;
+      for (const img of imgs) img.style.removeProperty("-webkit-filter");
+    });
+  };
+
+  let awaiting = 0;
+  const onReady = () => {
+    if (--awaiting <= 0) repaint();
+  };
+
+  for (const img of imgs) {
+    if (img.complete) continue;
+    awaiting++;
+    img.addEventListener("load", onReady);
+    img.addEventListener("error", onReady);
+    cleanups.push(() => {
+      img.removeEventListener("load", onReady);
+      img.removeEventListener("error", onReady);
+    });
+  }
+
+  if (awaiting === 0) repaint();
+
+  return () => {
+    cancelled = true;
+    for (const cleanup of cleanups) cleanup();
+  };
 }
 
 function CartridgeImage({ src, alt }: { src: string; alt: string }) {
@@ -167,6 +213,7 @@ export default function VaultCartridgeStack({
   const lastPointerRef = useRef({ x: 0, y: 0, time: 0 });
   const glideRafRef = useRef<number | null>(null);
   const elRef = useRef<HTMLDivElement | null>(null);
+  const expandedOverlayRef = useRef<HTMLDivElement | null>(null);
   const posRef = useRef(pos);
   const userMovedRef = useRef(false);
   const expandTimerRef = useRef<number | null>(null);
@@ -199,6 +246,14 @@ export default function VaultCartridgeStack({
     window.addEventListener("resize", sync);
     return () => window.removeEventListener("resize", sync);
   }, []);
+
+  useLayoutEffect(() => {
+    const unbind = [
+      bindCartridgeFilterRepaint(elRef.current),
+      bindCartridgeFilterRepaint(expandedOverlayRef.current),
+    ];
+    return () => unbind.forEach((fn) => fn());
+  }, [expanded, repPhase, heroPose, scrollFadeHold]);
 
   useLayoutEffect(() => {
     if (expanded || userMovedRef.current) return;
@@ -730,6 +785,7 @@ export default function VaultCartridgeStack({
 
   const expandedOverlay = overlayShellOpen ? (
     <div
+      ref={expandedOverlayRef}
       className="fixed inset-0 touch-none"
       style={{
         zIndex: vaultOverlayZIndex(zIndex),
@@ -793,7 +849,10 @@ export default function VaultCartridgeStack({
                 );
                 const list = cartridgeExpandedXY(i, layout, mobile);
                 const pose = heroPose === "list" ? list : scatter;
-                const delay = heroMotion ? heroCartridgeTransitionDelay(i, heroPose) : 0;
+                const heroDelay =
+                  heroMotion && cartridgeHeroShouldStagger(mobile, collapsing)
+                    ? `${heroCartridgeTransitionDelay(i, heroPose)}ms`
+                    : "0ms";
                 const opacity = heroPose === "list" ? 1 : scatter.opacity;
                 const heroScale = heroPose === "list" ? 1 : scatter.scale;
                 return (
@@ -807,11 +866,12 @@ export default function VaultCartridgeStack({
                       zIndex: CARTRIDGE_COUNT - i,
                       opacity,
                       pointerEvents: collapsing ? "none" : "auto",
+                      transitionDelay: heroDelay,
                     }}
                   >
                     <CartridgeCardPose
                       transform={`rotate(${heroPose === "list" ? 0 : scatter.rotate}deg) scale(${heroScale})`}
-                      transitionDelay={heroMotion ? `${delay}ms` : "0ms"}
+                      transitionDelay={heroDelay}
                     >
                       <CartridgeImage src={item.src} alt={item.alt} />
                     </CartridgeCardPose>

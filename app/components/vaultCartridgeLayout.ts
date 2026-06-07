@@ -148,6 +148,10 @@ export function heroCartridgeTransitionDelay(
   return Math.abs(cartridgeCardSlot(cardIndex)) * 55;
 }
 
+export function cartridgeHeroShouldStagger(mobile: boolean, collapsing: boolean) {
+  return (mobile && collapsing) || (!mobile && !collapsing);
+}
+
 export function heroCartridgeMaxDelay(heroPose: "scatter" | "list") {
   let max = 0;
   for (let i = 0; i < CARTRIDGE_COUNT; i++) {
