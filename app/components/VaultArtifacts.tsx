@@ -8,12 +8,15 @@ import { placeVaultStacks, vaultStacksValid } from "./vaultPlacement";
 import {
   reclampVaultCenter,
   VAULT_ARTIFACT_Z_BASE,
+  VAULT_COLLAPSED_SCALE_MIN,
+  VAULT_COLLAPSED_SCALE_SHRINK,
   vaultBookBounds,
   vaultBookClosedScale,
   vaultBookOpenScale,
   vaultCartridgeBounds,
   vaultCollapsedScale,
   vaultStackBounds,
+  VAULT_RESPONSIVE_BREAKPOINT,
 } from "./vaultRects";
 import { boxFromTopLeft, registerSpawnPeer } from "./uiPlacement";
 
@@ -31,8 +34,8 @@ const PICTURE_FOOTPRINT = { maxWidth: 140, maxHeight: 175 } as const;
 function stackBounds(
   stackId: (typeof STACK_IDS)[number],
   viewportW: number,
+  pileScale: number,
 ) {
-  const pileScale = vaultCollapsedScale(viewportW);
   if (stackId === "stack-pictures") {
     return vaultStackBounds(
       PICTURE_FOOTPRINT.maxWidth * pileScale,
@@ -40,12 +43,15 @@ function stackBounds(
       pileScale,
     );
   }
-  if (stackId === "stack-books") return vaultBookBounds(viewportW);
-  return vaultCartridgeBounds(viewportW);
+  if (stackId === "stack-books") return vaultBookBounds(viewportW, pileScale);
+  return vaultCartridgeBounds(viewportW, pileScale);
 }
 
-function stackItems(viewportW: number) {
-  return STACK_IDS.map((id) => ({ id, ...stackBounds(id, viewportW) }));
+function stackItems(viewportW: number, pileScale: number) {
+  return STACK_IDS.map((id) => ({
+    id,
+    ...stackBounds(id, viewportW, pileScale),
+  }));
 }
 
 type StackPosition = readonly [number, number];
@@ -68,28 +74,61 @@ function withCenters(
   });
 }
 
-function placeAllStacks(items: ReturnType<typeof stackItems>) {
-  const centers = placeVaultStacks(items);
-  const next = {} as Record<(typeof STACK_IDS)[number], StackPosition>;
+type VaultLayout = {
+  positions: StackPositions;
+  pileScale: number;
+  reserveHero: boolean;
+};
+
+function layoutFromCenters(
+  centers: Map<string, readonly [number, number]>,
+  pileScale: number,
+  reserveHero: boolean,
+): VaultLayout | null {
+  if (centers.size !== STACK_IDS.length) return null;
+  const positions = {} as Record<(typeof STACK_IDS)[number], StackPosition>;
   for (const id of STACK_IDS) {
-    const c = centers.get(id);
-    if (!c) return null;
-    next[id] = c;
+    const center = centers.get(id);
+    if (!center) return null;
+    positions[id] = center;
   }
-  return next;
+  return { positions, pileScale, reserveHero };
 }
 
-function commitStacks(
-  ref: { current: StackPositions },
-  placed: Record<(typeof STACK_IDS)[number], StackPosition>,
+function placeAllStacks(viewportW: number, viewportH: number) {
+  const desktop = viewportW >= VAULT_RESPONSIVE_BREAKPOINT;
+  let scale = vaultCollapsedScale(viewportW, viewportH);
+  const scaleFloor = VAULT_COLLAPSED_SCALE_MIN * VAULT_COLLAPSED_SCALE_SHRINK;
+  const heroModes = desktop ? [true] : [true, false];
+
+  while (scale >= scaleFloor) {
+    const items = stackItems(viewportW, scale);
+    for (const reserveHero of heroModes) {
+      const layout = layoutFromCenters(
+        placeVaultStacks(items, viewportW, viewportH, { reserveHero }),
+        scale,
+        reserveHero,
+      );
+      if (layout) return layout;
+    }
+    scale *= VAULT_COLLAPSED_SCALE_SHRINK;
+  }
+  return null;
+}
+
+const EMPTY_LAYOUT: VaultLayout = {
+  positions: {},
+  pileScale: 1,
+  reserveHero: true,
+};
+
+function commitLayout(
+  stackRef: { current: StackPositions },
+  scaleRef: { current: number },
+  layout: VaultLayout,
 ) {
-  for (const id of STACK_IDS) ref.current[id] = placed[id];
-}
-
-function readInitialStackPositions(): StackPositions {
-  if (typeof window === "undefined") return {};
-  const placed = placeAllStacks(stackItems(window.innerWidth));
-  return placed ?? {};
+  for (const id of STACK_IDS) stackRef.current[id] = layout.positions[id]!;
+  scaleRef.current = layout.pileScale;
 }
 
 const INITIAL_STACK: Record<string, number> = Object.fromEntries(
@@ -171,62 +210,97 @@ const PICTURE_ITEMS: VaultPictureItem[] = [
   },
 ];
 
+const MOUNT_PLACE_MAX_ATTEMPTS = 30;
+
 export default function VaultArtifacts() {
   const [viewport, setViewport] = useState(() =>
     typeof window !== "undefined"
       ? { w: window.innerWidth, h: window.innerHeight }
       : { w: 1200, h: 800 },
   );
-  const [stackPositions, setStackPositions] = useState<StackPositions>(
-    readInitialStackPositions,
-  );
-  const stackPositionsRef = useRef<StackPositions>(stackPositions);
+  const [layout, setLayout] = useState<VaultLayout>(EMPTY_LAYOUT);
+  const { positions: stackPositions, pileScale } = layout;
+  const stackPositionsRef = useRef<StackPositions>({});
+  const pileScaleRef = useRef(1);
 
   useLayoutEffect(() => {
-    if (stacksComplete(stackPositions)) {
-      commitStacks(
-        stackPositionsRef,
-        stackPositions as Record<(typeof STACK_IDS)[number], StackPosition>,
-      );
-    }
+    let cancelled = false;
+    let mountRaf = 0;
+    let mountAttempts = 0;
+
     const unregister = STACK_IDS.map((stackId) =>
       registerSpawnPeer(STACK_SPAWN_PEER[stackId], () => {
         const p = stackPositionsRef.current[stackId];
         if (!p) return null;
-        const { w, h } = stackBounds(stackId, window.innerWidth);
+        const { w, h } = stackBounds(
+          stackId,
+          window.innerWidth,
+          pileScaleRef.current,
+        );
         return boxFromTopLeft(p[0] - w / 2, p[1] - h / 2, w, h);
       }),
     );
 
-    const sync = () => {
-      const viewportW = window.innerWidth;
-      const viewportH = window.innerHeight;
+    const syncViewport = (viewportW: number, viewportH: number) => {
       setViewport((current) =>
         current.w === viewportW && current.h === viewportH
           ? current
           : { w: viewportW, h: viewportH },
       );
-      setStackPositions((prev) => {
-        const items = stackItems(viewportW);
-        const needsPlacement =
-          !stacksComplete(prev) ||
-          !vaultStacksValid(withCenters(items, prev), viewportW);
+    };
 
-        if (needsPlacement) {
-          const placed = placeAllStacks(items);
+    const applyLayout = (placed: VaultLayout) => {
+      commitLayout(stackPositionsRef, pileScaleRef, placed);
+      setLayout(placed);
+    };
+
+    const mountPlace = () => {
+      if (cancelled) return;
+      mountAttempts++;
+      const viewportW = window.innerWidth;
+      const viewportH = window.innerHeight;
+      const placed = placeAllStacks(viewportW, viewportH);
+      if (!placed) {
+        if (mountAttempts < MOUNT_PLACE_MAX_ATTEMPTS) {
+          mountRaf = requestAnimationFrame(mountPlace);
+        }
+        return;
+      }
+      syncViewport(viewportW, viewportH);
+      applyLayout(placed);
+    };
+
+    const syncResize = () => {
+      const viewportW = window.innerWidth;
+      const viewportH = window.innerHeight;
+      syncViewport(viewportW, viewportH);
+
+      setLayout((prev) => {
+        if (!stacksComplete(prev.positions)) return prev;
+
+        const items = stackItems(viewportW, prev.pileScale);
+        const valid = vaultStacksValid(
+          withCenters(items, prev.positions),
+          viewportW,
+          undefined,
+          prev.reserveHero,
+        );
+
+        if (!valid) {
+          const placed = placeAllStacks(viewportW, viewportH);
           if (!placed) return prev;
-          commitStacks(stackPositionsRef, placed);
-          return { ...prev, ...placed };
+          commitLayout(stackPositionsRef, pileScaleRef, placed);
+          return placed;
         }
 
         let changed = false;
-        const next = { ...prev };
+        const nextPositions = { ...prev.positions };
         for (const id of STACK_IDS) {
-          const current = prev[id]!;
-          const { w, h } = stackBounds(id, viewportW);
+          const current = prev.positions[id]!;
+          const { w, h } = stackBounds(id, viewportW, prev.pileScale);
           const reclamped = reclampVaultCenter(current[0], current[1], w, h);
           if (reclamped[0] !== current[0] || reclamped[1] !== current[1]) {
-            next[id] = reclamped;
+            nextPositions[id] = reclamped;
             stackPositionsRef.current[id] = reclamped;
             changed = true;
           }
@@ -234,26 +308,31 @@ export default function VaultArtifacts() {
 
         if (
           changed &&
-          stacksComplete(next) &&
-          !vaultStacksValid(withCenters(items, next), viewportW)
+          !vaultStacksValid(
+            withCenters(items, nextPositions),
+            viewportW,
+            undefined,
+            prev.reserveHero,
+          )
         ) {
-          const placed = placeAllStacks(items);
-          if (!placed) return next;
-          commitStacks(stackPositionsRef, placed);
-          return { ...prev, ...placed };
+          const placed = placeAllStacks(viewportW, viewportH);
+          if (!placed) return { ...prev, positions: nextPositions };
+          commitLayout(stackPositionsRef, pileScaleRef, placed);
+          return placed;
         }
 
-        return changed ? next : prev;
+        return changed ? { ...prev, positions: nextPositions } : prev;
       });
     };
 
-    sync();
-    window.addEventListener("resize", sync);
+    mountPlace();
+    window.addEventListener("resize", syncResize);
     return () => {
+      cancelled = true;
+      cancelAnimationFrame(mountRaf);
       for (const off of unregister) off();
-      window.removeEventListener("resize", sync);
+      window.removeEventListener("resize", syncResize);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [stack, setStack] = useState(INITIAL_STACK);
@@ -274,7 +353,6 @@ export default function VaultArtifacts() {
     [stack],
   );
 
-  const pileScale = vaultCollapsedScale(viewport.w);
   const pictureItems = PICTURE_ITEMS.map((item) => ({
     ...item,
     maxWidth: item.maxWidth != null ? item.maxWidth * pileScale : undefined,
@@ -288,8 +366,11 @@ export default function VaultArtifacts() {
   const [pictureLeft, pictureTop] = stackPositions["stack-pictures"];
   const [bookLeft, bookTop] = stackPositions["stack-books"];
   const [cartridgeLeft, cartridgeTop] = stackPositions["stack-cartridges"];
-  const { w: bookW, h: bookH } = vaultBookBounds(viewport.w);
-  const { w: cartridgeW, h: cartridgeH } = vaultCartridgeBounds(viewport.w);
+  const { w: bookW, h: bookH } = vaultBookBounds(viewport.w, pileScale);
+  const { w: cartridgeW, h: cartridgeH } = vaultCartridgeBounds(
+    viewport.w,
+    pileScale,
+  );
 
   return (
     <>
@@ -311,7 +392,7 @@ export default function VaultArtifacts() {
         initialTop={bookTop}
         footprintW={bookW}
         footprintH={bookH}
-        closedScale={vaultBookClosedScale(viewport.w)}
+        closedScale={vaultBookClosedScale(viewport.w, pileScale)}
         openScale={vaultBookOpenScale(viewport.w, viewport.h)}
       />
       <VaultCartridgeStack
@@ -322,6 +403,7 @@ export default function VaultArtifacts() {
         initialTop={cartridgeTop}
         footprintW={cartridgeW}
         footprintH={cartridgeH}
+        pileScale={pileScale}
       />
     </>
   );

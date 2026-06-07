@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { vaultCartridgeFanScale, vaultCartridgeDragClamp, vaultCollapsedScale, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
+import { vaultCartridgeFanScale, vaultCartridgeDragClamp, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
 import {
   pickCartridgeEmbed,
   VAULT_CARTRIDGE_ITEMS,
@@ -45,6 +45,7 @@ type VaultCartridgeStackProps = {
   initialTop: number;
   footprintW: number;
   footprintH: number;
+  pileScale: number;
 };
 
 const TAP_MOVE_THRESHOLD_PX = 8;
@@ -105,6 +106,7 @@ export default function VaultCartridgeStack({
   initialTop,
   footprintW,
   footprintH,
+  pileScale,
 }: VaultCartridgeStackProps) {
   const [pos, setPos] = useState(() =>
     posFromAnchor(initialLeft, initialTop, footprintW, footprintH),
@@ -644,8 +646,7 @@ export default function VaultCartridgeStack({
 
   const motionActive = dragging || gliding;
   const shellTransform = dragging ? "scale(1.02)" : undefined;
-  const pileScale = vaultCollapsedScale(viewport.w);
-  const fanScale = vaultCartridgeFanScale(viewport.w);
+  const fanScale = vaultCartridgeFanScale(viewport.w, pileScale);
   const fanCardW = CARTRIDGE_CARD_W * fanScale;
   const fanCardH = CARTRIDGE_CARD_H * fanScale;
   const fanOriginX = footprintW / 2 - fanCardW / 2;

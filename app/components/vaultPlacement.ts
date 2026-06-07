@@ -7,43 +7,46 @@ import {
   VAULT_SPAWN_MARGIN_PX,
 } from "./uiPlacement";
 import { fits, overlaps, placeRectangles, rectAt, type Rect } from "./placement";
-import { VAULT_RESPONSIVE_BREAKPOINT } from "./vaultRects";
+import { vaultCollapsedScale } from "./vaultRects";
 
-const MOBILE_HERO_BUFFER_PX = 28;
-
-const BLOCKED_SELECTORS = [
+const CHROME_SELECTORS = [
   { selector: "[data-site-header]", buffer: NAV_SPAWN_BUFFER_PX },
-  { selector: "[data-hero-heading]", buffer: HERO_SPAWN_BUFFER_PX },
-  { selector: "[data-hero-description]", buffer: HERO_SPAWN_BUFFER_PX },
   { selector: ".navbar-pill", buffer: NAV_SPAWN_BUFFER_PX },
   { selector: "[data-site-footer-corner]", buffer: NAV_SPAWN_BUFFER_PX },
 ] as const;
 
-function measureBlockedRects(viewportW: number): Rect[] {
-  const heroBuffer =
-    viewportW < VAULT_RESPONSIVE_BREAKPOINT
-      ? MOBILE_HERO_BUFFER_PX
-      : HERO_SPAWN_BUFFER_PX;
+const HERO_SELECTORS = [
+  { selector: "[data-hero-heading]", buffer: HERO_SPAWN_BUFFER_PX },
+  { selector: "[data-hero-description]", buffer: HERO_SPAWN_BUFFER_PX },
+] as const;
 
+function measureBlockedRects(includeHero: boolean): Rect[] {
+  const selectors = includeHero
+    ? [...CHROME_SELECTORS, ...HERO_SELECTORS]
+    : CHROME_SELECTORS;
   const rects: Rect[] = [];
-  for (const { selector, buffer } of BLOCKED_SELECTORS) {
-    const useBuffer =
-      selector === "[data-hero-heading]" ||
-      selector === "[data-hero-description]"
-        ? heroBuffer
-        : buffer;
+  for (const { selector, buffer } of selectors) {
     for (const el of document.querySelectorAll(selector)) {
       const r = el.getBoundingClientRect();
       if (r.width <= 0 || r.height <= 0) continue;
       rects.push({
-        left: r.left - useBuffer,
-        top: r.top - useBuffer,
-        right: r.right + useBuffer,
-        bottom: r.bottom + useBuffer,
+        left: r.left - buffer,
+        top: r.top - buffer,
+        right: r.right + buffer,
+        bottom: r.bottom + buffer,
       });
     }
   }
   return rects;
+}
+
+function spawnPlaceOptions(viewportW: number, viewportH: number) {
+  const scale = vaultCollapsedScale(viewportW, viewportH);
+  return {
+    margin: Math.max(4, Math.round(VAULT_SPAWN_MARGIN_PX * scale)),
+    gap: SPAWN_PEER_GAP_PX,
+    step: Math.max(4, Math.round(16 * scale)),
+  };
 }
 
 export type VaultStackItem = { id: string; w: number; h: number };
@@ -54,22 +57,10 @@ const VAULT_STACK_PEER_IDS = [
   "vault-cartridges",
 ] as const;
 
-export function placeVaultStacks(
+function stackCentersFromPlacement(
   items: readonly VaultStackItem[],
-): Map<string, readonly [number, number]> {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const blocked = [
-    ...measureBlockedRects(vw),
-    ...getSpawnPeerRects(...VAULT_STACK_PEER_IDS),
-  ];
-
-  const positions = placeRectangles(items, vw, vh, blocked, {
-    margin: VAULT_SPAWN_MARGIN_PX,
-    gap: SPAWN_PEER_GAP_PX,
-    step: vw < VAULT_RESPONSIVE_BREAKPOINT ? 12 : 16,
-  });
-
+  positions: Map<string, { x: number; y: number }>,
+) {
   const centers = new Map<string, readonly [number, number]>();
   for (const item of items) {
     const pos = positions.get(item.id);
@@ -82,12 +73,33 @@ export function placeVaultStacks(
   return centers;
 }
 
+export function placeVaultStacks(
+  items: readonly VaultStackItem[],
+  viewportW = window.innerWidth,
+  viewportH = window.innerHeight,
+  { reserveHero = true }: { reserveHero?: boolean } = {},
+) {
+  const blocked = [
+    ...measureBlockedRects(reserveHero),
+    ...getSpawnPeerRects(...VAULT_STACK_PEER_IDS),
+  ];
+  const positions = placeRectangles(
+    items,
+    viewportW,
+    viewportH,
+    blocked,
+    spawnPlaceOptions(viewportW, viewportH),
+  );
+  return stackCentersFromPlacement(items, positions);
+}
+
 export function vaultStacksValid(
   items: readonly (VaultStackItem & { cx: number; cy: number })[],
   viewportW: number,
   excludePeerId?: string,
+  reserveHero = true,
 ): boolean {
-  const blocked = measureBlockedRects(viewportW);
+  const blocked = measureBlockedRects(reserveHero);
   const placed: Rect[] = [];
 
   for (const { w, h, cx, cy } of items) {
@@ -110,12 +122,12 @@ export function pickWidgetPosition(
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const blocked = [
-    ...measureBlockedRects(vw),
+    ...measureBlockedRects(true),
     ...(excludePeerId ? getSpawnPeerRects(excludePeerId) : getSpawnPeerRects()),
   ];
   const result = placeRectangles([{ id: "widget", w, h }], vw, vh, blocked, {
+    ...spawnPlaceOptions(vw, vh),
     margin: VAULT_SPAWN_MARGIN_PX,
-    gap: SPAWN_PEER_GAP_PX,
   });
   const pos = result.get("widget");
   return [

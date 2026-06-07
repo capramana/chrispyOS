@@ -69,26 +69,29 @@ export const VAULT_COLLAPSED_SCALE_MIN = 0.56;
 export const VAULT_COLLAPSED_SCALE_MAX = 1;
 export const VAULT_COLLAPSED_SCALE_VP_MIN = 320;
 export const VAULT_RESPONSIVE_BREAKPOINT = 768;
+export const VAULT_COLLAPSED_SCALE_SHRINK = 0.92;
 
-const VAULT_BOOK_CLOSED_BASE_SCALE = 0.5;
-const VAULT_BOOK_FOOTPRINT_PAD_PX = 50;
-const CARTRIDGE_SHADOW_BLEED_PX = 44;
-
-export function vaultCollapsedScale(viewportW: number) {
-  if (viewportW >= VAULT_RESPONSIVE_BREAKPOINT) return VAULT_COLLAPSED_SCALE_MAX;
+function collapsedScaleForSpan(span: number) {
   const t = Math.max(
     0,
     Math.min(
       1,
-      (viewportW - VAULT_COLLAPSED_SCALE_VP_MIN) /
+      (span - VAULT_COLLAPSED_SCALE_VP_MIN) /
         (VAULT_RESPONSIVE_BREAKPOINT - VAULT_COLLAPSED_SCALE_VP_MIN),
     ),
   );
   return VAULT_COLLAPSED_SCALE_MIN + t * (VAULT_COLLAPSED_SCALE_MAX - VAULT_COLLAPSED_SCALE_MIN);
 }
 
-export function vaultBookClosedScale(viewportW: number) {
-  return VAULT_BOOK_CLOSED_BASE_SCALE * vaultCollapsedScale(viewportW);
+export function vaultCollapsedScale(viewportW: number, viewportH?: number) {
+  if (viewportW >= VAULT_RESPONSIVE_BREAKPOINT) return VAULT_COLLAPSED_SCALE_MAX;
+  const span =
+    viewportH != null ? Math.min(viewportW, viewportH) : viewportW;
+  return collapsedScaleForSpan(span);
+}
+
+export function vaultBookClosedScale(viewportW: number, pileScale?: number) {
+  return VAULT_BOOK_CLOSED_BASE_SCALE * (pileScale ?? vaultCollapsedScale(viewportW));
 }
 
 const VAULT_BOOK_OPEN_MARGIN_PX = 16;
@@ -121,28 +124,32 @@ export function vaultBookOpenLayout(
   };
 }
 
-export function vaultCartridgeFanScale(viewportW: number) {
-  return CARTRIDGE_FAN_SCALE * vaultCollapsedScale(viewportW);
+const VAULT_BOOK_CLOSED_BASE_SCALE = 0.5;
+const VAULT_BOOK_FOOTPRINT_PAD_PX = 50;
+const CARTRIDGE_SHADOW_BLEED_PX = 44;
+
+export function vaultCartridgeFanScale(viewportW: number, pileScale?: number) {
+  return CARTRIDGE_FAN_SCALE * (pileScale ?? vaultCollapsedScale(viewportW));
 }
 
-export function vaultCartridgeBounds(viewportW: number) {
-  const pileScale = vaultCollapsedScale(viewportW);
-  const fanScale = vaultCartridgeFanScale(viewportW);
+export function vaultCartridgeBounds(viewportW: number, pileScale?: number) {
+  const scale = pileScale ?? vaultCollapsedScale(viewportW);
+  const fanScale = vaultCartridgeFanScale(viewportW, scale);
   const cardW = CARTRIDGE_CARD_W * fanScale;
   const cardH = CARTRIDGE_CARD_H * fanScale;
-  const maxOx = Math.max(...CARTRIDGE_SCATTER.map((s) => Math.abs(s.ox))) * pileScale;
-  const maxOy = Math.max(...CARTRIDGE_SCATTER.map((s) => Math.abs(s.oy))) * pileScale;
-  const shadowBleed = CARTRIDGE_SHADOW_BLEED_PX * pileScale;
+  const maxOx = Math.max(...CARTRIDGE_SCATTER.map((s) => Math.abs(s.ox))) * scale;
+  const maxOy = Math.max(...CARTRIDGE_SCATTER.map((s) => Math.abs(s.oy))) * scale;
+  const shadowBleed = CARTRIDGE_SHADOW_BLEED_PX * scale;
   return {
     w: Math.ceil(cardW + 2 * maxOx + 2 * shadowBleed),
     h: Math.ceil(cardH + 2 * maxOy + 2 * shadowBleed),
   };
 }
 
-export function vaultBookBounds(viewportW: number) {
-  const pileScale = vaultCollapsedScale(viewportW);
-  const closedScale = vaultBookClosedScale(viewportW);
-  const footprintPad = VAULT_BOOK_FOOTPRINT_PAD_PX * pileScale;
+export function vaultBookBounds(viewportW: number, pileScale?: number) {
+  const scale = pileScale ?? vaultCollapsedScale(viewportW);
+  const closedScale = vaultBookClosedScale(viewportW, scale);
+  const footprintPad = VAULT_BOOK_FOOTPRINT_PAD_PX * scale;
   const w =
     Math.ceil((VAULT_BOOK_SIZE.w + VAULT_BOOK_SPINE_W) * closedScale) +
     footprintPad;
