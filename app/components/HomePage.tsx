@@ -13,10 +13,10 @@ import WorkInProgressSticker from "./WorkInProgressSticker";
 function HomeHero() {
   return (
     <div>
-      <h1 id="main-heading" className="transition-blur text-[clamp(28px,7.5vw,40px)] font-medium tracking-tight">
+      <h1 id="main-heading" className="transition-blur max-w-[calc(100vw-2rem)] text-[clamp(28px,7.5vw,40px)] font-medium tracking-tight md:max-w-none">
         <ChisledText>Chris Pramana</ChisledText>
       </h1>
-      <p id="main-description" className="transition-blur mt-2 max-w-[min(460px,92vw)] text-[clamp(15px,3.8vw,18px)] leading-snug">
+      <p id="main-description" className="transition-blur mt-2 max-w-[min(460px,calc(100vw-2rem))] text-[clamp(15px,3.8vw,18px)] leading-snug md:max-w-[min(460px,92vw)]">
         <ChisledText sub>
           {`is obsessed with missions for generational progress. This season, he's building autonomy into the finance suite to extend the impact of capital.`}
         </ChisledText>
@@ -32,7 +32,7 @@ export default function HomePage() {
     <div className="relative min-h-screen bg-[var(--background)]">
       <SiteHeader />
 
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
+      <div className="flex min-h-screen w-full flex-col items-center justify-center px-4 md:px-12">
         <HomeHero />
       </div>
 

@@ -12,7 +12,7 @@ export default function SiteHeader() {
 
   return createPortal(
     <div
-      className="fixed inset-x-12 top-12 flex min-w-0 gap-x-4 overflow-hidden"
+      className="fixed inset-x-4 top-12 flex min-w-0 gap-x-4 overflow-hidden md:inset-x-12"
       data-site-header
       style={{ zIndex: VAULT_NAV_Z_INDEX }}
     >
