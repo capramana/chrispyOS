@@ -13,8 +13,8 @@ const MOBILE_HERO_BUFFER_PX = 28;
 
 const BLOCKED_SELECTORS = [
   { selector: "[data-site-header]", buffer: NAV_SPAWN_BUFFER_PX },
-  { selector: "#main-heading", buffer: HERO_SPAWN_BUFFER_PX },
-  { selector: "#main-description", buffer: HERO_SPAWN_BUFFER_PX },
+  { selector: "[data-hero-heading]", buffer: HERO_SPAWN_BUFFER_PX },
+  { selector: "[data-hero-description]", buffer: HERO_SPAWN_BUFFER_PX },
   { selector: ".navbar-pill", buffer: NAV_SPAWN_BUFFER_PX },
   { selector: "[data-site-footer-corner]", buffer: NAV_SPAWN_BUFFER_PX },
 ] as const;
@@ -28,7 +28,8 @@ function measureBlockedRects(viewportW: number): Rect[] {
   const rects: Rect[] = [];
   for (const { selector, buffer } of BLOCKED_SELECTORS) {
     const useBuffer =
-      selector === "#main-heading" || selector === "#main-description"
+      selector === "[data-hero-heading]" ||
+      selector === "[data-hero-description]"
         ? heroBuffer
         : buffer;
     for (const el of document.querySelectorAll(selector)) {

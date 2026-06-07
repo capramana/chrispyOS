@@ -132,8 +132,10 @@ export default function NavBar({ activePage, onActivePageChange }: NavBarProps) 
               <NavButton icon={isDark ? SunIcon : MoonIcon} label={isDark ? "Light mode" : "Dark mode"} iconKey={isDark ? "sun" : "moon"} iconAnimation={isDark ? "animate-icon-enter-sunrise" : "animate-icon-enter-sunset"} onClick={() => { const next = !isDark; setIsDark(next); document.documentElement.classList.add("theme-snap"); document.documentElement.classList.toggle("dark", next); document.documentElement.classList.add("theme-transitioning"); requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove("theme-snap"))); setTimeout(() => document.documentElement.classList.remove("theme-transitioning"), 275); }} {...sharedProps} />
               <div className="w-3 shrink-0" />
               <NavButton icon={MailIcon} label="Email" href="mailto:christopher.apramana@gmail.com" {...sharedProps} />
-              <div className="w-3 shrink-0" />
-              <NavButton icon={XIcon} label="X profile" href="https://x.com/chrispramana" target="_blank" rel="noopener noreferrer" {...sharedProps} />
+              <div className="flex shrink-0 items-center md:hidden">
+                <div className="w-3 shrink-0" />
+                <NavButton icon={XIcon} label="X profile" href="https://x.com/chrispramana" target="_blank" rel="noopener noreferrer" {...sharedProps} />
+              </div>
             </div>
           </div>
         </div>

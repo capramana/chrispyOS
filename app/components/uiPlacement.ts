@@ -22,8 +22,8 @@ export type SpawnElementCheck = { selector: string; buffer: number };
 
 export function spawnElementChecks(heroBuffer: number): SpawnElementCheck[] {
   return [
-    { selector: "#main-heading", buffer: heroBuffer },
-    { selector: "#main-description", buffer: heroBuffer },
+    { selector: "[data-hero-heading]", buffer: heroBuffer },
+    { selector: "[data-hero-description]", buffer: heroBuffer },
     ...NAV_UI_SPAWN_CHECKS,
   ];
 }
