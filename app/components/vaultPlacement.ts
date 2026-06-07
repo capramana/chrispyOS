@@ -12,7 +12,7 @@ import { VAULT_RESPONSIVE_BREAKPOINT } from "./vaultRects";
 const MOBILE_HERO_BUFFER_PX = 28;
 
 const BLOCKED_SELECTORS = [
-  { selector: "[data-site-header]", buffer: 16 },
+  { selector: "[data-site-header]", buffer: NAV_SPAWN_BUFFER_PX },
   { selector: "#main-heading", buffer: HERO_SPAWN_BUFFER_PX },
   { selector: "#main-description", buffer: HERO_SPAWN_BUFFER_PX },
   { selector: ".navbar-pill", buffer: NAV_SPAWN_BUFFER_PX },
@@ -33,6 +33,7 @@ function measureBlockedRects(viewportW: number): Rect[] {
         : buffer;
     for (const el of document.querySelectorAll(selector)) {
       const r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) continue;
       rects.push({
         left: r.left - useBuffer,
         top: r.top - useBuffer,

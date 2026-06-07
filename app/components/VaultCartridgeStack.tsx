@@ -53,6 +53,7 @@ const GLIDE_VELOCITY_CAP = 0.28;
 const FRICTION_PER_MS = 0.0052;
 const GLIDE_STOP = 0.1;
 const GAMEBOY_BOOT_DELAY_MS = 300;
+const SCROLL_FADE_MS = 400;
 
 function posFromAnchor(cx: number, cy: number, w: number, h: number) {
   return { x: cx - w / 2, y: cy - h / 2 };
@@ -68,6 +69,30 @@ function CartridgeImage({ src, alt }: { src: string; alt: string }) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={alt} draggable={false} />
     </div>
+  );
+}
+
+function CartridgeScrollFades({
+  mobile,
+  visible,
+}: {
+  mobile: boolean;
+  visible: boolean;
+}) {
+  const suffix = visible ? " vault-cartridge-fade--visible" : "";
+  if (mobile) {
+    return (
+      <>
+        <div className={`vault-cartridge-fade vault-cartridge-fade--left${suffix}`} />
+        <div className={`vault-cartridge-fade vault-cartridge-fade--right${suffix}`} />
+      </>
+    );
+  }
+  return (
+    <>
+      <div className={`vault-cartridge-fade vault-cartridge-fade--top${suffix}`} />
+      <div className={`vault-cartridge-fade vault-cartridge-fade--bottom${suffix}`} />
+    </>
   );
 }
 
@@ -91,6 +116,9 @@ export default function VaultCartridgeStack({
   const [heroMotion, setHeroMotion] = useState(true);
   const [collapsing, setCollapsing] = useState(false);
   const [backdropEntered, setBackdropEntered] = useState(false);
+  const [scrollFadesShown, setScrollFadesShown] = useState(false);
+  const [scrollFadeHold, setScrollFadeHold] = useState(false);
+  const scrollFadeHoldTimerRef = useRef<number | null>(null);
   const [selectedCartridgeIdx, setSelectedCartridgeIdx] = useState<number | null>(
     null,
   );
@@ -164,6 +192,45 @@ export default function VaultCartridgeStack({
     }
     setGliding(false);
   }, []);
+
+  const clearScrollFadeHoldTimer = useCallback(() => {
+    if (scrollFadeHoldTimerRef.current !== null) {
+      window.clearTimeout(scrollFadeHoldTimerRef.current);
+      scrollFadeHoldTimerRef.current = null;
+    }
+  }, []);
+
+  const beginScrollFadeExit = useCallback(
+    (holdMs = SCROLL_FADE_MS) => {
+      setScrollFadesShown(false);
+      setScrollFadeHold(true);
+      clearScrollFadeHoldTimer();
+      scrollFadeHoldTimerRef.current = window.setTimeout(() => {
+        scrollFadeHoldTimerRef.current = null;
+        setScrollFadeHold(false);
+      }, holdMs);
+    },
+    [clearScrollFadeHoldTimer],
+  );
+
+  useEffect(() => {
+    if (!(repPhase && expanded && needsScroll && !collapsing)) return;
+
+    let alive = true;
+    let innerRaf = 0;
+    const outerRaf = requestAnimationFrame(() => {
+      innerRaf = requestAnimationFrame(() => {
+        if (alive) setScrollFadesShown(true);
+      });
+    });
+
+    return () => {
+      alive = false;
+      cancelAnimationFrame(outerRaf);
+      if (innerRaf) cancelAnimationFrame(innerRaf);
+      setScrollFadesShown(false);
+    };
+  }, [repPhase, expanded, needsScroll, collapsing]);
 
   const clearExpandTimer = useCallback(() => {
     if (expandTimerRef.current !== null) {
@@ -258,8 +325,11 @@ export default function VaultCartridgeStack({
 
   const expandStack = useCallback(() => {
     clearExpandTimer();
+    clearScrollFadeHoldTimer();
     collapsingRef.current = false;
     setCollapsing(false);
+    setScrollFadeHold(false);
+    setScrollFadesShown(false);
     resetSelection();
     setRepPhase(false);
     setHeroPose("scatter");
@@ -275,6 +345,7 @@ export default function VaultCartridgeStack({
     }, cartridgeHeroAnimMs("list") + 80);
   }, [
     clearExpandTimer,
+    clearScrollFadeHoldTimer,
     needsScroll,
     resetSelection,
     scheduleBootVideo,
@@ -283,8 +354,10 @@ export default function VaultCartridgeStack({
 
   const collapseStack = useCallback(() => {
     if (!expanded || collapsingRef.current) return;
+    const scatterMs = cartridgeHeroAnimMs("scatter") + 80;
     collapsingRef.current = true;
     setCollapsing(true);
+    beginScrollFadeExit(scatterMs + SCROLL_FADE_MS);
     clearExpandTimer();
     resetSelection();
     stopScrollLoop();
@@ -302,13 +375,13 @@ export default function VaultCartridgeStack({
 
     expandTimerRef.current = window.setTimeout(() => {
       expandTimerRef.current = null;
-      collapsingRef.current = false;
-      setCollapsing(false);
       setExpanded(false);
+      setCollapsing(false);
+      collapsingRef.current = false;
       setHeroPose("scatter");
       setHeroMotion(true);
-    }, cartridgeHeroAnimMs("scatter") + 80);
-  }, [clearExpandTimer, expanded, resetSelection, stopScrollLoop]);
+    }, scatterMs);
+  }, [beginScrollFadeExit, clearExpandTimer, expanded, resetSelection, stopScrollLoop]);
 
   const startGlide = useCallback(
     (vx: number, vy: number) => {
@@ -449,9 +522,10 @@ export default function VaultCartridgeStack({
       cancelGlide();
       clearExpandTimer();
       clearBootTimer();
+      clearScrollFadeHoldTimer();
       stopScrollLoop();
     },
-    [cancelGlide, clearBootTimer, clearExpandTimer, stopScrollLoop],
+    [cancelGlide, clearBootTimer, clearExpandTimer, clearScrollFadeHoldTimer, stopScrollLoop],
   );
 
   useEffect(() => {
@@ -470,7 +544,7 @@ export default function VaultCartridgeStack({
   }, [expanded]);
 
   useLayoutEffect(() => {
-    if (!expanded || heroPose !== "scatter" || collapsingRef.current) {
+    if (!expanded || heroPose !== "scatter" || collapsing) {
       return;
     }
     let alive = true;
@@ -484,7 +558,7 @@ export default function VaultCartridgeStack({
       alive = false;
       cancelAnimationFrame(id);
     };
-  }, [expanded, heroPose]);
+  }, [expanded, heroPose, collapsing]);
 
   useEffect(() => {
     if (!expanded) return;
@@ -573,7 +647,7 @@ export default function VaultCartridgeStack({
   const fanOriginX = footprintW / 2 - fanCardW / 2;
   const fanOriginY = footprintH / 2 - fanCardH / 2;
   const panelVisible = expanded && (repPhase || heroPose === "list");
-  const showScrollFades = expanded && needsScroll;
+  const overlayShellOpen = expanded || scrollFadeHold;
 
   const collapsedPile = (
     <div
@@ -624,154 +698,145 @@ export default function VaultCartridgeStack({
     </div>
   );
 
-  const expandedOverlay = expanded ? (
+  const expandedOverlay = overlayShellOpen ? (
     <div
       className="fixed inset-0 touch-none"
-      style={{ zIndex: vaultOverlayZIndex(zIndex) }}
+      style={{
+        zIndex: vaultOverlayZIndex(zIndex),
+        pointerEvents: expanded ? "auto" : "none",
+      }}
     >
-      <button
-        type="button"
-        className={VAULT_OVERLAY_BACKDROP_BUTTON_CLASS}
-        style={vaultOverlayBackdropStyle(backdropEntered)}
-        aria-label="Close cartridge gallery"
-        onClick={collapseStack}
-      />
+      {expanded ? (
+        <>
+          <button
+            type="button"
+            className={VAULT_OVERLAY_BACKDROP_BUTTON_CLASS}
+            style={vaultOverlayBackdropStyle(backdropEntered)}
+            aria-label="Close cartridge gallery"
+            onClick={collapseStack}
+          />
 
-      <div
-        className={`vault-gameboy-panel${panelVisible ? " vault-gameboy-panel--visible" : ""}`}
-        style={{ left: layout.panelX, top: layout.panelY }}
-        aria-label="Game Boy Advance SP"
-        onClick={collapseStack}
-      >
-        <div className="vault-gameboy-panel__inner">
-          <div className="vault-gameboy-shell" aria-hidden />
-          <div className="vault-gameboy-screen">
-            <div className="vault-gameboy-media">
-              {mediaKey === "boot" ? (
-                <video
-                  key="boot"
-                  src={VAULT_GBA_BOOT_VIDEO}
-                  autoPlay
-                  playsInline
-                  muted
-                />
-              ) : null}
-              {mediaKey === "youtube" && youtubeEmbed ? (
-                <iframe
-                  key={youtubeEmbed}
-                  src={youtubeEmbed}
-                  title="YouTube video player"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
-                />
-              ) : null}
+          <div
+            className={`vault-gameboy-panel${panelVisible ? " vault-gameboy-panel--visible" : ""}`}
+            style={{ left: layout.panelX, top: layout.panelY }}
+            aria-label="Game Boy Advance SP"
+            onClick={collapseStack}
+          >
+            <div className="vault-gameboy-panel__inner">
+              <div className="vault-gameboy-shell" aria-hidden />
+              <div className="vault-gameboy-screen">
+                <div className="vault-gameboy-media">
+                  {mediaKey === "boot" ? (
+                    <video
+                      key="boot"
+                      src={VAULT_GBA_BOOT_VIDEO}
+                      autoPlay
+                      playsInline
+                      muted
+                    />
+                  ) : null}
+                  {mediaKey === "youtube" && youtubeEmbed ? (
+                    <iframe
+                      key={youtubeEmbed}
+                      src={youtubeEmbed}
+                      title="YouTube video player"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allowFullScreen
+                    />
+                  ) : null}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {!repPhase
-        ? VAULT_CARTRIDGE_ITEMS.map((item, i) => {
-            const scatter = cartridgeScatterFixedPos(
-              i,
-              pos.x,
-              pos.y,
-              footprintW,
-              footprintH,
-              fanScale,
-              pileScale,
-            );
-            const list = cartridgeExpandedXY(i, layout, mobile);
-            const pose = heroPose === "list" ? list : scatter;
-            const delay = heroMotion ? heroCartridgeTransitionDelay(i, heroPose) : 0;
-            const opacity = heroPose === "list" ? 1 : scatter.opacity;
-            const heroScale = heroPose === "list" ? 1 : scatter.scale;
-            return (
-              <div
-                key={item.id}
-                className={`vault-cartridge-card${heroMotion ? "" : " vault-cartridge-card--hero-frozen"}`}
-                style={{
-                  position: "fixed",
-                  left: pose.x,
-                  top: pose.y,
-                  transform: `rotate(${heroPose === "list" ? 0 : scatter.rotate}deg) scale(${heroScale})`,
-                  zIndex: CARTRIDGE_COUNT - i,
-                  opacity,
-                  pointerEvents: collapsing ? "none" : "auto",
-                  transitionDelay: heroMotion ? `${delay}ms` : "0ms",
-                }}
-              >
-                <CartridgeImage src={item.src} alt={item.alt} />
-              </div>
-            );
-          })
-        : null}
+          {!repPhase
+            ? VAULT_CARTRIDGE_ITEMS.map((item, i) => {
+                const scatter = cartridgeScatterFixedPos(
+                  i,
+                  pos.x,
+                  pos.y,
+                  footprintW,
+                  footprintH,
+                  fanScale,
+                  pileScale,
+                );
+                const list = cartridgeExpandedXY(i, layout, mobile);
+                const pose = heroPose === "list" ? list : scatter;
+                const delay = heroMotion ? heroCartridgeTransitionDelay(i, heroPose) : 0;
+                const opacity = heroPose === "list" ? 1 : scatter.opacity;
+                const heroScale = heroPose === "list" ? 1 : scatter.scale;
+                return (
+                  <div
+                    key={item.id}
+                    className={`vault-cartridge-card${heroMotion ? "" : " vault-cartridge-card--hero-frozen"}`}
+                    style={{
+                      position: "fixed",
+                      left: pose.x,
+                      top: pose.y,
+                      transform: `rotate(${heroPose === "list" ? 0 : scatter.rotate}deg) scale(${heroScale})`,
+                      zIndex: CARTRIDGE_COUNT - i,
+                      opacity,
+                      pointerEvents: collapsing ? "none" : "auto",
+                      transitionDelay: heroMotion ? `${delay}ms` : "0ms",
+                    }}
+                  >
+                    <CartridgeImage src={item.src} alt={item.alt} />
+                  </div>
+                );
+              })
+            : null}
 
-      {repPhase ? (
-        <div
-          ref={repLayerRef}
-          className="fixed inset-0"
-          style={{ zIndex: 4, pointerEvents: "none" }}
-        >
-          {CARTRIDGE_SLOT_ORDER.map((cardIdx, row) => {
-            const item = VAULT_CARTRIDGE_ITEMS[cardIdx]!;
-            const isSelected = selectedCartridgeIdx === cardIdx;
-            const repPos = cartridgeRepCardPos(row, 0, layout, mobile);
-            return (
-              <button
-                key={`rep-${item.id}`}
-                type="button"
-                ref={(node) => {
-                  repCardElsRef.current[row] = node;
-                }}
-                className={`vault-cartridge-card vault-cartridge-card--rep${isSelected ? " vault-cartridge-card--selected" : ""}`}
-                style={{
-                  position: "fixed",
-                  left: repPos.x,
-                  top: repPos.y,
-                  transform: isSelected ? "scale(1.15)" : "scale(1)",
-                  pointerEvents: "auto",
-                }}
-                aria-pressed={isSelected}
-                onClick={() => {
-                  setSelectedCartridgeIdx(cardIdx);
-                  playCartridgeVideo(cardIdx);
-                }}
-              >
-                <CartridgeImage src={item.src} alt={item.alt} />
-              </button>
-            );
-          })}
-        </div>
+          {repPhase ? (
+            <div
+              ref={repLayerRef}
+              className="fixed inset-0"
+              style={{ zIndex: 4, pointerEvents: "none" }}
+            >
+              {CARTRIDGE_SLOT_ORDER.map((cardIdx, row) => {
+                const item = VAULT_CARTRIDGE_ITEMS[cardIdx]!;
+                const isSelected = selectedCartridgeIdx === cardIdx;
+                const repPos = cartridgeRepCardPos(row, 0, layout, mobile);
+                return (
+                  <button
+                    key={`rep-${item.id}`}
+                    type="button"
+                    ref={(node) => {
+                      repCardElsRef.current[row] = node;
+                    }}
+                    className={`vault-cartridge-card vault-cartridge-card--rep${isSelected ? " vault-cartridge-card--selected" : ""}`}
+                    style={{
+                      position: "fixed",
+                      left: repPos.x,
+                      top: repPos.y,
+                      transform: isSelected ? "scale(1.15)" : "scale(1)",
+                      pointerEvents: "auto",
+                    }}
+                    aria-pressed={isSelected}
+                    onClick={() => {
+                      setSelectedCartridgeIdx(cardIdx);
+                      playCartridgeVideo(cardIdx);
+                    }}
+                  >
+                    <CartridgeImage src={item.src} alt={item.alt} />
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </>
       ) : null}
 
-      {mobile ? (
-        <>
-          <div
-            className={`vault-cartridge-fade vault-cartridge-fade--left${showScrollFades ? " vault-cartridge-fade--visible" : ""}`}
-          />
-          <div
-            className={`vault-cartridge-fade vault-cartridge-fade--right${showScrollFades ? " vault-cartridge-fade--visible" : ""}`}
-          />
-        </>
-      ) : (
-        <>
-          <div
-            className={`vault-cartridge-fade vault-cartridge-fade--top${showScrollFades ? " vault-cartridge-fade--visible" : ""}`}
-          />
-          <div
-            className={`vault-cartridge-fade vault-cartridge-fade--bottom${showScrollFades ? " vault-cartridge-fade--visible" : ""}`}
-          />
-        </>
-      )}
+      {needsScroll && overlayShellOpen ? (
+        <CartridgeScrollFades mobile={mobile} visible={scrollFadesShown} />
+      ) : null}
     </div>
   ) : null;
 
   return (
     <>
       {mounted ? createPortal(collapsedPile, document.body) : collapsedPile}
-      {expanded && mounted
+      {overlayShellOpen && mounted
         ? createPortal(expandedOverlay, document.body)
         : expandedOverlay}
     </>

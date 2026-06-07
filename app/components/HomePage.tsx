@@ -3,10 +3,10 @@
 import { useState } from "react";
 import type { NavPage } from "../types/nav-page";
 import Clock from "./Clock";
-import NavBar from "./NavBar";
-import WorkExperience from "./WorkExperience";
-import ChisledText from "./ChisledText";
 import Graffiti from "./Graffiti";
+import NavBar from "./NavBar";
+import ChisledText from "./ChisledText";
+import SiteHeader from "./SiteHeader";
 import VaultArtifacts from "./VaultArtifacts";
 import WorkInProgressSticker from "./WorkInProgressSticker";
 
@@ -30,17 +30,7 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen bg-[var(--background)]">
-      <div
-        className="fixed inset-x-12 top-12 flex items-center justify-between"
-        data-site-header
-      >
-        <span className="transition-blur-corner inline-block font-mono text-base tracking-wide text-primary">
-          new york, ny
-        </span>
-        <div className="transition-blur-logo">
-          <WorkExperience />
-        </div>
-      </div>
+      <SiteHeader />
 
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <HomeHero />
@@ -52,7 +42,7 @@ export default function HomePage() {
 
       {activePage === "vault" && <VaultArtifacts />}
 
-      <div className="fixed bottom-12 left-12" data-site-footer-corner>
+      <div className="fixed bottom-12 left-12 hidden md:block" data-site-footer-corner>
         <div className="transition-blur-corner">
           <Clock />
         </div>
@@ -60,7 +50,7 @@ export default function HomePage() {
 
       <NavBar activePage={activePage} onActivePageChange={setActivePage} />
 
-      <div className="fixed bottom-12 right-12" data-site-footer-corner>
+      <div className="fixed bottom-12 right-12 hidden md:block" data-site-footer-corner>
         <a
           href="https://x.com/chrispramana"
           target="_blank"

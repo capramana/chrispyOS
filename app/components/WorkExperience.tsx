@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+const ENTRY_ROW = "flex w-full min-w-0 items-start gap-4";
+const ENTRY_TEXT = "min-w-0 flex-1 overflow-hidden text-right";
+
 export default function WorkExperience() {
   const [hoveredEntry, setHoveredEntry] = useState<string | null>(null);
 
@@ -20,23 +23,29 @@ export default function WorkExperience() {
 
   return (
     <div
-      className="flex flex-col items-end"
+      className="flex w-full min-w-0 flex-col items-end"
       onMouseLeave={() => setHoveredEntry(null)}
     >
       <a
         href="https://ramp.com"
         target="_blank"
         rel="noopener noreferrer"
-        className={`flex items-center gap-4${isRevealed ? " pb-4" : ""}`}
+        className={`${ENTRY_ROW}${isRevealed ? " pb-4" : ""}`}
       >
         <div
-          className={`text-right transition-opacity duration-200${isRevealed ? "" : " hidden"}`}
+          className={`${ENTRY_TEXT} transition-opacity duration-200${isRevealed ? "" : " hidden"}`}
           onMouseEnter={() => setHoveredEntry("ramp")}
         >
-          <div className="font-mono text-sm" style={{ color: titleColor("ramp") }}>
+          <div
+            className="truncate font-mono text-sm"
+            style={{ color: titleColor("ramp") }}
+          >
             Ramp
           </div>
-          <div className="font-mono text-xs" style={{ color: dateColor("ramp") }}>
+          <div
+            className="truncate font-mono text-xs"
+            style={{ color: dateColor("ramp") }}
+          >
             May 2025 - Present
           </div>
         </div>
@@ -68,14 +77,20 @@ export default function WorkExperience() {
           href="https://ghst.io/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-4 transition-all duration-200 ease-out"
+          className={`${ENTRY_ROW} transition-all duration-200 ease-out`}
           onMouseEnter={() => setHoveredEntry("ghost")}
         >
-          <div className="text-right">
-            <div className="font-mono text-sm" style={{ color: titleColor("ghost") }}>
+          <div className={ENTRY_TEXT}>
+            <div
+              className="truncate font-mono text-sm"
+              style={{ color: titleColor("ghost") }}
+            >
               Ghost
             </div>
-            <div className="font-mono text-xs" style={{ color: dateColor("ghost") }}>
+            <div
+              className="truncate font-mono text-xs"
+              style={{ color: dateColor("ghost") }}
+            >
               Aug 2024 - Apr 2025
             </div>
           </div>

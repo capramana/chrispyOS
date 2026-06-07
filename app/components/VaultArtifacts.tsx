@@ -234,8 +234,15 @@ export default function VaultArtifacts() {
     };
 
     sync();
+    let outerRaf = 0;
+    let innerRaf = 0;
+    outerRaf = requestAnimationFrame(() => {
+      innerRaf = requestAnimationFrame(sync);
+    });
     window.addEventListener("resize", sync);
     return () => {
+      cancelAnimationFrame(outerRaf);
+      cancelAnimationFrame(innerRaf);
       for (const off of unregister) off();
       window.removeEventListener("resize", sync);
     };

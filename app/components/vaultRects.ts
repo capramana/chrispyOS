@@ -11,7 +11,7 @@ const VIEWPORT_MARGIN_PX = 8;
 
 export const VAULT_ARTIFACT_Z_BASE = 46;
 
-/** Above collapsed vault piles (portaled to body), below expand overlays. */
+/** Above collapsed vault piles and site chrome (header, nav); below expand overlays. */
 export const VAULT_NAV_Z_INDEX = 65;
 
 export function vaultOverlayZIndex(artifactZ: number) {
@@ -133,7 +133,6 @@ export function vaultCartridgeBounds(viewportW: number) {
   const maxOx = Math.max(...CARTRIDGE_SCATTER.map((s) => Math.abs(s.ox))) * pileScale;
   const maxOy = Math.max(...CARTRIDGE_SCATTER.map((s) => Math.abs(s.oy))) * pileScale;
   const shadowBleed = CARTRIDGE_SHADOW_BLEED_PX * pileScale;
-
   return {
     w: Math.ceil(cardW + 2 * maxOx + 2 * shadowBleed),
     h: Math.ceil(cardH + 2 * maxOy + 2 * shadowBleed),

@@ -7,3 +7,72 @@
   from { max-width: 80px; }
   to   { max-width: 0px; }
 }
+
+.navbar-pill-scroll-wrap {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.navbar-pill-scroll {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.navbar-pill-music {
+  flex-shrink: 0;
+}
+
+.navbar-pill-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.navbar-pill-scroll-wrap--overflow-right .navbar-pill-scroll {
+  mask-image: linear-gradient(
+    to right,
+    black calc(100% - 44px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black calc(100% - 44px),
+    transparent 100%
+  );
+}
+
+.navbar-pill-scroll-wrap--overflow-left.navbar-pill-scroll-wrap--overflow-right .navbar-pill-scroll {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 44px,
+    black calc(100% - 44px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 44px,
+    black calc(100% - 44px),
+    transparent 100%
+  );
+}
+
+.navbar-pill-scroll-wrap--overflow-left:not(.navbar-pill-scroll-wrap--overflow-right) .navbar-pill-scroll {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 44px,
+    black 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 44px,
+    black 100%
+  );
+}
