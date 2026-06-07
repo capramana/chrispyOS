@@ -13,6 +13,9 @@
   --vault-picture-mat-bg: linear-gradient(to bottom, #f9f9f9, #eeeeee);
   --vault-picture-mat-border: 0.5px solid #fdfdfd;
   --vault-picture-mat-shadow: 0 1px 2px 0 rgba(0,0,0,0.05), inset 0 1px 0 0 rgba(255,255,255,1), inset 0 -1px 0 0 rgba(255,255,255,0);
+  --vault-artifact-shadow-a: 0 10px 18px rgba(0, 0, 0, 0.2);
+  --vault-artifact-shadow-b: 0 22px 40px rgba(0, 0, 0, 0.3);
+  --vault-artifact-box-shadow: var(--vault-artifact-shadow-a), var(--vault-artifact-shadow-b);
   --music-player-bg: linear-gradient(to top right, #EFEFEF 25%, #F7F7F7 100%);
   --music-player-border: #EAEAEA;
   --navbar-pill-height: 4.1875rem;
@@ -149,7 +152,23 @@ body {
     animation-timing-function: cubic-bezier(0.34, 1.15, 0.64, 1);
   }
 
-  html.vault-picture-vt-exit ::view-transition-group(.vault-cambio) {
+  html.vault-picture-vt-active ::view-transition-group(root) {
+    animation: none;
+  }
+
+  html.vault-picture-vt-active ::view-transition-image-pair(root) {
+    isolation: auto;
+  }
+
+  html.vault-picture-vt-active ::view-transition-old(root),
+  html.vault-picture-vt-active ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+    display: block;
+    opacity: 1;
+  }
+
+  html.vault-picture-vt-active.vault-picture-vt-exit ::view-transition-group(.vault-cambio) {
     animation-duration: 0.38s;
   }
 }

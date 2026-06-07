@@ -40,23 +40,25 @@ const siteUrl =
     ? process.env.NEXT_PUBLIC_SITE_URL
     : "http://localhost:3000";
 
+const siteDescription = "is obsessed with missions for generational progress";
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: "Chris Pramana",
     template: "%s · Chris Pramana",
   },
-  description: "builds products with intention and care",
+  description: siteDescription,
   openGraph: {
     title: "Chris Pramana",
-    description: "builds products with intention and care",
+    description: siteDescription,
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary",
     title: "Chris Pramana",
-    description: "builds products with intention and care",
+    description: siteDescription,
   },
   robots: {
     index: true,

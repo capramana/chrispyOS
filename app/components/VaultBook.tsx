@@ -444,8 +444,6 @@ export default function VaultBook({
     overflow: "visible",
     zIndex: overlayActive ? undefined : zIndex,
     cursor: open ? "default" : dragging ? "grabbing" : "grab",
-    filter:
-      "drop-shadow(0 10px 18px rgba(0,0,0,0.2)) drop-shadow(0 22px 40px rgba(0,0,0,0.3))",
     transform: shellTransform,
     transformOrigin: "center center",
     transition: shellTransition,
@@ -466,7 +464,7 @@ export default function VaultBook({
       onLostPointerCapture={endDrag}
     >
       <motion.div
-        className="vault-book"
+        className={open ? "vault-book vault-book--open" : "vault-book"}
         style={{
           transformStyle: "preserve-3d",
           transformOrigin: open ? "0% 50%" : "center center",
