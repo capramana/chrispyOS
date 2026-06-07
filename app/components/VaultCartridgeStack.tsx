@@ -7,7 +7,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 import { vaultCartridgeFanScale, vaultCartridgeDragClamp, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
@@ -68,28 +67,9 @@ function lerp(a: number, b: number, t: number) {
 
 function CartridgeImage({ src, alt }: { src: string; alt: string }) {
   return (
-    <div className="vault-cartridge-card__lit">
-      <div className="vault-cartridge-card__inner">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={alt} draggable={false} />
-      </div>
-    </div>
-  );
-}
-
-function CartridgeCardPose({
-  transform,
-  children,
-}: {
-  transform?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div
-      className="vault-cartridge-card__pose"
-      style={transform != null ? { transform } : undefined}
-    >
-      {children}
+    <div className="vault-cartridge-card__inner">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} draggable={false} />
     </div>
   );
 }
@@ -711,17 +691,14 @@ export default function VaultCartridgeStack({
             style={{
               left: fanOriginX + s.ox * pileScale,
               top: fanOriginY + s.oy * pileScale,
+              transform: `rotate(${s.rotate}deg) scale(${fanScale})`,
               zIndex: CARTRIDGE_VISIBLE_FAN - i,
               opacity: 1,
               pointerEvents: "auto",
               cursor: dragging || gliding ? "grabbing" : "grab",
             }}
           >
-            <CartridgeCardPose
-              transform={`rotate(${s.rotate}deg) scale(${fanScale})`}
-            >
-              <CartridgeImage src={item.src} alt={item.alt} />
-            </CartridgeCardPose>
+            <CartridgeImage src={item.src} alt={item.alt} />
           </div>
         );
       })}
@@ -804,17 +781,14 @@ export default function VaultCartridgeStack({
                       position: "fixed",
                       left: pose.x,
                       top: pose.y,
+                      transform: `rotate(${heroPose === "list" ? 0 : scatter.rotate}deg) scale(${heroScale})`,
                       zIndex: CARTRIDGE_COUNT - i,
                       opacity,
                       pointerEvents: collapsing ? "none" : "auto",
                       transitionDelay: heroMotion ? `${delay}ms` : "0ms",
                     }}
                   >
-                    <CartridgeCardPose
-                      transform={`rotate(${heroPose === "list" ? 0 : scatter.rotate}deg) scale(${heroScale})`}
-                    >
-                      <CartridgeImage src={item.src} alt={item.alt} />
-                    </CartridgeCardPose>
+                    <CartridgeImage src={item.src} alt={item.alt} />
                   </div>
                 );
               })
@@ -842,6 +816,7 @@ export default function VaultCartridgeStack({
                       position: "fixed",
                       left: repPos.x,
                       top: repPos.y,
+                      transform: isSelected ? "scale(1.15)" : "scale(1)",
                       pointerEvents: "auto",
                     }}
                     aria-pressed={isSelected}
@@ -850,9 +825,7 @@ export default function VaultCartridgeStack({
                       playCartridgeVideo(cardIdx);
                     }}
                   >
-                    <CartridgeCardPose>
-                      <CartridgeImage src={item.src} alt={item.alt} />
-                    </CartridgeCardPose>
+                    <CartridgeImage src={item.src} alt={item.alt} />
                   </button>
                 );
               })}
