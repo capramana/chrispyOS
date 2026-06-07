@@ -81,7 +81,7 @@ export default function NavBar({ activePage, onActivePageChange }: NavBarProps) 
 
   const bar = (
     <div
-      className="fixed bottom-[max(2rem,env(safe-area-inset-bottom))] left-1/2 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 md:max-w-[calc(100vw-1.5rem)]"
+      className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 w-max max-w-[calc(100vw-3rem)] -translate-x-1/2 md:max-w-[calc(100vw-1.5rem)]"
       style={{ zIndex: VAULT_NAV_Z_INDEX }}
       onMouseEnter={handleNavMouseEnter}
       onMouseLeave={handleNavMouseLeave}
