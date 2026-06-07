@@ -45,3 +45,28 @@
   background-clip: text;
   paint-order: stroke fill;
 }
+
+/* WebKit mobile clips text-shadow when paired with background-clip:text + transparent fill. */
+@media (hover: none) and (pointer: coarse) {
+  .text-chromed {
+    color: #d8d8d8;
+    background-color: transparent;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+  }
+
+  .text-chromed-sub {
+    color: #c3c3c3;
+    background-color: transparent;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+  }
+
+  .dark .text-chromed {
+    color: #010101;
+  }
+
+  .dark .text-chromed-sub {
+    color: #020202;
+  }
+}

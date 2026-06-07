@@ -1,11 +1,8 @@
 import {
-  boxFromTopLeft,
-  fitsSpawnPlacement,
-} from "./uiPlacement";
-import {
   CARTRIDGE_CARD_H,
   CARTRIDGE_CARD_W,
   CARTRIDGE_FAN_SCALE,
+  CARTRIDGE_SCATTER,
 } from "./vaultCartridgeLayout";
 
 export const VAULT_PILE_MARGIN_PX = 54;
@@ -52,10 +49,15 @@ export function rectsOverlap(a: DOMRect, b: DOMRect, pad = 0): boolean {
   );
 }
 
-export function vaultStackBounds(maxWidth: number, maxHeight: number) {
+export function vaultStackBounds(
+  maxWidth: number,
+  maxHeight: number,
+  pileScale = 1,
+) {
+  const margin = VAULT_PILE_MARGIN_PX * pileScale;
   return {
-    w: maxWidth + 2 * VAULT_PILE_MARGIN_PX + VAULT_MAT_OUTER_GROW_PX,
-    h: maxHeight + 2 * VAULT_PILE_MARGIN_PX + VAULT_MAT_OUTER_GROW_PX,
+    w: maxWidth + 2 * margin + VAULT_MAT_OUTER_GROW_PX,
+    h: maxHeight + 2 * margin + VAULT_MAT_OUTER_GROW_PX,
   };
 }
 
@@ -63,28 +65,90 @@ export const VAULT_BOOK_SIZE = { w: 300, h: 400 } as const;
 
 export const VAULT_BOOK_SPINE_W = Math.round((VAULT_BOOK_SIZE.w * 40) / 750);
 
-const VAULT_BOOK_CLOSED_SCALE = 0.5;
-const VAULT_BOOK_FOOTPRINT_PAD_PX = 50;
+export const VAULT_COLLAPSED_SCALE_MIN = 0.56;
+export const VAULT_COLLAPSED_SCALE_MAX = 1;
+export const VAULT_COLLAPSED_SCALE_VP_MIN = 320;
+export const VAULT_RESPONSIVE_BREAKPOINT = 768;
 
-export function vaultBookBounds() {
-  const w =
-    Math.ceil((VAULT_BOOK_SIZE.w + VAULT_BOOK_SPINE_W) * VAULT_BOOK_CLOSED_SCALE) +
-    VAULT_BOOK_FOOTPRINT_PAD_PX;
-  const h = Math.ceil(VAULT_BOOK_SIZE.h * VAULT_BOOK_CLOSED_SCALE);
-  return { w, h };
+const VAULT_BOOK_CLOSED_BASE_SCALE = 0.5;
+const VAULT_BOOK_FOOTPRINT_PAD_PX = 50;
+const CARTRIDGE_SHADOW_BLEED_PX = 44;
+
+export function vaultCollapsedScale(viewportW: number) {
+  if (viewportW >= VAULT_RESPONSIVE_BREAKPOINT) return VAULT_COLLAPSED_SCALE_MAX;
+  const t = Math.max(
+    0,
+    Math.min(
+      1,
+      (viewportW - VAULT_COLLAPSED_SCALE_VP_MIN) /
+        (VAULT_RESPONSIVE_BREAKPOINT - VAULT_COLLAPSED_SCALE_VP_MIN),
+    ),
+  );
+  return VAULT_COLLAPSED_SCALE_MIN + t * (VAULT_COLLAPSED_SCALE_MAX - VAULT_COLLAPSED_SCALE_MIN);
 }
 
-const VAULT_CARTRIDGE_SCATTER_PAD = { w: 90, h: 70 };
+export function vaultBookClosedScale(viewportW: number) {
+  return VAULT_BOOK_CLOSED_BASE_SCALE * vaultCollapsedScale(viewportW);
+}
 
-export function vaultCartridgeBounds() {
+const VAULT_BOOK_OPEN_MARGIN_PX = 16;
+const VAULT_BOOK_OPEN_SCALE_MIN = 0.52;
+const VAULT_BOOK_OPEN_SCALE_MAX = 1;
+
+export function vaultBookOpenScale(viewportW: number, viewportH: number) {
+  const maxW = viewportW - 2 * VAULT_BOOK_OPEN_MARGIN_PX;
+  const maxH = viewportH - 2 * VAULT_BOOK_OPEN_MARGIN_PX;
+  const fit = Math.min(
+    maxW / (2 * VAULT_BOOK_SIZE.w),
+    maxH / VAULT_BOOK_SIZE.h,
+  );
+  return Math.max(
+    VAULT_BOOK_OPEN_SCALE_MIN,
+    Math.min(VAULT_BOOK_OPEN_SCALE_MAX, fit),
+  );
+}
+
+export function vaultBookOpenLayout(
+  viewportW: number,
+  viewportH: number,
+  footprintW: number,
+  footprintH: number,
+) {
+  const bookInsetX = (footprintW - VAULT_BOOK_SIZE.w) / 2;
   return {
-    w:
-      Math.ceil(CARTRIDGE_CARD_W * CARTRIDGE_FAN_SCALE) +
-      VAULT_CARTRIDGE_SCATTER_PAD.w,
-    h:
-      Math.ceil(CARTRIDGE_CARD_H * CARTRIDGE_FAN_SCALE) +
-      VAULT_CARTRIDGE_SCATTER_PAD.h,
+    x: viewportW / 2 - bookInsetX,
+    y: viewportH / 2 - footprintH / 2,
   };
+}
+
+export function vaultCartridgeFanScale(viewportW: number) {
+  return CARTRIDGE_FAN_SCALE * vaultCollapsedScale(viewportW);
+}
+
+export function vaultCartridgeBounds(viewportW: number) {
+  const pileScale = vaultCollapsedScale(viewportW);
+  const fanScale = vaultCartridgeFanScale(viewportW);
+  const cardW = CARTRIDGE_CARD_W * fanScale;
+  const cardH = CARTRIDGE_CARD_H * fanScale;
+  const maxOx = Math.max(...CARTRIDGE_SCATTER.map((s) => Math.abs(s.ox))) * pileScale;
+  const maxOy = Math.max(...CARTRIDGE_SCATTER.map((s) => Math.abs(s.oy))) * pileScale;
+  const shadowBleed = CARTRIDGE_SHADOW_BLEED_PX * pileScale;
+
+  return {
+    w: Math.ceil(cardW + 2 * maxOx + 2 * shadowBleed),
+    h: Math.ceil(cardH + 2 * maxOy + 2 * shadowBleed),
+  };
+}
+
+export function vaultBookBounds(viewportW: number) {
+  const pileScale = vaultCollapsedScale(viewportW);
+  const closedScale = vaultBookClosedScale(viewportW);
+  const footprintPad = VAULT_BOOK_FOOTPRINT_PAD_PX * pileScale;
+  const w =
+    Math.ceil((VAULT_BOOK_SIZE.w + VAULT_BOOK_SPINE_W) * closedScale) +
+    footprintPad;
+  const h = Math.ceil(VAULT_BOOK_SIZE.h * closedScale);
+  return { w, h };
 }
 
 export function wipStickerBounds() {
@@ -101,71 +165,6 @@ export function clampVaultPosition(x: number, y: number, w: number, h: number) {
     x: Math.min(Math.max(m, x), Math.max(m, vw - w - m)),
     y: Math.min(Math.max(m, y), Math.max(m, vh - h - m)),
   };
-}
-
-function pickRandomTopLeft(
-  w: number,
-  h: number,
-  peerId?: string,
-): { x: number; y: number } {
-  const margin = 16;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const minX = margin;
-  const maxX = vw - margin - w;
-  const minY = margin;
-  const maxY = vh - margin - h;
-
-  if (maxX < minX || maxY < minY) {
-    return clampVaultPosition((vw - w) / 2, (vh - h) / 2, w, h);
-  }
-
-  for (let i = 0; i < 80; i++) {
-    const x = minX + Math.random() * (maxX - minX);
-    const y = minY + Math.random() * (maxY - minY);
-    const c = clampVaultPosition(x, y, w, h);
-    if (fitsSpawnPlacement(boxFromTopLeft(c.x, c.y, w, h), peerId)) return c;
-  }
-
-  const corners: [number, number][] = [
-    [minX, minY],
-    [maxX, minY],
-    [minX, maxY],
-    [maxX, maxY],
-  ];
-  for (const [x, y] of corners) {
-    const c = clampVaultPosition(x, y, w, h);
-    if (fitsSpawnPlacement(boxFromTopLeft(c.x, c.y, w, h), peerId)) return c;
-  }
-
-  for (const step of [24, 12, 8, 4]) {
-    for (let y = minY; y <= maxY; y += step) {
-      for (let x = minX; x <= maxX; x += step) {
-        const c = clampVaultPosition(x, y, w, h);
-        if (fitsSpawnPlacement(boxFromTopLeft(c.x, c.y, w, h), peerId)) return c;
-      }
-    }
-  }
-
-  return clampVaultPosition(maxX, minY, w, h);
-}
-
-export function pickRandomWidgetPosition(
-  w: number,
-  h: number,
-  peerId?: string,
-): readonly [number, number] {
-  const c = pickRandomTopLeft(w, h, peerId);
-  return [Math.round(c.x), Math.round(c.y)] as const;
-}
-
-export function pickRandomVaultCenter(
-  w: number,
-  h: number,
-  peerId?: string,
-): readonly [number, number] {
-  const c = pickRandomTopLeft(w, h, peerId);
-  return [Math.round(c.x + w / 2), Math.round(c.y + h / 2)] as const;
 }
 
 export function reclampVaultCenter(

@@ -6,6 +6,8 @@ export const CARTRIDGE_STEP_H = CARTRIDGE_CARD_W + CARTRIDGE_GAP;
 export const CARTRIDGE_FAN_SCALE = 0.8;
 export const CARTRIDGE_COUNT = 11;
 export const CARTRIDGE_ANIM_MS = 650;
+/** Must match `transform`/`left`/`top` duration in `VaultCartridgeStack.css`. */
+export const CARTRIDGE_TRANSITION_MS = 600;
 export const CARTRIDGE_PANEL_W = 310;
 export const CARTRIDGE_PANEL_H = 553;
 export const CARTRIDGE_PANEL_GAP_MOBILE = 40;
@@ -107,19 +109,21 @@ export function cartridgeScatterFixedPos(
   pileY: number,
   footprintW: number,
   footprintH: number,
+  fanScale: number = CARTRIDGE_FAN_SCALE,
+  pileScale = 1,
 ) {
-  const fanOriginX =
-    pileX + footprintW / 2 - (CARTRIDGE_CARD_W * CARTRIDGE_FAN_SCALE) / 2;
-  const fanOriginY =
-    pileY + footprintH / 2 - (CARTRIDGE_CARD_H * CARTRIDGE_FAN_SCALE) / 2;
+  const cardW = CARTRIDGE_CARD_W * fanScale;
+  const cardH = CARTRIDGE_CARD_H * fanScale;
+  const fanOriginX = pileX + footprintW / 2 - cardW / 2;
+  const fanOriginY = pileY + footprintH / 2 - cardH / 2;
 
   if (cardIndex < CARTRIDGE_VISIBLE_FAN) {
     const s = CARTRIDGE_SCATTER[cardIndex % CARTRIDGE_SCATTER.length]!;
     return {
-      x: fanOriginX + s.ox,
-      y: fanOriginY + s.oy,
+      x: fanOriginX + s.ox * pileScale,
+      y: fanOriginY + s.oy * pileScale,
       rotate: s.rotate,
-      scale: CARTRIDGE_FAN_SCALE,
+      scale: fanScale,
       opacity: 1,
     };
   }
@@ -128,7 +132,7 @@ export function cartridgeScatterFixedPos(
     x: fanOriginX,
     y: fanOriginY,
     rotate: 0,
-    scale: CARTRIDGE_FAN_SCALE,
+    scale: fanScale,
     opacity: 0,
   };
 }
@@ -142,6 +146,18 @@ export function heroCartridgeTransitionDelay(
   }
   if (cardIndex < CARTRIDGE_VISIBLE_FAN) return cardIndex * 60;
   return Math.abs(cartridgeCardSlot(cardIndex)) * 55;
+}
+
+export function heroCartridgeMaxDelay(heroPose: "scatter" | "list") {
+  let max = 0;
+  for (let i = 0; i < CARTRIDGE_COUNT; i++) {
+    max = Math.max(max, heroCartridgeTransitionDelay(i, heroPose));
+  }
+  return max;
+}
+
+export function cartridgeHeroAnimMs(heroPose: "scatter" | "list") {
+  return CARTRIDGE_TRANSITION_MS + heroCartridgeMaxDelay(heroPose);
 }
 
 export function cartridgeRepCardPos(

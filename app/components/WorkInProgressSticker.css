@@ -9,7 +9,7 @@
 .wip-sticker-wrap {
   --wip-rot-start: -25deg;
   --wip-rot-end: -15deg;
-  width: min(12.5vw, 140px);
+  width: clamp(72px, 12.5vw, 140px);
   aspect-ratio: 2400 / 1702;
   transform-style: preserve-3d;
   position: relative;

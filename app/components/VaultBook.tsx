@@ -10,7 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "iconoir-react";
-import { clampVaultPosition, VAULT_BOOK_SIZE, VAULT_BOOK_SPINE_W, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
+import { clampVaultPosition, VAULT_BOOK_SIZE, VAULT_BOOK_SPINE_W, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultBookOpenLayout, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
 import {
   VAULT_BOOK_CHAPTERS,
   VAULT_BOOK_PAPER_TEXTURE,
@@ -27,6 +27,8 @@ type VaultBookProps = {
   initialTop: number;
   footprintW: number;
   footprintH: number;
+  closedScale: number;
+  openScale: number;
 };
 
 const TILT_MAX = 2;
@@ -42,10 +44,16 @@ function randomSpawnRotation() {
   return sign * (10 + Math.random() * 5);
 }
 
-function openBookLayout(footprintW: number, footprintH: number) {
-  const shellX = window.innerWidth / 2 + (VAULT_BOOK_SIZE.w - footprintW) / 2;
-  const shellY = window.innerHeight / 2 - footprintH / 2;
-  return { x: shellX, y: shellY };
+function openBookLayout(
+  footprintW: number,
+  footprintH: number,
+) {
+  return vaultBookOpenLayout(
+    window.innerWidth,
+    window.innerHeight,
+    footprintW,
+    footprintH,
+  );
 }
 
 function posFromAnchor(cx: number, cy: number, w: number, h: number) {
@@ -64,6 +72,8 @@ export default function VaultBook({
   initialTop,
   footprintW,
   footprintH,
+  closedScale,
+  openScale,
 }: VaultBookProps) {
   const [pos, setPos] = useState(() =>
     posFromAnchor(initialLeft, initialTop, footprintW, footprintH),
@@ -182,7 +192,7 @@ export default function VaultBook({
       setAnimBusy(false);
       animBusyTimeoutRef.current = null;
     }, 900);
-  }, [animBusy, open, storeClosedAnchor, footprintW, footprintH]);
+  }, [animBusy, open, storeClosedAnchor, footprintW, footprintH, openScale]);
 
   const closeBook = useCallback(() => {
     if (!open) return;
@@ -349,17 +359,18 @@ export default function VaultBook({
     [cancelGlide],
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
-    const onResize = () => {
+    const applyOpenLayout = () => {
       const layout = openBookLayout(footprintW, footprintH);
       sizeRef.current = { w: footprintW, h: footprintH };
       posRef.current = { x: layout.x, y: layout.y };
       setPos({ x: layout.x, y: layout.y });
     };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [open, footprintW, footprintH]);
+    applyOpenLayout();
+    window.addEventListener("resize", applyOpenLayout);
+    return () => window.removeEventListener("resize", applyOpenLayout);
+  }, [open, footprintW, footprintH, openScale]);
 
   useEffect(() => {
     if (open) return;
@@ -449,9 +460,12 @@ export default function VaultBook({
     >
       <motion.div
         className="vault-book"
-        style={{ transformStyle: "preserve-3d" }}
-        initial={{ scale: 0.5 }}
-        animate={{ scale: open ? 1 : 0.5 }}
+        style={{
+          transformStyle: "preserve-3d",
+          transformOrigin: open ? "0% 50%" : "center center",
+        }}
+        initial={{ scale: closedScale }}
+        animate={{ scale: open ? openScale : closedScale }}
         transition={{
           scale: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
         }}

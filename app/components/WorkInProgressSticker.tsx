@@ -2,8 +2,8 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { boxFromTopLeft, registerSpawnPeer } from "./uiPlacement";
+import { pickWidgetPosition } from "./vaultPlacement";
 import {
-  pickRandomWidgetPosition,
   reclampWidgetPosition,
   wipStickerBounds,
 } from "./vaultRects";
@@ -40,7 +40,7 @@ export default function WorkInProgressSticker() {
       const { w, h } = wipStickerBounds();
       setPos((prev) => {
         if (!prev) {
-          const [x, y] = pickRandomWidgetPosition(w, h, SPAWN_PEER_ID);
+          const [x, y] = pickWidgetPosition(w, h, SPAWN_PEER_ID);
           const next = { x, y };
           posRef.current = next;
           return next;

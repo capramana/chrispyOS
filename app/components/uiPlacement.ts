@@ -1,11 +1,14 @@
 export const SPAWN_PEER_GAP_PX = 8;
 export const HERO_SPAWN_BUFFER_PX = 12;
 export const GRAFFITI_HERO_BUFFER_PX = 28;
+/** Viewport edge inset for vault / widget spawn search (matches desktop picker). */
+export const VAULT_SPAWN_MARGIN_PX = 16;
+export const NAV_SPAWN_BUFFER_PX = 20;
 
 const NAV_UI_SPAWN_CHECKS = [
-  { selector: ".navbar-pill", buffer: 20 },
-  { selector: ".transition-blur-corner", buffer: 20 },
-  { selector: ".transition-blur-logo", buffer: 20 },
+  { selector: ".navbar-pill", buffer: NAV_SPAWN_BUFFER_PX },
+  { selector: ".transition-blur-corner", buffer: NAV_SPAWN_BUFFER_PX },
+  { selector: ".transition-blur-logo", buffer: NAV_SPAWN_BUFFER_PX },
 ] as const;
 
 export type PlacementBox = {
@@ -74,14 +77,19 @@ export function registerSpawnPeer(
   return () => spawnPeers.delete(id);
 }
 
-function getSpawnPeerBoxes(excludeId?: string): PlacementBox[] {
+export function getSpawnPeerRects(...excludeIds: string[]) {
+  const exclude = new Set(excludeIds);
   const boxes: PlacementBox[] = [];
   for (const [id, getBox] of spawnPeers) {
-    if (excludeId && id === excludeId) continue;
+    if (exclude.has(id)) continue;
     const box = getBox();
     if (box) boxes.push(box);
   }
   return boxes;
+}
+
+function getSpawnPeerBoxes(excludeId?: string) {
+  return getSpawnPeerRects(...(excludeId ? [excludeId] : []));
 }
 
 export function fitsSpawnPeers(box: PlacementBox, excludeId?: string): boolean {

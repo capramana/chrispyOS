@@ -9,18 +9,16 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { clampVaultPosition, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
+import { clampVaultPosition, vaultCartridgeFanScale, vaultCollapsedScale, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlayBackdropStyle, vaultOverlayZIndex } from "./vaultRects";
 import {
   pickCartridgeEmbed,
   VAULT_CARTRIDGE_ITEMS,
   VAULT_GBA_BOOT_VIDEO,
 } from "./vaultCartridgeData";
 import {
-  CARTRIDGE_ANIM_MS,
   CARTRIDGE_CARD_H,
   CARTRIDGE_CARD_W,
   CARTRIDGE_COUNT,
-  CARTRIDGE_FAN_SCALE,
   CARTRIDGE_SCATTER,
   CARTRIDGE_SLOT_ORDER,
   CARTRIDGE_STEP_H,
@@ -28,6 +26,7 @@ import {
   CARTRIDGE_VISIBLE_FAN,
   cartridgeExpandedXY,
   cartridgeGroupLayout,
+  cartridgeHeroAnimMs,
   cartridgeNeedsScroll,
   cartridgeRepCardPos,
   cartridgeScatterFixedPos,
@@ -273,7 +272,7 @@ export default function VaultCartridgeStack({
       setHeroMotion(false);
       setRepPhase(true);
       if (needsScroll) startScrollLoop();
-    }, CARTRIDGE_ANIM_MS + 80);
+    }, cartridgeHeroAnimMs("list") + 80);
   }, [
     clearExpandTimer,
     needsScroll,
@@ -308,7 +307,7 @@ export default function VaultCartridgeStack({
       setExpanded(false);
       setHeroPose("scatter");
       setHeroMotion(true);
-    }, CARTRIDGE_ANIM_MS + 80);
+    }, cartridgeHeroAnimMs("scatter") + 80);
   }, [clearExpandTimer, expanded, resetSelection, stopScrollLoop]);
 
   const startGlide = useCallback(
@@ -567,10 +566,12 @@ export default function VaultCartridgeStack({
 
   const motionActive = dragging || gliding;
   const shellTransform = dragging ? "scale(1.02)" : undefined;
-  const fanOriginX =
-    footprintW / 2 - (CARTRIDGE_CARD_W * CARTRIDGE_FAN_SCALE) / 2;
-  const fanOriginY =
-    footprintH / 2 - (CARTRIDGE_CARD_H * CARTRIDGE_FAN_SCALE) / 2;
+  const pileScale = vaultCollapsedScale(viewport.w);
+  const fanScale = vaultCartridgeFanScale(viewport.w);
+  const fanCardW = CARTRIDGE_CARD_W * fanScale;
+  const fanCardH = CARTRIDGE_CARD_H * fanScale;
+  const fanOriginX = footprintW / 2 - fanCardW / 2;
+  const fanOriginY = footprintH / 2 - fanCardH / 2;
   const panelVisible = expanded && (repPhase || heroPose === "list");
   const showScrollFades = expanded && needsScroll;
 
@@ -609,9 +610,9 @@ export default function VaultCartridgeStack({
             key={item.id}
             className="vault-cartridge-card"
             style={{
-              left: fanOriginX + s.ox,
-              top: fanOriginY + s.oy,
-              transform: `rotate(${s.rotate}deg) scale(${CARTRIDGE_FAN_SCALE})`,
+              left: fanOriginX + s.ox * pileScale,
+              top: fanOriginY + s.oy * pileScale,
+              transform: `rotate(${s.rotate}deg) scale(${fanScale})`,
               zIndex: CARTRIDGE_VISIBLE_FAN - i,
               opacity: 1,
             }}
@@ -678,11 +679,14 @@ export default function VaultCartridgeStack({
               pos.y,
               footprintW,
               footprintH,
+              fanScale,
+              pileScale,
             );
             const list = cartridgeExpandedXY(i, layout, mobile);
             const pose = heroPose === "list" ? list : scatter;
             const delay = heroMotion ? heroCartridgeTransitionDelay(i, heroPose) : 0;
             const opacity = heroPose === "list" ? 1 : scatter.opacity;
+            const heroScale = heroPose === "list" ? 1 : scatter.scale;
             return (
               <div
                 key={item.id}
@@ -691,7 +695,7 @@ export default function VaultCartridgeStack({
                   position: "fixed",
                   left: pose.x,
                   top: pose.y,
-                  transform: `rotate(${heroPose === "list" ? 0 : scatter.rotate}deg) scale(${heroPose === "list" ? 1 : scatter.scale})`,
+                  transform: `rotate(${heroPose === "list" ? 0 : scatter.rotate}deg) scale(${heroScale})`,
                   zIndex: CARTRIDGE_COUNT - i,
                   opacity,
                   pointerEvents: collapsing ? "none" : "auto",
