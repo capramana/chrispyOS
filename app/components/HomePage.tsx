@@ -8,6 +8,7 @@ import ChisledText from "./ChisledText";
 import {
   DESCRIPTION_SIZE,
   HERO_COMBINED_DARK_SRC,
+  HERO_COMBINED_HEIGHT,
   HERO_COMBINED_LIGHT_SRC,
   HERO_COMBINED_WIDTH,
   HERO_DESCRIPTION_TEXT,
@@ -41,6 +42,7 @@ function HomeHero() {
           alt=""
           draggable={false}
           width={HERO_COMBINED_WIDTH}
+          height={HERO_COMBINED_HEIGHT}
           className="block h-auto w-full"
           style={{ maxWidth: heroCombinedMaxWidth }}
         />
