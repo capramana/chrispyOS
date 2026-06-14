@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { VAULT_NAV_Z_INDEX } from "./vaultRects";
 import "./NavButton.css";
 
 const iconProps = { width: 20, height: 20, strokeWidth: 2, color: "var(--color-primary)" };
@@ -22,6 +24,8 @@ interface NavButtonProps {
 
 export default function NavButton({ icon: Icon, label, href, active, onClick, iconKey, iconAnimation, target, rel, tooltipsReady, onTooltipShown, onTooltipReset }: NavButtonProps) {
   const [visible, setVisible] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState<{ left: number; top: number } | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [ExitingIcon, setExitingIcon] = useState<React.ElementType | null>(null);
   const [exitAnimation, setExitAnimation] = useState("");
@@ -44,11 +48,20 @@ export default function NavButton({ icon: Icon, label, href, active, onClick, ic
     }
   }, [Icon, iconAnimation]);
 
+  const updateTooltipPos = () => {
+    const el = rootRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setTooltipPos({ left: r.left + r.width / 2, top: r.top });
+  };
+
   const handleMouseEnter = () => {
     if (tooltipsReady) {
+      updateTooltipPos();
       setVisible(true);
     } else {
       timerRef.current = setTimeout(() => {
+        updateTooltipPos();
         setVisible(true);
         onTooltipShown();
       }, 1500);
@@ -69,7 +82,7 @@ export default function NavButton({ icon: Icon, label, href, active, onClick, ic
   const buttonClass = "flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-[#2A2A2E] transition-colors";
 
   return (
-    <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+    <div ref={rootRef} className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <div className="relative h-10 w-10 overflow-hidden rounded-full">
         {href ? (
           <a href={href} className={buttonClass} target={target} rel={rel} aria-label={label}>
@@ -92,19 +105,23 @@ export default function NavButton({ icon: Icon, label, href, active, onClick, ic
       {active && (
         <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ backgroundColor: "var(--color-secondary)" }} />
       )}
-      {label && (
+      {label && tooltipPos && createPortal(
         <div
-          className={`absolute bottom-full mb-1 left-1/2 -translate-x-1/2 px-2 py-1 text-xs whitespace-nowrap transition-opacity pointer-events-none ${visible ? "opacity-100" : "opacity-0"}`}
+          className={`fixed -translate-x-1/2 -translate-y-full px-2 py-1 text-xs whitespace-nowrap pointer-events-none ${visible ? "opacity-100" : "opacity-0"}`}
           style={{
+            left: tooltipPos.left,
+            top: tooltipPos.top - 4,
             background: "var(--navbar-bg)",
             border: "var(--navbar-border)",
             boxShadow: "var(--navbar-shadow)",
             borderRadius: 6,
             color: "var(--color-primary)",
+            zIndex: VAULT_NAV_Z_INDEX + 1,
           }}
         >
           {label}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
