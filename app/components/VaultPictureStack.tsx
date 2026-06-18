@@ -15,6 +15,7 @@ import { VAULT_PILE_MARGIN_PX, VAULT_OVERLAY_BACKDROP_BUTTON_CLASS, vaultOverlay
 import { ArrowUpRight } from "iconoir-react";
 import { eventTargetWithin } from "./uiPlacement";
 import { useClientMounted } from "./useClientMounted";
+import { useVaultSpawnEnter, VAULT_SPAWN_ENTER_POSITION_TRANSITION } from "./vaultSpawnEnter";
 
 export type VaultPictureItem = {
   id: string;
@@ -417,6 +418,7 @@ export default function VaultPictureStack({
       : { w: 1200, h: 800 },
   );
   const mounted = useClientMounted();
+  const { entered: spawnEntered, settled: spawnSettled } = useVaultSpawnEnter();
 
   const pointerStartRef = useRef({ x: 0, y: 0 });
   const dragCommittedRef = useRef(false);
@@ -852,7 +854,7 @@ export default function VaultPictureStack({
         transform,
         transformOrigin: "center center",
         visibility: expanded ? "hidden" : "visible",
-        pointerEvents: expanded ? "none" : "auto",
+        pointerEvents: expanded || !spawnEntered ? "none" : "auto",
         transition: motionActive
           ? "none"
           : PILE_SHELL_HOVER_TRANSITION,
@@ -891,16 +893,24 @@ export default function VaultPictureStack({
                   width: w,
                   height: h,
                   zIndex: isVis ? 10 + vp : 5,
-                  opacity: isVis ? 1 : 0,
-                  pointerEvents: isVis ? "auto" : "none",
+                  opacity: isVis && spawnEntered ? 1 : 0,
+                  pointerEvents: isVis && spawnEntered ? "auto" : "none",
                   cursor: isVis ? (dragging ? "grabbing" : "grab") : "default",
-                  transform: isVis
-                    ? `rotate(${(pileHovered ? HOVER_ROTS[vp] : ROTS[vp])}deg) scale(${pileHovered ? 1.03 : 1})`
-                    : "rotate(0deg) scale(0.88)",
-                  boxShadow: isVis
+                  transform:
+                    isVis && spawnEntered
+                      ? `rotate(${(pileHovered ? HOVER_ROTS[vp] : ROTS[vp])}deg) scale(${pileHovered ? 1.03 : 1})`
+                      : "rotate(0deg) scale(0.88)",
+                  boxShadow: isVis && spawnSettled
                     ? `0 ${2 + vp * 2}px ${8 + vp * 4}px rgba(0,0,0,0.32), var(--vault-picture-mat-shadow)`
                     : "none",
-                  transition: pileHovered ? PILE_HOVER_TRANSITION : CARD_TRANSITION,
+                  transition:
+                    !spawnEntered
+                      ? "none"
+                      : pileHovered
+                        ? PILE_HOVER_TRANSITION
+                        : !spawnSettled
+                          ? VAULT_SPAWN_ENTER_POSITION_TRANSITION
+                          : CARD_TRANSITION,
                 }}
               >
                 <VaultPictureMatInner

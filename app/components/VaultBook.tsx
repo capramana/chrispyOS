@@ -17,6 +17,7 @@ import {
   VAULT_BOOK_STAMP,
 } from "./vaultBookChapters";
 import { useClientMounted } from "./useClientMounted";
+import { useVaultSpawnEnter, VAULT_SPAWN_ENTER_TRANSITION } from "./vaultSpawnEnter";
 import "./VaultBook.css";
 
 type VaultBookProps = {
@@ -91,6 +92,7 @@ export default function VaultBook({
   const [backdropEntered, setBackdropEntered] = useState(false);
   const [restRotDeg] = useState(() => randomSpawnRotation());
   const mounted = useClientMounted();
+  const { entered: spawnEntered, settled: spawnSettled } = useVaultSpawnEnter();
 
   const dragRef = useRef<{
     offsetX: number;
@@ -427,13 +429,18 @@ export default function VaultBook({
   const motionActive = dragging || gliding;
   const positionAnimating = open || animBusy;
   const hoverPeek = hovered && !open && !motionActive && !animBusy;
-  const shellRotDeg = open ? 0 : restRotDeg + tiltDeg;
-  const shellTransform = `rotate(${shellRotDeg.toFixed(2)}deg) scale(${dragging ? 1.02 : 1})`;
+  const shellRotDeg = open ? 0 : (spawnEntered ? restRotDeg : 0) + tiltDeg;
+  const shellScale = spawnEntered ? (dragging ? 1.02 : 1) : 0.88;
+  const shellTransform = `rotate(${shellRotDeg.toFixed(2)}deg) scale(${shellScale})`;
   const shellTransition = motionActive
     ? "none"
     : positionAnimating
-      ? "left 0.8s cubic-bezier(0.45, 0, 0.55, 1), top 0.8s cubic-bezier(0.45, 0, 0.55, 1), transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)"
-      : "transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)";
+      ? "left 0.8s cubic-bezier(0.45, 0, 0.55, 1), top 0.8s cubic-bezier(0.45, 0, 0.55, 1), transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease"
+      : !spawnEntered
+        ? "none"
+        : spawnSettled
+          ? "transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease"
+          : VAULT_SPAWN_ENTER_TRANSITION;
   const overlayActive = open || animBusy;
   const paperStyle = {
     "--vault-book-paper-texture": `url("${VAULT_BOOK_PAPER_TEXTURE}")`,
@@ -451,6 +458,8 @@ export default function VaultBook({
     overflow: "visible",
     zIndex: overlayActive ? undefined : zIndex,
     cursor: open ? "default" : dragging ? "grabbing" : "grab",
+    opacity: spawnEntered ? 1 : 0,
+    pointerEvents: spawnEntered ? "auto" : "none",
     transform: shellTransform,
     transformOrigin: "center center",
     transition: shellTransition,

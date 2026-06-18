@@ -37,6 +37,10 @@ import {
 } from "./vaultCartridgeLayout";
 import { useClientMounted } from "./useClientMounted";
 import { eventTargetWithin } from "./uiPlacement";
+import {
+  useVaultSpawnEnter,
+  vaultSpawnLayerTransition,
+} from "./vaultSpawnEnter";
 import "./VaultCartridgeStack.css";
 
 type VaultCartridgeStackProps = {
@@ -124,16 +128,18 @@ function CartridgeImage({ src, alt }: { src: string; alt: string }) {
 function CartridgeCardPose({
   transform,
   transitionDelay,
+  transition,
   children,
 }: {
   transform?: string;
   transitionDelay?: string;
+  transition?: string;
   children: ReactNode;
 }) {
   return (
     <div
       className="vault-cartridge-card__pose"
-      style={{ transform, transitionDelay }}
+      style={{ transform, transitionDelay, transition }}
     >
       {children}
     </div>
@@ -200,6 +206,7 @@ export default function VaultCartridgeStack({
       : { w: 1200, h: 800 },
   );
   const mounted = useClientMounted();
+  const { entered: spawnEntered, settled: spawnSettled } = useVaultSpawnEnter();
 
   const dragRef = useRef<{
     offsetX: number;
@@ -743,7 +750,7 @@ export default function VaultCartridgeStack({
         transform: shellTransform,
         transformOrigin: "center center",
         visibility: expanded ? "hidden" : "visible",
-        pointerEvents: expanded ? "none" : "auto",
+        pointerEvents: expanded || !spawnEntered ? "none" : "auto",
         transition: motionActive
           ? "none"
           : PILE_SHELL_HOVER_TRANSITION,
@@ -760,21 +767,38 @@ export default function VaultCartridgeStack({
     >
       {VAULT_CARTRIDGE_ITEMS.slice(0, CARTRIDGE_VISIBLE_FAN).map((item, i) => {
         const s = CARTRIDGE_SCATTER[i % CARTRIDGE_SCATTER.length]!;
+        const scatterLeft = fanOriginX + s.ox * pileScale * scatterMul;
+        const scatterTop = fanOriginY + s.oy * pileScale * scatterMul;
         return (
           <div
             key={item.id}
             className="vault-cartridge-card vault-cartridge-card--pile"
             style={{
-              left: fanOriginX + s.ox * pileScale * scatterMul,
-              top: fanOriginY + s.oy * pileScale * scatterMul,
+              left: spawnEntered ? scatterLeft : fanOriginX,
+              top: spawnEntered ? scatterTop : fanOriginY,
               zIndex: CARTRIDGE_VISIBLE_FAN - i,
-              opacity: 1,
-              pointerEvents: "auto",
+              opacity: spawnEntered ? 1 : 0,
+              pointerEvents: spawnEntered ? "auto" : "none",
               cursor: dragging || gliding ? "grabbing" : "grab",
+              transition: vaultSpawnLayerTransition(
+                spawnEntered,
+                spawnSettled,
+                motionActive,
+                true,
+              ),
             }}
           >
             <CartridgeCardPose
-              transform={`rotate(${s.rotate}deg) scale(${fanScale})`}
+              transform={
+                spawnEntered
+                  ? `rotate(${s.rotate}deg) scale(${fanScale})`
+                  : `rotate(0deg) scale(${fanScale * 0.88})`
+              }
+              transition={vaultSpawnLayerTransition(
+                spawnEntered,
+                spawnSettled,
+                motionActive,
+              )}
             >
               <CartridgeImage src={item.src} alt={item.alt} />
             </CartridgeCardPose>
