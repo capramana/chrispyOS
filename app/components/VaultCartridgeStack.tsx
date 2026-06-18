@@ -58,6 +58,10 @@ const FRICTION_PER_MS = 0.0052;
 const GLIDE_STOP = 0.1;
 const GAMEBOY_BOOT_DELAY_MS = 300;
 const SCROLL_FADE_MS = 400;
+const CARTRIDGE_HOVER_SCATTER_MUL = 1.08;
+const CARTRIDGE_HOVER_SCALE_MUL = 1.03;
+const PILE_SHELL_HOVER_TRANSITION =
+  "transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)";
 
 function posFromAnchor(cx: number, cy: number, w: number, h: number) {
   return { x: cx - w / 2, y: cy - h / 2 };
@@ -176,6 +180,7 @@ export default function VaultCartridgeStack({
   const [dragging, setDragging] = useState(false);
   const [gliding, setGliding] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const [repPhase, setRepPhase] = useState(false);
   const [heroPose, setHeroPose] = useState<"scatter" | "list">("scatter");
   const [heroMotion, setHeroMotion] = useState(true);
@@ -521,6 +526,7 @@ export default function VaultCartridgeStack({
       const t = performance.now();
       lastPointerRef.current = { x: e.clientX, y: e.clientY, time: t };
       setDragging(true);
+      setHovered(false);
       onInteractionStart(id);
     },
     [cancelGlide, expanded, id, onInteractionStart],
@@ -702,7 +708,16 @@ export default function VaultCartridgeStack({
   }, [repPhase, layout, mobile, disposeRepCards]);
 
   const motionActive = dragging || gliding;
-  const shellTransform = dragging ? "scale(1.02)" : undefined;
+  const pileHovered = hovered && !expanded && !motionActive;
+  const scatterMul =
+    hovered && !motionActive && (!expanded || heroPose === "scatter")
+      ? CARTRIDGE_HOVER_SCATTER_MUL
+      : 1;
+  const shellTransform = dragging
+    ? "scale(1.02)"
+    : pileHovered
+      ? `scale(${CARTRIDGE_HOVER_SCALE_MUL})`
+      : undefined;
   const fanScale = vaultCartridgeFanScale(viewport.w, pileScale);
   const fanCardW = CARTRIDGE_CARD_W * fanScale;
   const fanCardH = CARTRIDGE_CARD_H * fanScale;
@@ -728,11 +743,15 @@ export default function VaultCartridgeStack({
         transform: shellTransform,
         transformOrigin: "center center",
         visibility: expanded ? "hidden" : "visible",
-        pointerEvents: dragging || gliding ? "auto" : "none",
+        pointerEvents: expanded ? "none" : "auto",
         transition: motionActive
           ? "none"
-          : "transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)",
+          : PILE_SHELL_HOVER_TRANSITION,
       }}
+      onPointerEnter={() => {
+        if (!expanded && !motionActive) setHovered(true);
+      }}
+      onPointerLeave={() => setHovered(false)}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
@@ -744,10 +763,10 @@ export default function VaultCartridgeStack({
         return (
           <div
             key={item.id}
-            className="vault-cartridge-card"
+            className="vault-cartridge-card vault-cartridge-card--pile"
             style={{
-              left: fanOriginX + s.ox * pileScale,
-              top: fanOriginY + s.oy * pileScale,
+              left: fanOriginX + s.ox * pileScale * scatterMul,
+              top: fanOriginY + s.oy * pileScale * scatterMul,
               zIndex: CARTRIDGE_VISIBLE_FAN - i,
               opacity: 1,
               pointerEvents: "auto",
@@ -827,7 +846,7 @@ export default function VaultCartridgeStack({
                   footprintW,
                   footprintH,
                   fanScale,
-                  pileScale,
+                  pileScale * scatterMul,
                 );
                 const list = cartridgeExpandedXY(i, layout, mobile);
                 const pose = heroPose === "list" ? list : scatter;

@@ -72,6 +72,12 @@ const PICTURE_MAT_INNER_STYLE: CSSProperties = {
 /** Visible pile indices and rotations (matches `Expandable Stacked Div Prototype.html`). */
 const VIS = [0, 1, 2];
 const ROTS = [4, -7, 11];
+const HOVER_ROTS = [7, -11, 15];
+const HOVER_PILE_SCALE = 1.04;
+const PILE_HOVER_TRANSITION =
+  "transform 0.2s cubic-bezier(0.34, 1.15, 0.64, 1)";
+const PILE_SHELL_HOVER_TRANSITION =
+  "transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)";
 const GAP = 8;
 const PAD = 10;
 
@@ -394,6 +400,7 @@ export default function VaultPictureStack({
   const [gliding, setGliding] = useState(false);
   /** Prototype: `stacked` vs `expanded` */
   const [expanded, setExpanded] = useState(false);
+  const [hovered, setHovered] = useState(false);
   /**
    * When expanded: false = portal cards sit on the stack anchor (so the next paint can
    * move them to the cluster and CSS will interpolate). True = cluster positions from
@@ -699,6 +706,7 @@ export default function VaultPictureStack({
       lastPointerRef.current = { x: e.clientX, y: e.clientY, time: t };
       setDragging(true);
       setTiltDeg(0);
+      setHovered(false);
       onInteractionStart(id);
     },
     [cancelGlide, expanded, id, onInteractionStart],
@@ -818,7 +826,9 @@ export default function VaultPictureStack({
   );
 
   const motionActive = dragging || gliding;
-  const transform = `rotate(${tiltDeg.toFixed(2)}deg) scale(${dragging ? 1.02 : 1})`;
+  const pileHovered = hovered && !expanded && !motionActive;
+  const pileHoverPose = hovered && !expandSpread;
+  const transform = `rotate(${tiltDeg.toFixed(2)}deg) scale(${dragging ? 1.02 : pileHovered ? HOVER_PILE_SCALE : 1})`;
 
   const { innerW, innerH } = stackOuterSize(maxWidth, maxHeight);
   const { ax, ay } = {
@@ -842,11 +852,15 @@ export default function VaultPictureStack({
         transform,
         transformOrigin: "center center",
         visibility: expanded ? "hidden" : "visible",
-        pointerEvents: dragging || gliding ? "auto" : "none",
+        pointerEvents: expanded ? "none" : "auto",
         transition: motionActive
           ? "none"
-          : "transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)",
+          : PILE_SHELL_HOVER_TRANSITION,
       }}
+      onPointerEnter={() => {
+        if (!expanded && !motionActive) setHovered(true);
+      }}
+      onPointerLeave={() => setHovered(false)}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
@@ -881,12 +895,12 @@ export default function VaultPictureStack({
                   pointerEvents: isVis ? "auto" : "none",
                   cursor: isVis ? (dragging ? "grabbing" : "grab") : "default",
                   transform: isVis
-                    ? `rotate(${ROTS[vp]}deg)`
+                    ? `rotate(${(pileHovered ? HOVER_ROTS[vp] : ROTS[vp])}deg) scale(${pileHovered ? 1.03 : 1})`
                     : "rotate(0deg) scale(0.88)",
                   boxShadow: isVis
                     ? `0 ${2 + vp * 2}px ${8 + vp * 4}px rgba(0,0,0,0.32), var(--vault-picture-mat-shadow)`
                     : "none",
-                  transition: CARD_TRANSITION,
+                  transition: pileHovered ? PILE_HOVER_TRANSITION : CARD_TRANSITION,
                 }}
               >
                 <VaultPictureMatInner
@@ -936,7 +950,7 @@ export default function VaultPictureStack({
                 const transform = useClusterPose
                   ? "rotate(0deg)"
                   : isVis
-                    ? `rotate(${ROTS[vp]}deg)`
+                    ? `rotate(${(pileHoverPose ? HOVER_ROTS[vp] : ROTS[vp])}deg) scale(${pileHoverPose ? 1.03 : 1})`
                     : "rotate(0deg) scale(0.88)";
                 const opacity = useClusterPose ? 1 : isVis ? 1 : 0;
                 const boxShadow = useClusterPose

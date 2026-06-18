@@ -16,8 +16,29 @@ type NavBarProps = {
   onActivePageChange: (page: NavPage) => void;
 };
 
-const expandTransition  = { type: "spring" as const, stiffness: 1100, damping: 60, mass: 2 };
-const collapseTransition = { type: "tween" as const, ease: "easeInOut" as const, duration: 0.2 };
+const navExpandEase = [0.24, 0.69, 0.45, 0.94] as const;
+
+const expandTransition = {
+  type: "tween" as const,
+  duration: 0.35,
+  ease: navExpandEase,
+};
+const collapseTransition = { type: "tween" as const, ease: "easeIn" as const, duration: 0.12 };
+
+const FILTER_SLOT_MAX_PX = 112;
+
+const filterEnterTransition = {
+  maxWidth: { duration: 0.35, ease: navExpandEase },
+  opacity: { duration: 0.12, ease: "easeOut" as const, delay: 0.06 },
+  filter: { duration: 0.12, ease: "easeOut" as const, delay: 0.06 },
+  scale: { duration: 0.12, ease: navExpandEase, delay: 0.06 },
+};
+
+const filterExitTransition = {
+  maxWidth: { duration: 0.12, ease: "easeIn" as const },
+  opacity: { duration: 0.06, ease: "easeIn" as const },
+  filter: { duration: 0.06, ease: "easeIn" as const },
+};
 
 export default function NavBar({ activePage, onActivePageChange }: NavBarProps) {
   const mounted = useClientMounted();
@@ -112,13 +133,24 @@ export default function NavBar({ activePage, onActivePageChange }: NavBarProps) 
                   <motion.div
                     layout="position"
                     variants={{
-                      visible: { opacity: 1, filter: "blur(0px)", scale: 1,   transition: { duration: 0.225, ease: "easeOut" } },
-                      hidden:  { opacity: 0, filter: "blur(4px)", scale: 0.85, transition: { duration: 0.1, ease: "easeInOut" } },
+                      visible: {
+                        maxWidth: FILTER_SLOT_MAX_PX,
+                        opacity: 1,
+                        filter: "blur(0px)",
+                        scale: 1,
+                        transition: filterEnterTransition,
+                      },
+                      hidden: {
+                        maxWidth: 0,
+                        opacity: 0,
+                        filter: "blur(4px)",
+                        transition: filterExitTransition,
+                      },
                     }}
                     initial="hidden"
                     animate="visible"
                     exit="hidden"
-                    className="flex shrink-0 items-center"
+                    className="flex shrink-0 items-center overflow-hidden"
                   >
                     <div className="w-3 shrink-0" />
                     <NavButton icon={FilterIcon} label="Filter" {...sharedProps} />

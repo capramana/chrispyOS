@@ -39,6 +39,10 @@ const GLIDE_VELOCITY_CAP = 0.28;
 const FRICTION_PER_MS = 0.0052;
 const GLIDE_STOP = 0.1;
 
+const BOOK_HOVER_PEEK_DEG = -28;
+const BOOK_HOVER_SCALE_MUL = 1.03;
+const BOOK_HOVER_TRANSITION_S = 0.2;
+
 function randomSpawnRotation() {
   const sign = Math.random() < 0.5 ? -1 : 1;
   return sign * (10 + Math.random() * 5);
@@ -82,6 +86,7 @@ export default function VaultBook({
   const [dragging, setDragging] = useState(false);
   const [gliding, setGliding] = useState(false);
   const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const [animBusy, setAnimBusy] = useState(false);
   const [backdropEntered, setBackdropEntered] = useState(false);
   const [restRotDeg] = useState(() => randomSpawnRotation());
@@ -171,7 +176,6 @@ export default function VaultBook({
 
   const openBook = useCallback(() => {
     if (animBusy || open) return;
-    setAnimBusy(true);
     storeClosedAnchor(true);
     setBackdropEntered(false);
     const layout = openBookLayout(footprintW, footprintH);
@@ -183,6 +187,7 @@ export default function VaultBook({
       suppressCloseClickTimeoutRef.current = null;
     }, 400);
     setOpen(true);
+    setAnimBusy(true);
     requestAnimationFrame(() => {
       posRef.current = { x: layout.x, y: layout.y };
       setPos({ x: layout.x, y: layout.y });
@@ -293,6 +298,7 @@ export default function VaultBook({
       lastPointerRef.current = { x: e.clientX, y: e.clientY, time: t };
       setDragging(true);
       setTiltDeg(0);
+      setHovered(false);
       onInteractionStart(id);
     },
     [cancelGlide, id, onInteractionStart, open],
@@ -420,6 +426,7 @@ export default function VaultBook({
 
   const motionActive = dragging || gliding;
   const positionAnimating = open || animBusy;
+  const hoverPeek = hovered && !open && !motionActive && !animBusy;
   const shellRotDeg = open ? 0 : restRotDeg + tiltDeg;
   const shellTransform = `rotate(${shellRotDeg.toFixed(2)}deg) scale(${dragging ? 1.02 : 1})`;
   const shellTransition = motionActive
@@ -457,6 +464,10 @@ export default function VaultBook({
       data-spawn-peer={id}
       className="vault-book-root vault-artifact touch-none select-none outline-none focus:outline-none"
       style={shellStyle}
+      onPointerEnter={() => {
+        if (!open && !motionActive) setHovered(true);
+      }}
+      onPointerLeave={() => setHovered(false)}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
@@ -470,9 +481,18 @@ export default function VaultBook({
           transformOrigin: open ? "0% 50%" : "center center",
         }}
         initial={{ scale: closedScale }}
-        animate={{ scale: open ? openScale : closedScale }}
+        animate={{
+          scale: open
+            ? openScale
+            : hoverPeek
+              ? closedScale * BOOK_HOVER_SCALE_MUL
+              : closedScale,
+        }}
         transition={{
-          scale: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+          scale: {
+            duration: positionAnimating ? 0.6 : BOOK_HOVER_TRANSITION_S,
+            ease: [0.22, 1, 0.36, 1],
+          },
         }}
         onClick={
           open
@@ -570,11 +590,16 @@ export default function VaultBook({
           }}
           initial={{ rotateY: 0, z: 13, y: "-50%" }}
           animate={{
-            rotateY: open ? -180 : 0,
+            rotateY: open ? -180 : hoverPeek ? BOOK_HOVER_PEEK_DEG : 0,
             z: open ? -1 : 13,
             y: "-50%",
           }}
-          transition={{ duration: 0.8, ease: [0.45, 0, 0.55, 1] }}
+          transition={{
+            duration: positionAnimating ? 0.8 : BOOK_HOVER_TRANSITION_S,
+            ease: positionAnimating
+              ? [0.45, 0, 0.55, 1]
+              : [0.22, 1, 0.36, 1],
+          }}
         >
           <div className="vault-book__half vault-book__half--front">
             <div className="vault-book__spine" aria-hidden />
