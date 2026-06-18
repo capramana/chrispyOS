@@ -105,14 +105,15 @@ export default function MusicPlayer() {
     const a = audioRef.current;
     if (!a) return;
     const onEnd = () => {
-      stopPlayback();
+      playOnLoadRef.current = true;
+      setCurrentTrack((i) => (i + 1) % tracks.length);
     };
     a.addEventListener("ended", onEnd);
     return () => {
       a.removeEventListener("ended", onEnd);
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [stopPlayback]);
+  }, []);
 
   useEffect(() => {
     const a = audioRef.current;
