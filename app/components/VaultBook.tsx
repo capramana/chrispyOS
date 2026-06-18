@@ -622,9 +622,9 @@ export default function VaultBook({
                 </div>
                 <div>All rights reserved.</div>
                 <div>
-                  Published in the United States of America
+                  Published in the United States of America by
                   <br />
-                  by Humane Institute on LED
+                  Christopher Pramana on Cursor and Claude Code
                 </div>
                 <div>
                   Generational Partners

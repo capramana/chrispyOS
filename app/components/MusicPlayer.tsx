@@ -76,43 +76,35 @@ export default function MusicPlayer() {
     animateRef.current = animate;
   }, [animate]);
 
-  const stopPlayback = useCallback(() => {
-    const a = audioRef.current;
-    if (a) a.pause();
+  const stopDiscAnimation = useCallback(() => {
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
     lastTimeRef.current = null;
-    setIsPlaying(false);
   }, []);
 
-  const beginPlayback = useCallback(
-    (a: HTMLAudioElement, loadId: number) => {
-      void a.play()
-        .then(() => {
-          if (loadId !== trackLoadIdRef.current) return;
-          setIsPlaying(true);
-          animationRef.current = requestAnimationFrame(animate);
-        })
-        .catch(() => {
-          if (loadId !== trackLoadIdRef.current) return;
-          setIsPlaying(false);
-        });
-    },
-    [animate],
-  );
+  const stopPlayback = useCallback(() => {
+    audioRef.current?.pause();
+  }, []);
+
+  const beginPlayback = useCallback((a: HTMLAudioElement, loadId: number) => {
+    void a.play().catch(() => {
+      if (loadId !== trackLoadIdRef.current) return;
+      setIsPlaying(false);
+    });
+  }, []);
+
+  const skipTrack = useCallback((delta: -1 | 1) => {
+    playOnLoadRef.current = true;
+    setCurrentTrack((i) => (i + delta + tracks.length) % tracks.length);
+  }, []);
 
   const startPlayback = useCallback(() => {
     const a = audioRef.current;
     if (!a) return;
     beginPlayback(a, trackLoadIdRef.current);
   }, [beginPlayback]);
-
-  const skipTrack = useCallback((delta: -1 | 1) => {
-    playOnLoadRef.current = true;
-    setCurrentTrack((i) => (i + delta + tracks.length) % tracks.length);
-  }, []);
 
   const togglePlay = () => {
     if (isPlaying) stopPlayback();
@@ -122,18 +114,30 @@ export default function MusicPlayer() {
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
-    const onEnd = () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
+
+    const onPlay = () => {
+      setIsPlaying(true);
+      if (animationRef.current === null) {
+        animationRef.current = requestAnimationFrame((t) => animateRef.current(t));
       }
-      lastTimeRef.current = null;
-      setIsPlaying(false);
-      skipTrack(1);
     };
+
+    const onPause = () => {
+      stopDiscAnimation();
+      setIsPlaying(false);
+    };
+
+    const onEnd = () => skipTrack(1);
+
+    a.addEventListener("play", onPlay);
+    a.addEventListener("pause", onPause);
     a.addEventListener("ended", onEnd);
-    return () => a.removeEventListener("ended", onEnd);
-  }, [skipTrack]);
+    return () => {
+      a.removeEventListener("play", onPlay);
+      a.removeEventListener("pause", onPause);
+      a.removeEventListener("ended", onEnd);
+    };
+  }, [skipTrack, stopDiscAnimation]);
 
   useEffect(() => {
     const a = audioRef.current;
@@ -142,21 +146,14 @@ export default function MusicPlayer() {
     const loadId = ++trackLoadIdRef.current;
 
     a.pause();
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = null;
-    }
-    lastTimeRef.current = null;
+    stopDiscAnimation();
     a.load();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset disc + playing UI on track change
     setRotation(0);
 
     const shouldPlay = playOnLoadRef.current;
     playOnLoadRef.current = false;
-    if (!shouldPlay) {
-      setIsPlaying(false);
-      return;
-    }
+    if (!shouldPlay) return;
 
     const tryPlay = () => {
       if (loadId !== trackLoadIdRef.current) return;
@@ -167,7 +164,7 @@ export default function MusicPlayer() {
     else a.addEventListener("canplay", tryPlay, { once: true });
 
     return () => a.removeEventListener("canplay", tryPlay);
-  }, [track.src, beginPlayback]);
+  }, [track.src, beginPlayback, stopDiscAnimation]);
 
   const fade = (show: boolean) => ({
     opacity: show ? 1 : 0,

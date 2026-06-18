@@ -139,8 +139,9 @@ export default function NavBar({ activePage, onActivePageChange }: NavBarProps) 
             </div>
           </div>
         </div>
-        <div className="navbar-pill-music relative z-[1] flex shrink-0 items-center gap-1 py-2 pr-2 pl-1">
+        <div className="navbar-pill-music relative z-[1] flex shrink-0 items-center py-2 pr-2 pl-1">
           <div className="mx-1 h-6 w-px shrink-0 bg-gray-200 dark:bg-[#444]" />
+          <div className="w-3 shrink-0" />
           <MusicPlayer />
         </div>
       </motion.div>
