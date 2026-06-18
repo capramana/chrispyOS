@@ -13,16 +13,34 @@ interface Track {
 
 const tracks: Track[] = [
   {
-    title: "Carlos (Freddit2B)",
+    title: "Carlos(Freddit2B)",
     artist: "Fred again..",
     src: "/music/songs/Carlos(Freddit2B).mp3",
     albumArt: "/music/covers/carlos.jpg",
   },
   {
-    title: "Valentina (Tokyo)",
+    title: "Fleur-De-Lis",
+    artist: "Jenevieve, Lous and the Yakuza",
+    src: "/music/songs/Fleur-De-Lis.mp3",
+    albumArt: "/music/covers/fleur-de-lis.png",
+  },
+  {
+    title: "Teach Me How To Love",
+    artist: "Galdive",
+    src: "/music/songs/Teach-Me-How-To-Love.mp3",
+    albumArt: "/music/covers/teach-me-how-to-love.jpg",
+  },
+  {
+    title: "Kimpton",
+    artist: "Barry Can't Swim",
+    src: "/music/songs/Kimpton.mp3",
+    albumArt: "/music/covers/kimpton.png",
+  },
+  {
+    title: "ModeratFrank(Sketch2)",
     artist: "Fred again..",
-    src: "/music/songs/Valentina(Tokyo).m4a",
-    albumArt: "/music/covers/valentina.png",
+    src: "/music/songs/ModeratFrank(Sketch2).mp3",
+    albumArt: "/music/covers/moderat-frank-sketch2.jpg",
   },
 ];
 
@@ -91,10 +109,10 @@ export default function MusicPlayer() {
     beginPlayback(a, trackLoadIdRef.current);
   }, [beginPlayback]);
 
-  const skipTrack = (delta: -1 | 1) => {
+  const skipTrack = useCallback((delta: -1 | 1) => {
     playOnLoadRef.current = true;
     setCurrentTrack((i) => (i + delta + tracks.length) % tracks.length);
-  };
+  }, []);
 
   const togglePlay = () => {
     if (isPlaying) stopPlayback();
@@ -105,15 +123,17 @@ export default function MusicPlayer() {
     const a = audioRef.current;
     if (!a) return;
     const onEnd = () => {
-      playOnLoadRef.current = true;
-      setCurrentTrack((i) => (i + 1) % tracks.length);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      lastTimeRef.current = null;
+      setIsPlaying(false);
+      skipTrack(1);
     };
     a.addEventListener("ended", onEnd);
-    return () => {
-      a.removeEventListener("ended", onEnd);
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    };
-  }, []);
+    return () => a.removeEventListener("ended", onEnd);
+  }, [skipTrack]);
 
   useEffect(() => {
     const a = audioRef.current;

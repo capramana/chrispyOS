@@ -3,7 +3,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { HomeSimple as HomeIcon, Edit as JournalIcon, BookmarkBook as GridIcon, HalfMoon as MoonIcon, SunLight as SunIcon, MailOut as MailIcon, Filter as FilterIcon, X as XIcon } from "iconoir-react";
+import { HomeSimple as HomeIcon, Edit as JournalIcon, Safe as VaultIcon, HalfMoon as MoonIcon, SunLight as SunIcon, MailOut as MailIcon, Filter as FilterIcon, X as XIcon } from "iconoir-react";
 import type { NavPage } from "../types/nav-page";
 import MusicPlayer from "./MusicPlayer";
 import NavButton from "./NavButton";
@@ -27,7 +27,7 @@ export default function NavBar({ activePage, onActivePageChange }: NavBarProps) 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollHints, setScrollHints] = useState({ left: false, right: false });
 
-  const showFilter = activePage === "writing" || activePage === "vault";
+  const showFilter = activePage === "writing";
 
   const updateScrollHints = useCallback(() => {
     const el = scrollRef.current;
@@ -103,7 +103,7 @@ export default function NavBar({ activePage, onActivePageChange }: NavBarProps) 
               <div className="w-3 shrink-0" />
               <NavButton icon={JournalIcon} label="Writing" active={activePage === "writing"} onClick={() => onActivePageChange("writing")} {...sharedProps} />
               <div className="w-3 shrink-0" />
-              <NavButton icon={GridIcon} label="Vault" active={activePage === "vault"} onClick={() => onActivePageChange("vault")} {...sharedProps} />
+              <NavButton icon={VaultIcon} label="Vault" active={activePage === "vault"} onClick={() => onActivePageChange("vault")} {...sharedProps} />
               <div className="w-3 shrink-0" />
               <div className="mx-1 h-6 w-px shrink-0 bg-gray-200 dark:bg-[#444]" />
 

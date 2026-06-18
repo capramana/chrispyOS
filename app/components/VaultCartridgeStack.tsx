@@ -63,10 +63,6 @@ function posFromAnchor(cx: number, cy: number, w: number, h: number) {
   return { x: cx - w / 2, y: cy - h / 2 };
 }
 
-function lerp(a: number, b: number, t: number) {
-  return a * (1 - t) + b * t;
-}
-
 function bindCartridgeFilterRepaint(root: ParentNode | null): () => void {
   if (!root) return () => {};
 
@@ -219,8 +215,6 @@ export default function VaultCartridgeStack({
   const expandTimerRef = useRef<number | null>(null);
   const bootTimerRef = useRef<number | null>(null);
   const scrollPosRef = useRef(0);
-  const currentScrollRef = useRef(0);
-  const scrollRafRef = useRef<number | null>(null);
   const isDraggingScrollRef = useRef(false);
   const scrollDragStartRef = useRef(0);
   const repLayerRef = useRef<HTMLDivElement | null>(null);
@@ -359,47 +353,37 @@ export default function VaultCartridgeStack({
     stopMedia();
   }, [stopMedia]);
 
-  const stopScrollLoop = useCallback(() => {
-    if (scrollRafRef.current !== null) {
-      cancelAnimationFrame(scrollRafRef.current);
-      scrollRafRef.current = null;
-    }
+  const resetRepScroll = useCallback(() => {
     isDraggingScrollRef.current = false;
     scrollPosRef.current = 0;
-    currentScrollRef.current = 0;
   }, []);
 
   const disposeRepCards = useCallback(
     (scroll: number) => {
+      scrollPosRef.current = scroll;
       const step = mobile ? CARTRIDGE_STEP_H : CARTRIDGE_STEP_V;
       const wrap = CARTRIDGE_COUNT * step;
+      if (Math.abs(scrollPosRef.current) > wrap * 1000) {
+        scrollPosRef.current -= Math.round(scrollPosRef.current / wrap) * wrap;
+      }
+      const layoutScroll = scrollPosRef.current;
       repCardElsRef.current.forEach((el, row) => {
         if (!el) return;
-        const { x, y } = cartridgeRepCardPos(row, scroll, layout, mobile);
+        const { x, y } = cartridgeRepCardPos(row, layoutScroll, layout, mobile);
         el.style.left = `${x}px`;
         el.style.top = `${y}px`;
       });
-      if (Math.abs(scrollPosRef.current) > wrap * 1000) {
-        const excess = Math.round(scrollPosRef.current / wrap) * wrap;
-        scrollPosRef.current -= excess;
-        currentScrollRef.current -= excess;
-      }
     },
     [layout, mobile],
   );
 
-  const startScrollLoop = useCallback(() => {
-    const tick = () => {
-      scrollRafRef.current = requestAnimationFrame(tick);
-      currentScrollRef.current = lerp(
-        currentScrollRef.current,
-        scrollPosRef.current,
-        0.1,
-      );
-      disposeRepCards(currentScrollRef.current);
-    };
-    tick();
-  }, [disposeRepCards]);
+  const updateRepScroll = useCallback(
+    (delta: number) => {
+      scrollPosRef.current += delta;
+      disposeRepCards(scrollPosRef.current);
+    },
+    [disposeRepCards],
+  );
 
   const expandStack = useCallback(() => {
     clearExpandTimer();
@@ -419,15 +403,12 @@ export default function VaultCartridgeStack({
       expandTimerRef.current = null;
       setHeroMotion(false);
       setRepPhase(true);
-      if (needsScroll) startScrollLoop();
     }, cartridgeHeroAnimMs("list") + 80);
   }, [
     clearExpandTimer,
     clearScrollFadeHoldTimer,
-    needsScroll,
     resetSelection,
     scheduleBootVideo,
-    startScrollLoop,
   ]);
 
   const collapseStack = useCallback(() => {
@@ -438,7 +419,7 @@ export default function VaultCartridgeStack({
     beginScrollFadeExit(scatterMs + SCROLL_FADE_MS);
     clearExpandTimer();
     resetSelection();
-    stopScrollLoop();
+    resetRepScroll();
     setRepPhase(false);
     setBackdropEntered(false);
     setHeroMotion(false);
@@ -459,7 +440,7 @@ export default function VaultCartridgeStack({
       setHeroPose("scatter");
       setHeroMotion(true);
     }, scatterMs);
-  }, [beginScrollFadeExit, clearExpandTimer, expanded, resetSelection, stopScrollLoop]);
+  }, [beginScrollFadeExit, clearExpandTimer, expanded, resetSelection, resetRepScroll]);
 
   const startGlide = useCallback(
     (vx: number, vy: number) => {
@@ -604,9 +585,9 @@ export default function VaultCartridgeStack({
       clearExpandTimer();
       clearBootTimer();
       clearScrollFadeHoldTimer();
-      stopScrollLoop();
+      resetRepScroll();
     },
-    [cancelGlide, clearBootTimer, clearExpandTimer, clearScrollFadeHoldTimer, stopScrollLoop],
+    [cancelGlide, clearBootTimer, clearExpandTimer, clearScrollFadeHoldTimer, resetRepScroll],
   );
 
   useEffect(() => {
@@ -660,10 +641,11 @@ export default function VaultCartridgeStack({
 
     const onWheel = (e: WheelEvent) => {
       if (mobile) {
-        scrollPosRef.current -=
-          (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * 0.8;
+        updateRepScroll(
+          -(Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * 0.8,
+        );
       } else {
-        scrollPosRef.current -= e.deltaY * 0.8;
+        updateRepScroll(-e.deltaY * 0.8);
       }
     };
 
@@ -680,7 +662,7 @@ export default function VaultCartridgeStack({
       if (!pt) return;
       const cur = mobile ? pt.clientX : pt.clientY;
       const delta = cur - scrollDragStartRef.current;
-      scrollPosRef.current += delta * 2;
+      updateRepScroll(delta * 2);
       scrollDragStartRef.current = cur;
     };
 
@@ -711,11 +693,11 @@ export default function VaultCartridgeStack({
       window.removeEventListener("mouseup", onDragEnd);
       window.removeEventListener("touchend", onDragEnd);
     };
-  }, [mobile, needsScroll, repPhase]);
+  }, [mobile, needsScroll, repPhase, updateRepScroll]);
 
   useLayoutEffect(() => {
     if (repPhase) {
-      disposeRepCards(currentScrollRef.current);
+      disposeRepCards(scrollPosRef.current);
     }
   }, [repPhase, layout, mobile, disposeRepCards]);
 

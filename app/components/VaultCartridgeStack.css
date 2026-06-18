@@ -28,6 +28,8 @@
 
 .vault-cartridge-card--rep {
   cursor: pointer;
+  /* Rep positions are set every frame in JS — no left/top tween (wrap jumps instantly). */
+  transition: none;
 }
 
 .vault-cartridge-card--rep .vault-cartridge-card__pose {

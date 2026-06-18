@@ -79,9 +79,7 @@ export default function HomePage() {
         <HomeHero />
       </div>
 
-      {(activePage === "writing" || activePage === "vault") && (
-        <WorkInProgressSticker />
-      )}
+      {activePage === "writing" && <WorkInProgressSticker />}
 
       {activePage === "vault" && <VaultArtifacts />}
 
