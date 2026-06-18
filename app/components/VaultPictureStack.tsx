@@ -900,7 +900,7 @@ export default function VaultPictureStack({
                     isVis && spawnEntered
                       ? `rotate(${(pileHovered ? HOVER_ROTS[vp] : ROTS[vp])}deg) scale(${pileHovered ? 1.03 : 1})`
                       : "rotate(0deg) scale(0.88)",
-                  boxShadow: isVis && spawnSettled
+                  boxShadow: isVis && spawnEntered
                     ? `0 ${2 + vp * 2}px ${8 + vp * 4}px rgba(0,0,0,0.32), var(--vault-picture-mat-shadow)`
                     : "none",
                   transition:
