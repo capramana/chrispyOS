@@ -55,6 +55,7 @@ const VAULT_STACK_PEER_IDS = [
   "vault-pictures",
   "vault-book",
   "vault-cartridges",
+  "vault-postit",
 ] as const;
 
 function stackCentersFromPlacement(

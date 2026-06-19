@@ -4,6 +4,7 @@ import {
   CARTRIDGE_FAN_SCALE,
   CARTRIDGE_SCATTER,
 } from "./vaultCartridgeLayout";
+import { VAULT_POSTIT_COLLAPSED, VAULT_POSTIT_EXPANDED } from "./vaultPostItLayout";
 
 export const VAULT_PILE_MARGIN_PX = 54;
 const VAULT_MAT_OUTER_GROW_PX = 8;
@@ -127,6 +128,17 @@ export function vaultBookOpenLayout(
 const VAULT_BOOK_CLOSED_BASE_SCALE = 0.5;
 const VAULT_BOOK_FOOTPRINT_PAD_PX = 50;
 const CARTRIDGE_SHADOW_BLEED_PX = 44;
+const VAULT_POSTIT_FOOTPRINT_PAD_PX = 36;
+
+export function vaultPostItBounds(pileScale = 1) {
+  const noteSize = VAULT_POSTIT_COLLAPSED * pileScale;
+  const pad = VAULT_POSTIT_FOOTPRINT_PAD_PX * pileScale;
+  return { w: Math.ceil(noteSize + pad), h: Math.ceil(noteSize + pad), noteSize };
+}
+
+export function vaultPostItExpandedSize(pileScale = 1) {
+  return Math.round(VAULT_POSTIT_EXPANDED * pileScale);
+}
 
 export function vaultCartridgeFanScale(viewportW: number, pileScale?: number) {
   return CARTRIDGE_FAN_SCALE * (pileScale ?? vaultCollapsedScale(viewportW));

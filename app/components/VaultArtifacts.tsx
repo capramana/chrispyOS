@@ -4,6 +4,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import VaultPictureStack, { type VaultPictureItem } from "./VaultPictureStack";
 import VaultBook from "./VaultBook";
 import VaultCartridgeStack from "./VaultCartridgeStack";
+import VaultPostIt from "./VaultPostIt";
 import { placeVaultStacks, vaultStacksValid } from "./vaultPlacement";
 import {
   reclampVaultCenter,
@@ -15,18 +16,25 @@ import {
   vaultBookOpenScale,
   vaultCartridgeBounds,
   vaultCollapsedScale,
+  vaultPostItBounds,
+  vaultPostItExpandedSize,
   vaultStackBounds,
   VAULT_RESPONSIVE_BREAKPOINT,
 } from "./vaultRects";
 import { boxFromTopLeft, registerSpawnPeer } from "./uiPlacement";
 
-/** One draggable entity per stack type (pictures, books, text, …). */
-const STACK_IDS = ["stack-pictures", "stack-books", "stack-cartridges"] as const;
+const STACK_IDS = [
+  "stack-pictures",
+  "stack-books",
+  "stack-cartridges",
+  "stack-postit",
+] as const;
 
 const STACK_SPAWN_PEER: Record<(typeof STACK_IDS)[number], string> = {
   "stack-pictures": "vault-pictures",
   "stack-books": "vault-book",
   "stack-cartridges": "vault-cartridges",
+  "stack-postit": "vault-postit",
 };
 
 const PICTURE_FOOTPRINT = { maxWidth: 140, maxHeight: 175 } as const;
@@ -44,7 +52,10 @@ function stackBounds(
     );
   }
   if (stackId === "stack-books") return vaultBookBounds(viewportW, pileScale);
-  return vaultCartridgeBounds(viewportW, pileScale);
+  if (stackId === "stack-cartridges") {
+    return vaultCartridgeBounds(viewportW, pileScale);
+  }
+  return vaultPostItBounds(pileScale);
 }
 
 function stackItems(viewportW: number, pileScale: number) {
@@ -366,11 +377,18 @@ export default function VaultArtifacts() {
   const [pictureLeft, pictureTop] = stackPositions["stack-pictures"];
   const [bookLeft, bookTop] = stackPositions["stack-books"];
   const [cartridgeLeft, cartridgeTop] = stackPositions["stack-cartridges"];
+  const [postItLeft, postItTop] = stackPositions["stack-postit"];
   const { w: bookW, h: bookH } = vaultBookBounds(viewport.w, pileScale);
   const { w: cartridgeW, h: cartridgeH } = vaultCartridgeBounds(
     viewport.w,
     pileScale,
   );
+  const {
+    w: postItW,
+    h: postItH,
+    noteSize: postItNoteSize,
+  } = vaultPostItBounds(pileScale);
+  const postItExpandedSize = vaultPostItExpandedSize(pileScale);
 
   return (
     <>
@@ -404,6 +422,17 @@ export default function VaultArtifacts() {
         footprintW={cartridgeW}
         footprintH={cartridgeH}
         pileScale={pileScale}
+      />
+      <VaultPostIt
+        id="stack-postit"
+        zIndex={zFor("stack-postit")}
+        onInteractionStart={onInteractionStart}
+        initialLeft={postItLeft}
+        initialTop={postItTop}
+        footprintW={postItW}
+        footprintH={postItH}
+        noteSize={postItNoteSize}
+        expandedSize={postItExpandedSize}
       />
     </>
   );
