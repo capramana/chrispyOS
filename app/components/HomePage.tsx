@@ -77,6 +77,14 @@ function HomeHero() {
 
 export default function HomePage() {
   const [activePage, setActivePage] = useState<NavPage>("home");
+  const [vaultEnterCount, setVaultEnterCount] = useState(0);
+
+  const handleActivePageChange = (page: NavPage) => {
+    if (page === "vault" && activePage !== "vault") {
+      setVaultEnterCount((count) => count + 1);
+    }
+    setActivePage(page);
+  };
 
   return (
     <div className="relative min-h-screen bg-[var(--background)]">
@@ -88,11 +96,13 @@ export default function HomePage() {
 
       {activePage === "writing" && <WorkInProgressSticker />}
 
-      {activePage === "vault" && <VaultArtifacts />}
+      {activePage === "vault" && (
+        <VaultArtifacts vaultEnterCount={vaultEnterCount} />
+      )}
 
       <SiteFooter />
 
-      <NavBar activePage={activePage} onActivePageChange={setActivePage} />
+      <NavBar activePage={activePage} onActivePageChange={handleActivePageChange} />
 
       <Graffiti />
     </div>

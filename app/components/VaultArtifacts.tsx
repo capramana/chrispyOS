@@ -223,7 +223,11 @@ const PICTURE_ITEMS: VaultPictureItem[] = [
 
 const MOUNT_PLACE_MAX_ATTEMPTS = 30;
 
-export default function VaultArtifacts() {
+type VaultArtifactsProps = {
+  vaultEnterCount: number;
+};
+
+export default function VaultArtifacts({ vaultEnterCount }: VaultArtifactsProps) {
   const [viewport, setViewport] = useState(() =>
     typeof window !== "undefined"
       ? { w: window.innerWidth, h: window.innerHeight }
@@ -424,6 +428,7 @@ export default function VaultArtifacts() {
         pileScale={pileScale}
       />
       <VaultPostIt
+        key={vaultEnterCount}
         id="stack-postit"
         zIndex={zFor("stack-postit")}
         onInteractionStart={onInteractionStart}
