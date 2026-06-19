@@ -402,6 +402,7 @@ export default function VaultPictureStack({
   /** Prototype: `stacked` vs `expanded` */
   const [expanded, setExpanded] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [tapPending, setTapPending] = useState(false);
   /**
    * When expanded: false = portal cards sit on the stack anchor (so the next paint can
    * move them to the cluster and CSS will interpolate). True = cluster positions from
@@ -707,8 +708,8 @@ export default function VaultPictureStack({
       const t = performance.now();
       lastPointerRef.current = { x: e.clientX, y: e.clientY, time: t };
       setDragging(true);
+      setTapPending(true);
       setTiltDeg(0);
-      setHovered(false);
       onInteractionStart(id);
     },
     [cancelGlide, expanded, id, onInteractionStart],
@@ -727,6 +728,8 @@ export default function VaultPictureStack({
         if (!dragCommittedRef.current) {
           dragCommittedRef.current = true;
           userMovedRef.current = true;
+          setHovered(false);
+          setTapPending(false);
         }
       }
       const now = performance.now();
@@ -764,6 +767,7 @@ export default function VaultPictureStack({
       const wasTap = !dragCommittedRef.current;
       dragRef.current = null;
       setDragging(false);
+      setTapPending(false);
       try {
         elRef.current?.releasePointerCapture(e.pointerId);
       } catch {
@@ -828,8 +832,9 @@ export default function VaultPictureStack({
   );
 
   const motionActive = dragging || gliding;
-  const pileHovered = hovered && !expanded && !motionActive;
-  const pileHoverPose = hovered && !expandSpread;
+  const hoverAffordance = hovered || tapPending;
+  const pileHovered = hoverAffordance && !expanded && !gliding;
+  const pileHoverPose = hoverAffordance && !expandSpread;
   const transform = `rotate(${tiltDeg.toFixed(2)}deg) scale(${dragging ? 1.02 : pileHovered ? HOVER_PILE_SCALE : 1})`;
 
   const { innerW, innerH } = stackOuterSize(maxWidth, maxHeight);

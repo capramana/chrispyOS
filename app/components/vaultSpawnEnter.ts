@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 
 const MOTION_MS = 280;
 const OPACITY_MS = 200;
@@ -27,28 +27,70 @@ export function vaultSpawnLayerTransition(
   return undefined;
 }
 
-export function useVaultSpawnEnter() {
-  const [entered, setEntered] = useState(false);
-  const [settled, setSettled] = useState(false);
+type SpawnStore = {
+  entered: boolean;
+  settled: boolean;
+  listeners: Set<() => void>;
+  rafId: number;
+  timerId: number;
+};
 
-  useLayoutEffect(() => {
-    let alive = true;
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (alive) setEntered(true);
-      });
+function createSpawnStore(): SpawnStore {
+  return {
+    entered: false,
+    settled: false,
+    listeners: new Set(),
+    rafId: 0,
+    timerId: 0,
+  };
+}
+
+function start(store: SpawnStore) {
+  if (store.entered || store.rafId) return;
+  store.rafId = requestAnimationFrame(() => {
+    store.rafId = requestAnimationFrame(() => {
+      store.rafId = 0;
+      store.entered = true;
+      store.listeners.forEach((listener) => listener());
+      store.timerId = window.setTimeout(() => {
+        store.timerId = 0;
+        store.settled = true;
+        store.listeners.forEach((listener) => listener());
+      }, VAULT_SPAWN_ENTER_MS);
     });
-    return () => {
-      alive = false;
-      cancelAnimationFrame(id);
-    };
-  }, []);
+  });
+}
 
-  useEffect(() => {
-    if (!entered) return;
-    const id = window.setTimeout(() => setSettled(true), VAULT_SPAWN_ENTER_MS);
-    return () => window.clearTimeout(id);
-  }, [entered]);
+function dispose(store: SpawnStore) {
+  if (store.rafId) cancelAnimationFrame(store.rafId);
+  if (store.timerId) window.clearTimeout(store.timerId);
+  store.rafId = 0;
+  store.timerId = 0;
+  store.entered = false;
+  store.settled = false;
+}
+
+export function useVaultSpawnEnter() {
+  const store = useMemo(() => createSpawnStore(), []);
+
+  const subscribe = useCallback((onStoreChange: () => void) => {
+    store.listeners.add(onStoreChange);
+    start(store);
+    return () => store.listeners.delete(onStoreChange);
+  }, [store]);
+
+  useEffect(() => () => dispose(store), [store]);
+
+  const entered = useSyncExternalStore(
+    subscribe,
+    () => store.entered,
+    () => false,
+  );
+  const settled = useSyncExternalStore(
+    subscribe,
+    () => store.settled,
+    () => false,
+  );
 
   return { entered, settled };
 }

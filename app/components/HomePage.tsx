@@ -17,18 +17,25 @@ import {
 import SiteHeader from "./SiteHeader";
 import SiteFooter from "./SiteFooter";
 import { useIsDark } from "./useIsDark";
+import { useClientMounted } from "./useClientMounted";
 import VaultArtifacts from "./VaultArtifacts";
 import WorkInProgressSticker from "./WorkInProgressSticker";
 
 const heroCombinedMaxWidth = `min(${HERO_COMBINED_WIDTH}px, calc(100vw - 3rem))`;
 
 function HomeHero() {
+  const mounted = useClientMounted();
   const isDark = useIsDark();
-
+  const heroSrc =
+    mounted && isDark ? HERO_COMBINED_DARK_SRC : HERO_COMBINED_LIGHT_SRC;
   return (
     <div>
-      <h1 className="sr-only">Chris Pramana</h1>
-      <p className="sr-only">{HERO_DESCRIPTION_TEXT}</p>
+      <h1 className="sr-only" suppressHydrationWarning>
+        Chris Pramana
+      </h1>
+      <p className="sr-only" suppressHydrationWarning>
+        {HERO_DESCRIPTION_TEXT}
+      </p>
 
       <figure
         data-hero-heading
@@ -38,7 +45,7 @@ function HomeHero() {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={isDark ? HERO_COMBINED_DARK_SRC : HERO_COMBINED_LIGHT_SRC}
+          src={heroSrc}
           alt=""
           draggable={false}
           width={HERO_COMBINED_WIDTH}

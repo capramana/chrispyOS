@@ -187,6 +187,7 @@ export default function VaultCartridgeStack({
   const [gliding, setGliding] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [tapPending, setTapPending] = useState(false);
   const [repPhase, setRepPhase] = useState(false);
   const [heroPose, setHeroPose] = useState<"scatter" | "list">("scatter");
   const [heroMotion, setHeroMotion] = useState(true);
@@ -533,7 +534,7 @@ export default function VaultCartridgeStack({
       const t = performance.now();
       lastPointerRef.current = { x: e.clientX, y: e.clientY, time: t };
       setDragging(true);
-      setHovered(false);
+      setTapPending(true);
       onInteractionStart(id);
     },
     [cancelGlide, expanded, id, onInteractionStart],
@@ -552,6 +553,8 @@ export default function VaultCartridgeStack({
         if (!dragCommittedRef.current) {
           dragCommittedRef.current = true;
           userMovedRef.current = true;
+          setHovered(false);
+          setTapPending(false);
         }
       }
       const now = performance.now();
@@ -582,6 +585,7 @@ export default function VaultCartridgeStack({
       const wasTap = !dragCommittedRef.current;
       dragRef.current = null;
       setDragging(false);
+      setTapPending(false);
       elRef.current?.releasePointerCapture(e.pointerId);
       if (wasTap && !expanded) {
         expandStack();
@@ -715,9 +719,10 @@ export default function VaultCartridgeStack({
   }, [repPhase, layout, mobile, disposeRepCards]);
 
   const motionActive = dragging || gliding;
-  const pileHovered = hovered && !expanded && !motionActive;
+  const hoverAffordance = hovered || tapPending;
+  const pileHovered = hoverAffordance && !expanded && !gliding;
   const scatterMul =
-    hovered && !motionActive && (!expanded || heroPose === "scatter")
+    hoverAffordance && !gliding && (!expanded || heroPose === "scatter")
       ? CARTRIDGE_HOVER_SCATTER_MUL
       : 1;
   const shellTransform = dragging

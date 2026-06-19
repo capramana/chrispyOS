@@ -88,6 +88,7 @@ export default function VaultBook({
   const [gliding, setGliding] = useState(false);
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [tapPending, setTapPending] = useState(false);
   const [animBusy, setAnimBusy] = useState(false);
   const [backdropEntered, setBackdropEntered] = useState(false);
   const [restRotDeg] = useState(() => randomSpawnRotation());
@@ -299,8 +300,8 @@ export default function VaultBook({
       const t = performance.now();
       lastPointerRef.current = { x: e.clientX, y: e.clientY, time: t };
       setDragging(true);
+      setTapPending(true);
       setTiltDeg(0);
-      setHovered(false);
       onInteractionStart(id);
     },
     [cancelGlide, id, onInteractionStart, open],
@@ -318,6 +319,8 @@ export default function VaultBook({
       if (!dragCommittedRef.current) {
         dragCommittedRef.current = true;
         userMovedRef.current = true;
+        setHovered(false);
+        setTapPending(false);
       }
     }
     const now = performance.now();
@@ -350,6 +353,7 @@ export default function VaultBook({
       const wasTap = !dragCommittedRef.current;
       dragRef.current = null;
       setDragging(false);
+      setTapPending(false);
       elRef.current?.releasePointerCapture(e.pointerId);
       if (wasTap) {
         openBook();
@@ -428,7 +432,8 @@ export default function VaultBook({
 
   const motionActive = dragging || gliding;
   const positionAnimating = open || animBusy;
-  const hoverPeek = hovered && !open && !motionActive && !animBusy;
+  const hoverAffordance = hovered || tapPending;
+  const hoverPeek = hoverAffordance && !open && !gliding && !animBusy;
   const shellRotDeg = open ? 0 : (spawnEntered ? restRotDeg : 0) + tiltDeg;
   const shellScale = spawnEntered ? (dragging ? 1.02 : 1) : 0.88;
   const shellTransform = `rotate(${shellRotDeg.toFixed(2)}deg) scale(${shellScale})`;
