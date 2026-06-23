@@ -12,6 +12,7 @@ import {
 } from "react";
 import {
   MEMENTO_COLORS,
+  MEMENTO_HOST_PROFILES,
   type MementoStep,
   type SocialType,
 } from "./mementoColors";
@@ -25,6 +26,13 @@ const PREVIEW_ROTATION_DEG = 2;
 const EXPORT_ALPHA_THRESHOLD = 1;
 const EXPORT_PADDING_CSS_PX = 4;
 const MAX_UNDO = 40;
+
+function replayStepAnimation(element: HTMLElement | null) {
+  if (!element) return;
+  element.classList.remove("step-anim");
+  void element.offsetWidth;
+  element.classList.add("step-anim");
+}
 
 function exportCroppedTransparentPng(canvas: HTMLCanvasElement): {
   dataUrl: string;
@@ -164,24 +172,41 @@ function getPreviewDisplay(
   };
 }
 
-export default function MementoPage() {
+export type MementoDevConfirmPreview = {
+  name: string;
+  drawing: string;
+  size: { width: number; height: number };
+  socialType?: SocialType;
+};
+
+type MementoPageProps = {
+  devConfirmPreview?: MementoDevConfirmPreview | null;
+};
+
+export default function MementoPage({
+  devConfirmPreview = null,
+}: MementoPageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasSlotRef = useRef<HTMLDivElement>(null);
-  const confirmSealRef = useRef<HTMLDivElement>(null);
   const confirmStepRef = useRef<HTMLDivElement>(null);
   const formTransitionRef = useRef<number[]>([]);
 
-  const [step, setStep] = useState<MementoStep>(1);
+  const [step, setStep] = useState<MementoStep>(devConfirmPreview ? 3 : 1);
   const [hasDrawn, setHasDrawn] = useState(false);
   const [currentColor, setCurrentColor] = useState<string>(MEMENTO_COLORS[0].color);
   const [socialType, setSocialType] = useState<SocialType>("twitter");
-  const [capturedDrawing, setCapturedDrawing] = useState<string | null>(null);
+  const [capturedDrawing, setCapturedDrawing] = useState<string | null>(
+    devConfirmPreview?.drawing ?? null,
+  );
   const [drawingSize, setDrawingSize] = useState<{
     width: number;
     height: number;
-  } | null>(null);
+  } | null>(devConfirmPreview?.size ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmName, setConfirmName] = useState("");
+  const [confirmName, setConfirmName] = useState(devConfirmPreview?.name ?? "");
+  const [confirmSocialType, setConfirmSocialType] = useState<SocialType>(
+    devConfirmPreview?.socialType ?? "twitter",
+  );
   const [layoutVars, setLayoutVars] = useState<FrozenCanvasLayout | null>(null);
 
   const [name, setName] = useState("");
@@ -256,6 +281,11 @@ export default function MementoPage() {
     if (page) page.scrollTop = 0;
   }, [step]);
 
+  useLayoutEffect(() => {
+    if (!devConfirmPreview) return;
+    replayStepAnimation(confirmStepRef.current);
+  }, [devConfirmPreview]);
+
   const measureFormPreview = useCallback(() => {
     const slot = canvasSlotRef.current;
     const frozen = layoutVarsRef.current;
@@ -298,14 +328,6 @@ export default function MementoPage() {
 
   const isDrawStep = step === 1;
   const isFormStep = step === 2;
-
-  const animateConfirmStep = () => {
-    const el = confirmStepRef.current;
-    if (!el) return;
-    el.classList.remove("step-anim");
-    void el.offsetWidth;
-    el.classList.add("step-anim");
-  };
 
   const drawCanvasBackground = useCallback(() => {
     const canvas = canvasRef.current;
@@ -461,14 +483,6 @@ export default function MementoPage() {
     drawingRef.current = false;
   };
 
-  const clearCanvas = () => {
-    hasDrawnRef.current = false;
-    setHasDrawn(false);
-    undoStackRef.current = [];
-    setCanUndo(false);
-    drawCanvasBackground();
-  };
-
   const freezeCanvasLayout = () => {
     const slot = canvasSlotRef.current;
     const canvas = canvasRef.current;
@@ -532,37 +546,6 @@ export default function MementoPage() {
     setFormError("");
   };
 
-  const playConfirmSeal = () => {
-    const seal = confirmSealRef.current;
-    if (!seal) return;
-    seal.classList.remove("play");
-    void seal.offsetWidth;
-    seal.classList.add("play");
-  };
-
-  const resetForm = () => {
-    setName("");
-    setHandle("");
-    setMessage("");
-    hasDrawnRef.current = false;
-    setHasDrawn(false);
-    undoStackRef.current = [];
-    setCanUndo(false);
-    setCurrentColor(MEMENTO_COLORS[0].color);
-    editingSnapshotRef.current = null;
-    layoutVarsRef.current = null;
-    setLayoutVars(null);
-    setCapturedDrawing(null);
-    setDrawingSize(null);
-    setConfirmName("");
-    setFormExpanded(false);
-    setFormShown(false);
-    clearFormTimers();
-    drawCanvasBackground();
-    confirmSealRef.current?.classList.remove("play");
-    setStep(1);
-  };
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     clearErrors();
@@ -611,9 +594,9 @@ export default function MementoPage() {
       if (!mountedRef.current) return;
 
       setConfirmName(trimmedName);
+      setConfirmSocialType(socialType);
       setStep(3);
-      playConfirmSeal();
-      animateConfirmStep();
+      replayStepAnimation(confirmStepRef.current);
     } catch {
       if (mountedRef.current) {
         setFormError("Couldn't save that — check your connection and try again.");
@@ -647,6 +630,8 @@ export default function MementoPage() {
     drawingSize != null
       ? fitPreviewSize(drawingSize.width, drawingSize.height, 120, 200)
       : null;
+
+  const confirmHostProfile = MEMENTO_HOST_PROFILES[confirmSocialType];
 
   return (
     <div className="memento-root">
@@ -698,47 +683,36 @@ export default function MementoPage() {
                   </span>
                   <div className="canvas-toolbar">
                     <div className="color-tools">
-                      <div className="color-group">
-                        <div className="color-row" role="group" aria-label="Choose a color">
-                          {MEMENTO_COLORS.map(({ color, label }) => (
-                            <button
-                              key={color}
-                              type="button"
-                              className={`swatch${currentColor === color ? " active" : ""}`}
-                              style={{ "--c": color } as CSSProperties}
-                              data-color={color}
-                              aria-label={label}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setCurrentColor(color);
-                              }}
-                            />
-                          ))}
-                        </div>
-                        <button
-                          type="button"
-                          className={`undo-btn${canUndo ? " is-enabled" : ""}`}
-                          aria-label="Undo"
-                          disabled={!canUndo}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            undoLastStroke();
-                          }}
-                        >
-                          <Undo width={18} height={18} strokeWidth={2} color="currentColor" />
-                        </button>
+                      <div className="color-row" role="group" aria-label="Choose a color">
+                        {MEMENTO_COLORS.map(({ color, label }) => (
+                          <button
+                            key={color}
+                            type="button"
+                            className={`swatch${currentColor === color ? " active" : ""}`}
+                            style={{ "--c": color } as CSSProperties}
+                            data-color={color}
+                            aria-label={label}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setCurrentColor(color);
+                            }}
+                          />
+                        ))}
                       </div>
                     </div>
                     <div className="canvas-actions">
                       <button
                         type="button"
-                        className={`clear-btn${hasDrawn ? " is-visible" : ""}`}
+                        className={`undo-action-btn${hasDrawn ? " is-visible" : ""}`}
+                        disabled={!canUndo}
+                        aria-label="Undo"
                         onClick={(event) => {
                           event.stopPropagation();
-                          clearCanvas();
+                          undoLastStroke();
                         }}
                       >
-                        Clear
+                        <Undo width={16} height={16} strokeWidth={2} color="currentColor" />
+                        Undo
                       </button>
                       <button
                         type="button"
@@ -815,16 +789,6 @@ export default function MementoPage() {
           id="step3"
         >
           <div className="confirm-body">
-            <div ref={confirmSealRef} className="confirm-seal">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 2l2.2 6.3L21 9l-5 4.6L17.5 21 12 17.3 6.5 21 8 13.6 3 9l6.8-0.7z" />
-              </svg>
-            </div>
-            <h1 className="confirm-title">You&apos;re in the book</h1>
-            <p className="confirm-sub">
-              Thanks, <strong>{confirmName}</strong>. Your page is part of the
-              memento now.
-            </p>
             {capturedDrawing ? (
               <img
                 className="confirm-preview"
@@ -840,10 +804,26 @@ export default function MementoPage() {
                 }
               />
             ) : null}
+            <p className="confirm-sub">
+              Thanks, <strong>{confirmName}</strong>, for leaving a memorable
+              moment this Config season.
+            </p>
+            <a
+              className="confirm-social-link"
+              href={confirmHostProfile.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src={confirmHostProfile.favicon}
+                alt=""
+                width={16}
+                height={16}
+                draggable={false}
+              />
+              {confirmHostProfile.label}
+            </a>
             <p className="confirm-note">Saved for the conference archive</p>
-            <button type="button" className="confirm-btn" onClick={resetForm}>
-              Leave another mark
-            </button>
           </div>
         </div>
       </div>

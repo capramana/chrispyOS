@@ -180,7 +180,6 @@
   }
 
   .memento-root .color-tools,
-  .memento-root .color-group,
   .memento-root .color-row,
   .memento-root .canvas-actions,
   .memento-root .canvas-toolbar {
@@ -195,6 +194,10 @@
   .memento-root .layout-form .form-panel.is-expanded,
   .memento-root .form-panel.is-shown .form-panel-body {
     opacity: 1;
+  }
+
+  .memento-root .submit-btn:active:not(:disabled) {
+    transform: none;
   }
 }
 
@@ -358,11 +361,14 @@
   min-height: var(--canvas-toolbar-h);
 }
 
-.memento-root .clear-btn {
+.memento-root .undo-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: none;
   border: none;
   border-radius: 0;
-  font-family: var(--font-zalando-sans), sans-serif;
+  font: inherit;
   font-size: 14px;
   font-weight: 500;
   line-height: 1;
@@ -380,16 +386,24 @@
   pointer-events: none;
 }
 
-.memento-root .clear-btn.is-visible {
-  display: inline-flex;
-  align-items: center;
+.memento-root .undo-action-btn.is-visible {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
 }
 
-.memento-root .clear-btn:hover {
+.memento-root .undo-action-btn.is-visible:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+.memento-root .undo-action-btn.is-visible:not(:disabled):hover {
   color: var(--ink);
+}
+
+.memento-root .undo-action-btn svg {
+  flex-shrink: 0;
 }
 
 .memento-root .color-tools {
@@ -398,15 +412,6 @@
   flex: 1 1 auto;
   min-width: 0;
   min-height: var(--canvas-toolbar-h);
-}
-
-.memento-root .color-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 100%;
 }
 
 .memento-root .color-row {
@@ -459,47 +464,6 @@
   border: 1.5px solid color-mix(in srgb, var(--c) 50%, transparent);
 }
 
-.memento-root .undo-btn {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--ink-soft);
-  cursor: default;
-  opacity: 0.35;
-  pointer-events: none;
-  transition:
-    color 0.15s ease-out,
-    opacity 0.15s ease-out,
-    background-color 0.15s ease-out;
-}
-
-.memento-root .undo-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.memento-root .undo-btn.is-enabled {
-  opacity: 1;
-  pointer-events: auto;
-  cursor: pointer;
-}
-
-.memento-root .undo-btn.is-enabled:hover {
-  color: var(--ink);
-  background: rgba(33, 28, 22, 0.06);
-}
-
-.memento-root .undo-btn:disabled {
-  cursor: default;
-}
-
 .memento-root .field-error {
   font-size: 12px;
   color: var(--seal);
@@ -530,7 +494,7 @@
     var(--continue-btn-bottom) 100%
   );
   color: #fefefe;
-  font-family: var(--font-zalando-sans), sans-serif;
+  font: inherit;
   font-size: 14px;
   line-height: 1;
   font-weight: 400;
@@ -771,81 +735,38 @@
   padding: 8px 4px 12px;
 }
 
-.memento-root .confirm-seal {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: var(--seal);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 22px;
-  box-shadow: 0 8px 22px rgba(178, 58, 46, 0.35);
-  transform: scale(0) rotate(-18deg);
-  opacity: 0;
-}
-
-.memento-root .confirm-seal.play {
-  animation: memento-stamp-in 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
-}
-
-@keyframes memento-stamp-in {
-  0% {
-    transform: scale(0) rotate(-18deg);
-    opacity: 0;
-  }
-  55% {
-    transform: scale(1.1) rotate(4deg);
-    opacity: 1;
-  }
-  75% {
-    transform: scale(0.95) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1) rotate(0deg);
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .memento-root .submit-btn:active,
-  .memento-root .confirm-btn:active {
-    transform: none;
-  }
-
-  .memento-root .confirm-seal.play {
-    animation: none;
-    opacity: 1;
-    transform: scale(1) rotate(0deg);
-  }
-}
-
-.memento-root .confirm-seal svg {
-  width: 32px;
-  height: 32px;
-  fill: var(--paper-light);
-}
-
-.memento-root .confirm-title {
-  font-family: var(--font-zalando-sans), sans-serif;
-  font-weight: 600;
-  font-size: 28px;
-  line-height: 1.12;
-  margin: 0 0 10px;
-}
-
 .memento-root .confirm-sub {
   font-size: 15px;
   line-height: 1.45;
   color: var(--ink-soft);
-  margin: 0 0 22px;
-  max-width: 28ch;
+  margin: 0 0 16px;
+  max-width: 32ch;
 }
 
 .memento-root .confirm-sub strong {
   color: var(--ink);
   font-weight: 600;
+}
+
+.memento-root .confirm-social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 22px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+  transition: color 0.15s ease-out;
+}
+
+.memento-root .confirm-social-link:hover {
+  color: var(--ink-soft);
+}
+
+.memento-root .confirm-social-link img {
+  flex: 0 0 auto;
+  display: block;
 }
 
 .memento-root .confirm-preview {
@@ -856,7 +777,7 @@
   border-radius: 8px;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
   transform: rotate(-2deg);
-  margin-bottom: 6px;
+  margin: 0 0 22px;
 }
 
 .memento-root .confirm-note {
@@ -866,31 +787,7 @@
   text-transform: uppercase;
   color: var(--ink-soft);
   opacity: 0.75;
-  margin: 0 0 28px;
-}
-
-.memento-root .confirm-btn {
-  width: 100%;
-  padding: 15px;
-  border-radius: var(--btn-radius);
-  border: 1.5px solid var(--rule);
-  background: transparent;
-  color: var(--ink);
-  font-family: var(--font-zalando-sans), sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    transform 0.1s ease-out,
-    border-color 0.15s ease-out;
-}
-
-.memento-root .confirm-btn:active {
-  transform: scale(0.97) translateY(1px);
-}
-
-.memento-root .confirm-btn:hover {
-  border-color: var(--ink-soft);
+  margin: 0;
 }
 
 .memento-root *:focus-visible {
