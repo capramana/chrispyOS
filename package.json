@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "setup:memento": "node --env-file=.env.local scripts/setup-memento-supabase.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
     "framer-motion": "^12.36.0",
     "iconoir-react": "^7.11.0",
     "next": "16.1.3",
@@ -24,6 +26,7 @@
     "agentation": "^2.2.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.3",
+    "pg": "^8.22.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

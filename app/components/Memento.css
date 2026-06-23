@@ -1,0 +1,844 @@
+.memento-root {
+  --paper: #e9e1cc;
+  --paper-light: #f8f8f8;
+  --ink: #211c16;
+  --ink-soft: #6b6354;
+  --seal: #b23a2e;
+  --seal-dark: #8c2c22;
+  --continue-btn-top: oklab(72.6% -0.086 -0.116);
+  --continue-btn-bottom: oklab(65% -0.058 -0.147);
+  --continue-btn-inset: #2cc0ff;
+  --continue-btn-ring: #22b4f2;
+  --field-line: #c6c6c8;
+  --field-line-active: #202020;
+  --rule: #cdc2a4;
+  --moss: #6b7257;
+  --canvas: #ffffff;
+  --radius: 14px;
+  --btn-radius: 8px;
+  --canvas-pad: 16px;
+  --canvas-pad-bottom: 48px;
+  --canvas-toolbar-h: 36px;
+  --canvas-toolbar-gutter: calc(var(--canvas-pad-bottom) - var(--canvas-pad));
+  --memento-transition: 150ms ease-out;
+  --form-fade-transition: 150ms ease-out;
+  --memento-section-gap: 24px;
+
+  box-sizing: border-box;
+  margin: 0;
+  min-height: 100vh;
+  padding: 28px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f8f8;
+  font-family: var(--font-zalando-sans), sans-serif;
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.memento-root *,
+.memento-root *::before,
+.memento-root *::after {
+  box-sizing: border-box;
+}
+
+.memento-root .page {
+  width: 100%;
+  max-width: 440px;
+  height: min(660px, 84vh);
+  display: flex;
+  flex-direction: column;
+  background: var(--paper-light);
+  border-radius: var(--radius);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.18),
+    0 2px 0 rgba(255, 255, 255, 0.4) inset;
+  padding: 28px 24px 26px;
+  position: relative;
+  overflow: hidden;
+}
+
+.memento-root:has(.layout-form) .page {
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.memento-root:has(.layout-form) .page::-webkit-scrollbar {
+  display: none;
+}
+
+.memento-root .layout-form {
+  overflow: visible;
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: auto minmax(160px, 1fr) auto;
+  align-content: stretch;
+}
+
+.memento-root .page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.03 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.memento-root .step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.memento-root .step[hidden] {
+  display: none;
+}
+
+.memento-root .memento-flow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+  transition: grid-template-rows var(--memento-transition);
+}
+
+.memento-root .layout-draw {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.memento-root .title-stack {
+  position: relative;
+  flex: 0 0 auto;
+  height: calc(30px * 1.08);
+  margin: 0 0 var(--memento-section-gap);
+}
+
+.memento-root .memento-title {
+  font-family: var(--font-zalando-sans), sans-serif;
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 1.08;
+  margin: 0;
+  position: absolute;
+  inset: 0;
+  transition: opacity var(--memento-transition);
+}
+
+.memento-root .layout-draw .title-draw {
+  opacity: 1;
+}
+
+.memento-root .layout-draw .title-form {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.memento-root .layout-form .title-draw {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.memento-root .layout-form .title-form {
+  opacity: 1;
+}
+
+.memento-root .step-anim {
+  animation: memento-step-in 0.28s ease-out;
+}
+
+@keyframes memento-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memento-root .step-anim {
+    animation: none;
+  }
+
+  .memento-root .memento-flow,
+  .memento-root .memento-title,
+  .memento-root .canvas-slot,
+  .memento-root .canvas-scaler,
+  .memento-root .canvas-wrap,
+  .memento-root .form-panel,
+  .memento-root .form-panel-body {
+    transition: none;
+  }
+
+  .memento-root .color-row,
+  .memento-root .canvas-actions,
+  .memento-root .canvas-toolbar {
+    transition: none;
+  }
+
+  .memento-root .canvas-wrap.is-active,
+  .memento-root .canvas-wrap.is-inactive {
+    clip-path: none;
+  }
+
+  .memento-root .layout-form .form-panel.is-expanded,
+  .memento-root .form-panel.is-shown .form-panel-body {
+    opacity: 1;
+  }
+}
+
+.memento-root .canvas-slot {
+  position: relative;
+  width: 100%;
+  min-height: 160px;
+  align-self: stretch;
+  margin-bottom: 0;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  transition: height var(--memento-transition);
+}
+
+.memento-root .layout-draw .canvas-slot {
+  height: 100%;
+  min-height: 160px;
+}
+
+.memento-root .layout-form .canvas-slot {
+  height: 100%;
+  min-height: 160px;
+  margin-bottom: var(--memento-section-gap);
+  cursor: pointer;
+  overflow: visible;
+  justify-content: center;
+}
+
+.memento-root .layout-form .canvas-scaler {
+  width: var(--preview-w, 150px);
+  height: var(--preview-h, 200px);
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.memento-root .layout-form .canvas-slot:hover .canvas-wrap {
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+}
+
+.memento-root .canvas-scaler {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  transition:
+    width var(--memento-transition),
+    height var(--memento-transition);
+}
+
+.memento-root .canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--canvas);
+  padding: var(--canvas-pad);
+  padding-bottom: var(--canvas-pad-bottom);
+  transform-origin: top left;
+  transition:
+    transform var(--memento-transition),
+    box-shadow var(--memento-transition),
+    clip-path var(--memento-transition);
+}
+
+.memento-root .canvas-wrap.is-active {
+  clip-path: inset(0 round 10px);
+  transform: scale(1) rotate(0deg);
+  cursor: crosshair;
+  box-shadow: none;
+}
+
+.memento-root .canvas-wrap.is-inactive {
+  clip-path: inset(0 round 10px);
+  padding: 0;
+  transform: scale(var(--preview-scale, 1)) rotate(-2deg);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.14);
+}
+
+.memento-root .canvas-wrap.is-inactive canvas {
+  pointer-events: none;
+  cursor: pointer;
+}
+
+.memento-root .canvas-wrap.is-inactive .canvas-toolbar {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.memento-root .canvas-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  box-shadow:
+    inset 0 0 4px rgba(0, 0, 0, 0.22),
+    inset 0 0 2px rgba(0, 0, 0, 0.14),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.memento-root canvas {
+  position: relative;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.memento-root .canvas-hint {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - (var(--canvas-pad-bottom) - var(--canvas-pad)) / 2);
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-family: var(--font-zalando-sans), sans-serif;
+  font-size: 15px;
+  font-style: italic;
+  color: var(--ink-soft);
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity 0.2s ease-out;
+  z-index: 2;
+}
+
+.memento-root .canvas-hint.hidden {
+  opacity: 0;
+}
+
+.memento-root .canvas-toolbar {
+  position: absolute;
+  bottom: var(--canvas-pad);
+  left: var(--canvas-pad);
+  right: var(--canvas-pad);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--memento-section-gap);
+  min-height: var(--canvas-toolbar-h);
+  min-width: 0;
+  transition:
+    opacity var(--memento-transition),
+    visibility var(--memento-transition);
+}
+
+.memento-root .canvas-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex: 0 0 auto;
+  margin-left: auto;
+  min-height: var(--canvas-toolbar-h);
+}
+
+.memento-root .clear-btn {
+  background: none;
+  border: none;
+  border-radius: 0;
+  font-family: var(--font-zalando-sans), sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition:
+    opacity 0.15s ease-out,
+    visibility 0.15s ease-out,
+    color 0.15s ease-out;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.memento-root .clear-btn.is-visible {
+  display: inline-flex;
+  align-items: center;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.memento-root .clear-btn:hover {
+  color: var(--ink);
+}
+
+.memento-root .color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--canvas-toolbar-h);
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 4px 6px;
+}
+
+.memento-root .color-row::-webkit-scrollbar {
+  display: none;
+}
+
+.memento-root .swatch {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--paper-light);
+  background: var(--c);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease-out;
+}
+
+.memento-root .swatch:hover {
+  transform: scale(1.1);
+}
+
+.memento-root .swatch.active {
+  transform: scale(1.15);
+}
+
+.memento-root .swatch.active::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--c) 50%, transparent);
+}
+
+.memento-root .field-error {
+  font-size: 12px;
+  color: var(--seal);
+  margin: 6px 2px 0;
+  min-height: 14px;
+}
+
+.memento-root .canvas-error {
+  margin: 8px 0 0;
+  min-height: 0;
+}
+
+.memento-root .layout-form .form-panel-body > .field:first-child {
+  margin-top: 0;
+}
+
+.memento-root .canvas-actions .next-btn {
+  width: auto;
+  margin-top: 0;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: none;
+  background-image: linear-gradient(
+    in oklab 180deg,
+    var(--continue-btn-top) 0%,
+    var(--continue-btn-bottom) 100%
+  );
+  color: #fefefe;
+  font-family: var(--font-zalando-sans), sans-serif;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 400;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow:
+    var(--continue-btn-inset) 0 0 4px 1px inset,
+    rgba(0, 0, 0, 0.05) 0 2px 3px,
+    var(--continue-btn-ring) 0 0 0 1px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    filter 0.15s ease-out,
+    opacity 0.15s ease-out,
+    visibility 0.15s ease-out;
+}
+
+.memento-root .canvas-actions .next-btn.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.memento-root .canvas-actions .next-btn:active {
+  transform: none;
+  filter: brightness(0.94);
+}
+
+.memento-root .form-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  min-height: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border: none;
+  transition: grid-template-rows var(--memento-transition);
+}
+
+.memento-root .form-panel.is-expanded {
+  grid-template-rows: auto;
+  overflow: visible;
+}
+
+.memento-root .layout-draw .form-panel {
+  pointer-events: none;
+}
+
+.memento-root .form-panel.is-expanded .form-panel-body {
+  overflow: visible;
+  min-height: auto;
+}
+
+.memento-root .form-panel-body {
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--form-fade-transition);
+}
+
+.memento-root .form-panel.is-shown .form-panel-body {
+  opacity: 1;
+}
+
+.memento-root .field {
+  margin-top: 20px;
+}
+
+.memento-root input[type="text"] {
+  width: 100%;
+  border: none;
+  border-bottom: 1.5px solid var(--field-line);
+  background: transparent;
+  font-family: var(--font-zalando-sans), sans-serif;
+  font-size: 16px;
+  color: var(--ink);
+  padding: 6px 2px 8px;
+  outline: none;
+  transition: border-color 0.2s ease-out;
+}
+
+.memento-root input[type="text"]::placeholder {
+  color: rgba(107, 99, 84, 0.55);
+}
+
+.memento-root input[type="text"]:focus {
+  border-bottom-color: var(--field-line-active);
+}
+
+.memento-root .social-field-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1.5px solid var(--field-line);
+  padding: 6px 2px 8px;
+  transition: border-color 0.2s ease-out;
+}
+
+.memento-root .social-field-row:focus-within {
+  border-bottom-color: var(--field-line-active);
+}
+
+.memento-root .social-field-row .toggle-row {
+  flex-shrink: 0;
+  margin-bottom: 0;
+  padding-left: 4px;
+}
+
+.memento-root .social-field-row input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  border-bottom: none;
+  padding: 0;
+}
+
+.memento-root .toggle-row {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.memento-root .toggle-btn {
+  position: relative;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease-out;
+}
+
+.memento-root .toggle-btn img {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  transition:
+    opacity 0.15s ease-out,
+    filter 0.15s ease-out;
+}
+
+.memento-root .toggle-btn-linkedin:not(.active) img {
+  filter: grayscale(1);
+}
+
+.memento-root .toggle-btn-twitter:not(.active) img {
+  opacity: 0.6;
+}
+
+.memento-root .toggle-btn.active img {
+  opacity: 1;
+  filter: none;
+}
+
+.memento-root .toggle-btn.active {
+  transform: scale(1.15);
+}
+
+.memento-root .toggle-btn.active::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 8px;
+  border: 1.5px solid color-mix(in srgb, var(--c) 50%, transparent);
+}
+
+.memento-root .submit-btn {
+  width: 100%;
+  margin-top: var(--memento-section-gap);
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: none;
+  background-image: linear-gradient(
+    in oklab 180deg,
+    var(--continue-btn-top) 0%,
+    var(--continue-btn-bottom) 100%
+  );
+  color: #fefefe;
+  font-family: var(--font-zalando-sans), sans-serif;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow:
+    var(--continue-btn-inset) 0 0 4px 1px inset,
+    rgba(0, 0, 0, 0.05) 0 2px 3px,
+    var(--continue-btn-ring) 0 0 0 1px;
+  transition:
+    filter 0.15s ease-out,
+    opacity 0.15s ease-out;
+}
+
+.memento-root .submit-btn:active:not(:disabled) {
+  transform: none;
+  filter: brightness(0.94);
+}
+
+.memento-root .submit-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  filter: none;
+}
+
+.memento-root .form-error {
+  text-align: center;
+  font-size: 13px;
+  color: var(--seal);
+  margin-top: 12px;
+  min-height: 14px;
+}
+
+.memento-root .confirm-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px 4px 12px;
+}
+
+.memento-root .confirm-seal {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--seal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 22px;
+  box-shadow: 0 8px 22px rgba(178, 58, 46, 0.35);
+  transform: scale(0) rotate(-18deg);
+  opacity: 0;
+}
+
+.memento-root .confirm-seal.play {
+  animation: memento-stamp-in 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+}
+
+@keyframes memento-stamp-in {
+  0% {
+    transform: scale(0) rotate(-18deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.1) rotate(4deg);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(0.95) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memento-root .submit-btn:active,
+  .memento-root .confirm-btn:active {
+    transform: none;
+  }
+
+  .memento-root .confirm-seal.play {
+    animation: none;
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.memento-root .confirm-seal svg {
+  width: 32px;
+  height: 32px;
+  fill: var(--paper-light);
+}
+
+.memento-root .confirm-title {
+  font-family: var(--font-zalando-sans), sans-serif;
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.12;
+  margin: 0 0 10px;
+}
+
+.memento-root .confirm-sub {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  margin: 0 0 22px;
+  max-width: 28ch;
+}
+
+.memento-root .confirm-sub strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.memento-root .confirm-preview {
+  display: block;
+  object-fit: contain;
+  background: var(--canvas);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+  transform: rotate(-2deg);
+  margin-bottom: 6px;
+}
+
+.memento-root .confirm-note {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  opacity: 0.75;
+  margin: 0 0 28px;
+}
+
+.memento-root .confirm-btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: var(--btn-radius);
+  border: 1.5px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-zalando-sans), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease-out,
+    border-color 0.15s ease-out;
+}
+
+.memento-root .confirm-btn:active {
+  transform: scale(0.97) translateY(1px);
+}
+
+.memento-root .confirm-btn:hover {
+  border-color: var(--ink-soft);
+}
+
+.memento-root *:focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 2px;
+}
+
+.memento-root input[type="text"]:focus-visible {
+  outline: none;
+}
