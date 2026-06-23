@@ -18,6 +18,12 @@ import {
 } from "./mementoColors";
 import MementoSocialField from "./MementoSocialField";
 import { Undo } from "iconoir-react";
+import {
+  applyDevConfirmPreviewState,
+  DEV_CONFIRM_PREVIEW,
+  isDevConfirmStepSearch,
+  type MementoDevConfirmPreview,
+} from "@/app/memento/devConfirmPreview";
 import "./Memento.css";
 
 const TRANSITION_MS = 150;
@@ -172,12 +178,7 @@ function getPreviewDisplay(
   };
 }
 
-export type MementoDevConfirmPreview = {
-  name: string;
-  drawing: string;
-  size: { width: number; height: number };
-  socialType?: SocialType;
-};
+export type { MementoDevConfirmPreview };
 
 type MementoPageProps = {
   devConfirmPreview?: MementoDevConfirmPreview | null;
@@ -282,7 +283,22 @@ export default function MementoPage({
   }, [step]);
 
   useLayoutEffect(() => {
-    if (!devConfirmPreview) return;
+    if (process.env.NODE_ENV !== "development") return;
+
+    if (devConfirmPreview) {
+      replayStepAnimation(confirmStepRef.current);
+      return;
+    }
+
+    if (!isDevConfirmStepSearch(window.location.search)) return;
+
+    applyDevConfirmPreviewState(DEV_CONFIRM_PREVIEW, {
+      setStep,
+      setConfirmName,
+      setConfirmSocialType,
+      setCapturedDrawing,
+      setDrawingSize,
+    });
     replayStepAnimation(confirmStepRef.current);
   }, [devConfirmPreview]);
 
@@ -599,7 +615,7 @@ export default function MementoPage({
       replayStepAnimation(confirmStepRef.current);
     } catch {
       if (mountedRef.current) {
-        setFormError("Couldn't save that — check your connection and try again.");
+        setFormError("Couldn't save that, check your connection and try again.");
       }
     } finally {
       if (mountedRef.current) {
@@ -805,8 +821,8 @@ export default function MementoPage({
               />
             ) : null}
             <p className="confirm-sub">
-              Thanks, <strong>{confirmName}</strong>, for leaving a memorable
-              moment this Config season.
+              Thanks {confirmName} for leaving a memorable moment this Config
+              season.
             </p>
             <a
               className="confirm-social-link"
@@ -823,7 +839,6 @@ export default function MementoPage({
               />
               {confirmHostProfile.label}
             </a>
-            <p className="confirm-note">Saved for the conference archive</p>
           </div>
         </div>
       </div>

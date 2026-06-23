@@ -743,16 +743,11 @@
   max-width: 32ch;
 }
 
-.memento-root .confirm-sub strong {
-  color: var(--ink);
-  font-weight: 600;
-}
-
 .memento-root .confirm-social-link {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 22px;
+  margin: 0;
   font-size: 14px;
   font-weight: 500;
   color: var(--ink);
@@ -767,6 +762,7 @@
 .memento-root .confirm-social-link img {
   flex: 0 0 auto;
   display: block;
+  border-radius: 4px;
 }
 
 .memento-root .confirm-preview {
@@ -778,16 +774,6 @@
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
   transform: rotate(-2deg);
   margin: 0 0 22px;
-}
-
-.memento-root .confirm-note {
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  opacity: 0.75;
-  margin: 0;
 }
 
 .memento-root *:focus-visible {
