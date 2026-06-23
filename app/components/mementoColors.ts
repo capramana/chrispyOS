@@ -42,7 +42,7 @@ export const MEMENTO_HOST_PROFILES: Record<
   },
   linkedin: {
     url: "https://linkedin.com/in/capramana",
-    label: "linkedin.com/in/capramana",
+    label: "capramana",
     favicon: socialFavicon("linkedin"),
   },
 };
