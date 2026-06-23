@@ -179,6 +179,8 @@
     transition: none;
   }
 
+  .memento-root .color-tools,
+  .memento-root .color-group,
   .memento-root .color-row,
   .memento-root .canvas-actions,
   .memento-root .canvas-toolbar {
@@ -256,6 +258,9 @@
   transform-origin: top left;
   transition:
     transform var(--memento-transition),
+    width var(--memento-transition),
+    height var(--memento-transition),
+    padding var(--memento-transition),
     box-shadow var(--memento-transition),
     clip-path var(--memento-transition);
 }
@@ -316,7 +321,6 @@
   text-align: center;
   font-family: var(--font-zalando-sans), sans-serif;
   font-size: 15px;
-  font-style: italic;
   color: var(--ink-soft);
   opacity: 0.55;
   pointer-events: none;
@@ -388,6 +392,23 @@
   color: var(--ink);
 }
 
+.memento-root .color-tools {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--canvas-toolbar-h);
+}
+
+.memento-root .color-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .memento-root .color-row {
   display: flex;
   align-items: center;
@@ -436,6 +457,47 @@
   inset: -4px;
   border-radius: 50%;
   border: 1.5px solid color-mix(in srgb, var(--c) 50%, transparent);
+}
+
+.memento-root .undo-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: default;
+  opacity: 0.35;
+  pointer-events: none;
+  transition:
+    color 0.15s ease-out,
+    opacity 0.15s ease-out,
+    background-color 0.15s ease-out;
+}
+
+.memento-root .undo-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.memento-root .undo-btn.is-enabled {
+  opacity: 1;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.memento-root .undo-btn.is-enabled:hover {
+  color: var(--ink);
+  background: rgba(33, 28, 22, 0.06);
+}
+
+.memento-root .undo-btn:disabled {
+  cursor: default;
 }
 
 .memento-root .field-error {

@@ -16,17 +16,15 @@ import {
   type SocialType,
 } from "./mementoColors";
 import MementoSocialField from "./MementoSocialField";
+import { Undo } from "iconoir-react";
 import "./Memento.css";
 
 const TRANSITION_MS = 150;
 
-const PREVIEW_MAX_W = 150;
-const PREVIEW_MAX_H = 220;
 const PREVIEW_ROTATION_DEG = 2;
-const PREVIEW_ROTATION_SLACK = 10;
-const PREVIEW_SHADOW_BLEED = 20;
 const EXPORT_ALPHA_THRESHOLD = 1;
 const EXPORT_PADDING_CSS_PX = 4;
+const MAX_UNDO = 40;
 
 function exportCroppedTransparentPng(canvas: HTMLCanvasElement): {
   dataUrl: string;
@@ -199,9 +197,11 @@ export default function MementoPage() {
   const [formPreviewLayout, setFormPreviewLayout] = useState<PreviewScale | null>(
     null,
   );
+  const [canUndo, setCanUndo] = useState(false);
 
   const drawingRef = useRef(false);
   const hasDrawnRef = useRef(false);
+  const undoStackRef = useRef<string[]>([]);
   const lastPointRef = useRef({ x: 0, y: 0 });
   const stepRef = useRef<MementoStep>(step);
   const editingSnapshotRef = useRef<string | null>(null);
@@ -239,16 +239,11 @@ export default function MementoPage() {
       return;
     }
 
-    setFormExpanded(false);
-    setFormShown(false);
     clearFormTimers();
-    const enterId = deferFormStep(() => {
-      setFormExpanded(true);
-      deferFormStep(() => setFormShown(true));
-    });
+    const showId = deferFormStep(() => setFormShown(true));
 
     return () => {
-      window.clearTimeout(enterId);
+      window.clearTimeout(showId);
       clearFormTimers();
     };
   }, [step, clearFormTimers, deferFormStep]);
@@ -389,6 +384,28 @@ export default function MementoPage() {
     return () => window.clearTimeout(id);
   }, [isDrawStep, setupCanvas]);
 
+  const pushUndoSnapshot = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const stack = undoStackRef.current;
+    stack.push(canvas.toDataURL("image/png"));
+    if (stack.length > MAX_UNDO) stack.shift();
+    setCanUndo(true);
+  }, []);
+
+  const undoLastStroke = useCallback(() => {
+    const snapshot = undoStackRef.current.pop();
+    if (!snapshot) return;
+
+    setCanUndo(undoStackRef.current.length > 0);
+    restoreCanvasSnapshot(snapshot);
+
+    if (undoStackRef.current.length === 0) {
+      hasDrawnRef.current = false;
+      setHasDrawn(false);
+    }
+  }, [restoreCanvasSnapshot]);
+
   const canvasPos = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -404,6 +421,8 @@ export default function MementoPage() {
     if (!ctx) return;
 
     drawingRef.current = true;
+
+    pushUndoSnapshot();
 
     if (!hasDrawnRef.current) {
       hasDrawnRef.current = true;
@@ -445,6 +464,8 @@ export default function MementoPage() {
   const clearCanvas = () => {
     hasDrawnRef.current = false;
     setHasDrawn(false);
+    undoStackRef.current = [];
+    setCanUndo(false);
     drawCanvasBackground();
   };
 
@@ -457,30 +478,27 @@ export default function MementoPage() {
     const canvasRect = canvas.getBoundingClientRect();
     const previewWrapWidth = canvasRect.width;
     const previewWrapHeight = canvasRect.height;
-    const preview = fitPreviewSize(
+    const formFit = computeFormPreviewFit(
       previewWrapWidth,
       previewWrapHeight,
-      PREVIEW_MAX_W - PREVIEW_ROTATION_SLACK,
-      PREVIEW_MAX_H - PREVIEW_ROTATION_SLACK - PREVIEW_SHADOW_BLEED,
+      slotRect.width,
+      slotRect.height,
     );
-    const bounds = rotatedPreviewBounds(
-      previewWrapWidth,
-      previewWrapHeight,
-      preview.scale,
-    );
+    if (!formFit) return null;
 
     const layout: FrozenCanvasLayout = {
       width: slotRect.width,
       height: slotRect.height,
       previewWrapWidth,
       previewWrapHeight,
-      previewWidth: Math.ceil(bounds.width),
-      previewHeight: Math.ceil(bounds.height),
-      previewScale: preview.scale,
+      previewWidth: formFit.previewWidth,
+      previewHeight: formFit.previewHeight,
+      previewScale: formFit.previewScale,
     };
 
     layoutVarsRef.current = layout;
     setLayoutVars(layout);
+    setFormPreviewLayout(formFit);
     return layout;
   };
 
@@ -491,10 +509,14 @@ export default function MementoPage() {
     const exported = exportCroppedTransparentPng(canvas);
     if (!exported) return;
 
+    const layout = freezeCanvasLayout();
+    if (!layout) return;
+
     editingSnapshotRef.current = canvas.toDataURL("image/png");
-    freezeCanvasLayout();
     setCapturedDrawing(exported.dataUrl);
     setDrawingSize({ width: exported.width, height: exported.height });
+    setFormShown(false);
+    setFormExpanded(true);
     setStep(2);
   };
 
@@ -524,6 +546,8 @@ export default function MementoPage() {
     setMessage("");
     hasDrawnRef.current = false;
     setHasDrawn(false);
+    undoStackRef.current = [];
+    setCanUndo(false);
     setCurrentColor(MEMENTO_COLORS[0].color);
     editingSnapshotRef.current = null;
     layoutVarsRef.current = null;
@@ -673,21 +697,37 @@ export default function MementoPage() {
                     draw or sign here
                   </span>
                   <div className="canvas-toolbar">
-                    <div className="color-row" role="group" aria-label="Choose a color">
-                      {MEMENTO_COLORS.map(({ color, label }) => (
+                    <div className="color-tools">
+                      <div className="color-group">
+                        <div className="color-row" role="group" aria-label="Choose a color">
+                          {MEMENTO_COLORS.map(({ color, label }) => (
+                            <button
+                              key={color}
+                              type="button"
+                              className={`swatch${currentColor === color ? " active" : ""}`}
+                              style={{ "--c": color } as CSSProperties}
+                              data-color={color}
+                              aria-label={label}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setCurrentColor(color);
+                              }}
+                            />
+                          ))}
+                        </div>
                         <button
-                          key={color}
                           type="button"
-                          className={`swatch${currentColor === color ? " active" : ""}`}
-                          style={{ "--c": color } as CSSProperties}
-                          data-color={color}
-                          aria-label={label}
+                          className={`undo-btn${canUndo ? " is-enabled" : ""}`}
+                          aria-label="Undo"
+                          disabled={!canUndo}
                           onClick={(event) => {
                             event.stopPropagation();
-                            setCurrentColor(color);
+                            undoLastStroke();
                           }}
-                        />
-                      ))}
+                        >
+                          <Undo width={18} height={18} strokeWidth={2} color="currentColor" />
+                        </button>
+                      </div>
                     </div>
                     <div className="canvas-actions">
                       <button
