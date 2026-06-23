@@ -174,7 +174,8 @@
     opacity: 1;
   }
 
-  .memento-root .submit-btn:active:not(:disabled) {
+  .memento-root .submit-btn:active:not(:disabled),
+  .memento-root .canvas-actions .next-btn:active {
     transform: none;
   }
 }
@@ -510,7 +511,8 @@
   transition:
     filter 0.15s ease-out,
     opacity 0.15s ease-out,
-    visibility 0.15s ease-out;
+    visibility 0.15s ease-out,
+    transform 0.1s ease-out;
 }
 
 .memento-root .canvas-actions .next-btn.is-visible {
@@ -519,9 +521,9 @@
   pointer-events: auto;
 }
 
-.memento-root .canvas-actions .next-btn:active {
-  transform: none;
-  filter: brightness(0.94);
+.memento-root .canvas-actions .next-btn:active,
+.memento-root .submit-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .memento-root .form-panel {
@@ -703,12 +705,8 @@
     var(--continue-btn-ring) 0 0 0 1px;
   transition:
     filter 0.15s ease-out,
-    opacity 0.15s ease-out;
-}
-
-.memento-root .submit-btn:active:not(:disabled) {
-  transform: none;
-  filter: brightness(0.94);
+    opacity 0.15s ease-out,
+    transform 0.1s ease-out;
 }
 
 .memento-root .submit-btn:disabled {
