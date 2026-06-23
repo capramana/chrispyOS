@@ -32,6 +32,10 @@ const PREVIEW_ROTATION_DEG = 2;
 const EXPORT_ALPHA_THRESHOLD = 1;
 const EXPORT_PADDING_CSS_PX = 4;
 const MAX_UNDO = 40;
+const COLOR_ROW_PAD = 4;
+const COLOR_SWATCH = 24;
+const COLOR_GAP = 8;
+const COLOR_STRIDE = COLOR_SWATCH + COLOR_GAP;
 
 function replayStepAnimation(element: HTMLElement | null) {
   if (!element) return;
@@ -189,6 +193,7 @@ export default function MementoPage({
 }: MementoPageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvasSlotRef = useRef<HTMLDivElement>(null);
+  const colorRowRef = useRef<HTMLDivElement>(null);
   const confirmStepRef = useRef<HTMLDivElement>(null);
   const formTransitionRef = useRef<number[]>([]);
 
@@ -224,6 +229,7 @@ export default function MementoPage({
     null,
   );
   const [canUndo, setCanUndo] = useState(false);
+  const [colorRowClip, setColorRowClip] = useState<number | null>(null);
 
   const drawingRef = useRef(false);
   const hasDrawnRef = useRef(false);
@@ -345,6 +351,44 @@ export default function MementoPage({
   const isDrawStep = step === 1;
   const isFormStep = step === 2;
 
+  useLayoutEffect(() => {
+    if (!isDrawStep || !hasDrawn) {
+      setColorRowClip(null);
+      return;
+    }
+
+    const row = colorRowRef.current;
+    const tools = row?.parentElement;
+    const toolbar = row?.closest(".canvas-toolbar");
+    if (!row || !tools) return;
+
+    const syncColorRowClip = () => {
+      if (
+        row.scrollWidth <= tools.clientWidth + 1 ||
+        row.scrollLeft + row.clientWidth >= row.scrollWidth - 1
+      ) {
+        setColorRowClip(null);
+        return;
+      }
+
+      let clip = tools.clientWidth;
+      let shrink = ((clip - COLOR_ROW_PAD) % COLOR_STRIDE) - COLOR_SWATCH / 2;
+      if (shrink < 0) shrink += COLOR_STRIDE;
+      if (shrink > 0 && shrink < COLOR_STRIDE) clip -= shrink;
+      setColorRowClip(Math.round(clip));
+    };
+
+    syncColorRowClip();
+    row.addEventListener("scroll", syncColorRowClip, { passive: true });
+    const observer = new ResizeObserver(syncColorRowClip);
+    if (toolbar) observer.observe(toolbar);
+
+    return () => {
+      row.removeEventListener("scroll", syncColorRowClip);
+      observer.disconnect();
+    };
+  }, [isDrawStep, hasDrawn]);
+
   const drawCanvasBackground = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -459,6 +503,7 @@ export default function MementoPage({
     if (!ctx) return;
 
     drawingRef.current = true;
+    canvas.setPointerCapture(event.pointerId);
 
     pushUndoSnapshot();
 
@@ -495,8 +540,16 @@ export default function MementoPage({
     lastPointRef.current = point;
   };
 
-  const endDraw = () => {
+  const endDraw = (event?: ReactPointerEvent<HTMLCanvasElement>) => {
     drawingRef.current = false;
+    const canvas = canvasRef.current;
+    if (
+      canvas &&
+      event?.pointerId != null &&
+      canvas.hasPointerCapture(event.pointerId)
+    ) {
+      canvas.releasePointerCapture(event.pointerId);
+    }
   };
 
   const freezeCanvasLayout = () => {
@@ -657,10 +710,7 @@ export default function MementoPage({
             className={`memento-flow${isDrawStep ? " layout-draw" : " layout-form"}`}
             style={flowStyle}
           >
-            <div className="title-stack">
-              <h1 className="memento-title title-draw">Leave your mark</h1>
-              <h1 className="memento-title title-form">Credit your piece</h1>
-            </div>
+            <h1 className="memento-title">Leave your mark</h1>
 
             <div
               ref={canvasSlotRef}
@@ -699,7 +749,17 @@ export default function MementoPage({
                   </span>
                   <div className="canvas-toolbar">
                     <div className="color-tools">
-                      <div className="color-row" role="group" aria-label="Choose a color">
+                      <div
+                        ref={colorRowRef}
+                        className="color-row"
+                        role="group"
+                        aria-label="Choose a color"
+                        style={
+                          colorRowClip != null
+                            ? { maxWidth: `${colorRowClip}px` }
+                            : undefined
+                        }
+                      >
                         {MEMENTO_COLORS.map(({ color, label }) => (
                           <button
                             key={color}
@@ -716,7 +776,7 @@ export default function MementoPage({
                         ))}
                       </div>
                     </div>
-                    <div className="canvas-actions">
+                    <div className={`canvas-actions${hasDrawn ? " is-visible" : ""}`}>
                       <button
                         type="button"
                         className={`undo-action-btn${hasDrawn ? " is-visible" : ""}`}

@@ -20,6 +20,8 @@
   --canvas-pad-bottom: 48px;
   --canvas-toolbar-h: 36px;
   --canvas-toolbar-gutter: calc(var(--canvas-pad-bottom) - var(--canvas-pad));
+  --swatch-size: 24px;
+  --swatch-gap: 8px;
   --memento-transition: 150ms ease-out;
   --form-fade-transition: 150ms ease-out;
   --memento-section-gap: 24px;
@@ -36,6 +38,9 @@
   font-family: var(--font-zalando-sans), sans-serif;
   color: var(--ink);
   -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .memento-root *,
@@ -113,40 +118,12 @@
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
-.memento-root .title-stack {
-  position: relative;
-  flex: 0 0 auto;
-  height: calc(30px * 1.08);
-  margin: 0 0 var(--memento-section-gap);
-}
-
 .memento-root .memento-title {
   font-family: var(--font-zalando-sans), sans-serif;
   font-weight: 600;
   font-size: 30px;
   line-height: 1.08;
-  margin: 0;
-  position: absolute;
-  inset: 0;
-  transition: opacity var(--memento-transition);
-}
-
-.memento-root .layout-draw .title-draw {
-  opacity: 1;
-}
-
-.memento-root .layout-draw .title-form {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.memento-root .layout-form .title-draw {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.memento-root .layout-form .title-form {
-  opacity: 1;
+  margin: 0 0 var(--memento-section-gap);
 }
 
 .memento-root .step-anim {
@@ -353,12 +330,16 @@
 }
 
 .memento-root .canvas-actions {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 18px;
   flex: 0 0 auto;
   margin-left: auto;
   min-height: var(--canvas-toolbar-h);
+}
+
+.memento-root .canvas-actions.is-visible {
+  display: flex;
 }
 
 .memento-root .undo-action-btn {
@@ -414,10 +395,14 @@
   min-height: var(--canvas-toolbar-h);
 }
 
+.memento-root .canvas-toolbar:has(.canvas-actions.is-visible) .color-tools {
+  overflow: hidden;
+}
+
 .memento-root .color-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--swatch-gap);
   flex: 1 1 auto;
   min-width: 0;
   min-height: var(--canvas-toolbar-h);
@@ -436,8 +421,8 @@
 
 .memento-root .swatch {
   flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
+  width: var(--swatch-size);
+  height: var(--swatch-size);
   border-radius: 50%;
   border: 2px solid var(--paper-light);
   background: var(--c);
@@ -578,6 +563,9 @@
   padding: 6px 2px 8px;
   outline: none;
   transition: border-color 0.2s ease-out;
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
 }
 
 .memento-root input[type="text"]::placeholder {
