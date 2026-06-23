@@ -22,6 +22,7 @@
   --canvas-toolbar-gutter: calc(var(--canvas-pad-bottom) - var(--canvas-pad));
   --swatch-size: 24px;
   --swatch-gap: 8px;
+  --color-row-fade: calc(var(--swatch-size) + var(--swatch-gap));
   --memento-transition: 150ms ease-out;
   --form-fade-transition: 150ms ease-out;
   --memento-section-gap: 24px;
@@ -397,6 +398,17 @@
 
 .memento-root .canvas-toolbar:has(.canvas-actions.is-visible) .color-tools {
   overflow: hidden;
+}
+
+.memento-root .color-tools.has-scroll-fade {
+  --color-row-fade-mask: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(100% - var(--color-row-fade)),
+    transparent 100%
+  );
+  mask-image: var(--color-row-fade-mask);
+  -webkit-mask-image: var(--color-row-fade-mask);
 }
 
 .memento-root .color-row {

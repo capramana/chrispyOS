@@ -32,10 +32,6 @@ const PREVIEW_ROTATION_DEG = 2;
 const EXPORT_ALPHA_THRESHOLD = 1;
 const EXPORT_PADDING_CSS_PX = 4;
 const MAX_UNDO = 40;
-const COLOR_ROW_PAD = 4;
-const COLOR_SWATCH = 24;
-const COLOR_GAP = 8;
-const COLOR_STRIDE = COLOR_SWATCH + COLOR_GAP;
 
 function replayStepAnimation(element: HTMLElement | null) {
   if (!element) return;
@@ -229,7 +225,7 @@ export default function MementoPage({
     null,
   );
   const [canUndo, setCanUndo] = useState(false);
-  const [colorRowClip, setColorRowClip] = useState<number | null>(null);
+  const [colorRowFade, setColorRowFade] = useState(false);
 
   const drawingRef = useRef(false);
   const hasDrawnRef = useRef(false);
@@ -353,7 +349,7 @@ export default function MementoPage({
 
   useLayoutEffect(() => {
     if (!isDrawStep || !hasDrawn) {
-      setColorRowClip(null);
+      setColorRowFade(false);
       return;
     }
 
@@ -362,29 +358,20 @@ export default function MementoPage({
     const toolbar = row?.closest(".canvas-toolbar");
     if (!row || !tools) return;
 
-    const syncColorRowClip = () => {
-      if (
-        row.scrollWidth <= tools.clientWidth + 1 ||
-        row.scrollLeft + row.clientWidth >= row.scrollWidth - 1
-      ) {
-        setColorRowClip(null);
-        return;
-      }
-
-      let clip = tools.clientWidth;
-      let shrink = ((clip - COLOR_ROW_PAD) % COLOR_STRIDE) - COLOR_SWATCH / 2;
-      if (shrink < 0) shrink += COLOR_STRIDE;
-      if (shrink > 0 && shrink < COLOR_STRIDE) clip -= shrink;
-      setColorRowClip(Math.round(clip));
+    const syncColorRowFade = () => {
+      const canScrollRight =
+        row.scrollWidth > tools.clientWidth + 1 &&
+        row.scrollLeft + row.clientWidth < row.scrollWidth - 1;
+      setColorRowFade(canScrollRight);
     };
 
-    syncColorRowClip();
-    row.addEventListener("scroll", syncColorRowClip, { passive: true });
-    const observer = new ResizeObserver(syncColorRowClip);
+    syncColorRowFade();
+    row.addEventListener("scroll", syncColorRowFade, { passive: true });
+    const observer = new ResizeObserver(syncColorRowFade);
     if (toolbar) observer.observe(toolbar);
 
     return () => {
-      row.removeEventListener("scroll", syncColorRowClip);
+      row.removeEventListener("scroll", syncColorRowFade);
       observer.disconnect();
     };
   }, [isDrawStep, hasDrawn]);
@@ -748,17 +735,14 @@ export default function MementoPage({
                     draw or sign here
                   </span>
                   <div className="canvas-toolbar">
-                    <div className="color-tools">
+                    <div
+                      className={`color-tools${colorRowFade ? " has-scroll-fade" : ""}`}
+                    >
                       <div
                         ref={colorRowRef}
                         className="color-row"
                         role="group"
                         aria-label="Choose a color"
-                        style={
-                          colorRowClip != null
-                            ? { maxWidth: `${colorRowClip}px` }
-                            : undefined
-                        }
                       >
                         {MEMENTO_COLORS.map(({ color, label }) => (
                           <button
