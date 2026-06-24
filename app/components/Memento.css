@@ -24,7 +24,7 @@
   --swatch-gap: 8px;
   --color-row-fade: calc(var(--swatch-size) + var(--swatch-gap));
   --memento-transition: 150ms ease-out;
-  --canvas-shrink-transition: 200ms ease-out;
+  --canvas-shrink-transition: 180ms ease-out;
   --form-fade-transition: 150ms ease-out;
   --memento-section-gap: 24px;
 

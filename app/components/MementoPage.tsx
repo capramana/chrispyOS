@@ -27,7 +27,7 @@ import {
 import "./Memento.css";
 
 const TRANSITION_MS = 150;
-const CANVAS_SHRINK_MS = 200;
+const CANVAS_SHRINK_MS = 180;
 
 const PREVIEW_ROTATION_DEG = 2;
 const EXPORT_ALPHA_THRESHOLD = 1;
