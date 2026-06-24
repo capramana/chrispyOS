@@ -46,6 +46,14 @@ function isPhonePortraitViewport(): boolean {
   return window.matchMedia(PHONE_PORTRAIT_MQ).matches;
 }
 
+function canvasLogicalSize(canvas: HTMLCanvasElement) {
+  const dpr = window.devicePixelRatio || 1;
+  return {
+    width: canvas.width > 0 ? canvas.width / dpr : 0,
+    height: canvas.height > 0 ? canvas.height / dpr : 0,
+  };
+}
+
 function replayStepAnimation(element: HTMLElement | null) {
   if (!element) return;
   element.classList.remove("step-anim");
@@ -255,6 +263,7 @@ export default function MementoPage({
   const portraitCanvasSizeRef = useRef<{ width: number; height: number } | null>(
     null,
   );
+  const wasPhoneLandscapeDrawRef = useRef(false);
   const layoutVarsRef = useRef(layoutVars);
   const mountedRef = useRef(true);
 
@@ -435,8 +444,11 @@ export default function MementoPage({
 
     const image = new Image();
     image.onload = () => {
-      ctx.clearRect(0, 0, rect.width, rect.height);
-      ctx.drawImage(image, 0, 0, rect.width, rect.height);
+      const { width: logicalW, height: logicalH } = canvasLogicalSize(canvas);
+      const drawW = logicalW > 0 ? logicalW : rect.width;
+      const drawH = logicalH > 0 ? logicalH : rect.height;
+      ctx.clearRect(0, 0, drawW, drawH);
+      ctx.drawImage(image, 0, 0, drawW, drawH);
       drawingSnapshotRef.current = canvas.toDataURL("image/png");
     };
     image.src = snapshot;
@@ -500,6 +512,16 @@ export default function MementoPage({
     [drawCanvasBackground, restoreCanvasSnapshot],
   );
 
+  useLayoutEffect(() => {
+    if (isPhoneLandscapeDraw) {
+      wasPhoneLandscapeDrawRef.current = true;
+      return;
+    }
+    if (!isDrawStep || !wasPhoneLandscapeDrawRef.current) return;
+    wasPhoneLandscapeDrawRef.current = false;
+    requestAnimationFrame(() => setupCanvas());
+  }, [isDrawStep, isPhoneLandscapeDraw, setupCanvas]);
+
   useEffect(() => {
     setupCanvas();
     const onResize = () => setupCanvas();
@@ -554,7 +576,15 @@ export default function MementoPage({
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    if (rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
+
+    const { width: logicalW, height: logicalH } = canvasLogicalSize(canvas);
+    const scaleX = logicalW > 0 ? logicalW / rect.width : 1;
+    const scaleY = logicalH > 0 ? logicalH / rect.height : 1;
+    return {
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY,
+    };
   };
 
   const startDraw = (event: ReactPointerEvent<HTMLCanvasElement>) => {

@@ -58,7 +58,7 @@
   display: flex;
   flex-direction: column;
   background: var(--paper-light);
-  padding: 28px 24px 26px;
+  padding: 24px;
   position: relative;
   overflow: hidden;
 }
@@ -123,9 +123,10 @@
 .memento-root .memento-title {
   font-family: var(--font-zalando-sans), sans-serif;
   font-weight: 600;
-  font-size: 30px;
+  font-size: 24px;
   line-height: 1.08;
-  margin: 0 0 var(--memento-section-gap);
+  padding: 8px;
+  margin: 0 0 12px;
 }
 
 .memento-root .step-anim {
