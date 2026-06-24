@@ -341,8 +341,8 @@
   min-height: var(--canvas-toolbar-h);
   min-width: 0;
   transition:
-    opacity var(--canvas-shrink-transition),
-    visibility var(--canvas-shrink-transition);
+    opacity var(--memento-transition),
+    visibility var(--memento-transition);
 }
 
 .memento-root .canvas-actions {
