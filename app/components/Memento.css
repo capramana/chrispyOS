@@ -796,3 +796,53 @@
 .memento-root input[type="text"]:focus-visible {
   outline: none;
 }
+
+.memento-root .layout-draw.is-phone-landscape .canvas-slot {
+  align-items: center;
+  justify-content: center;
+}
+
+.memento-root .layout-draw.is-phone-landscape .canvas-scaler {
+  width: auto;
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.memento-root .canvas-wrap.is-rotation-locked {
+  flex-shrink: 0;
+}
+
+.memento-root .canvas-wrap.is-rotation-locked.is-active {
+  transform: none;
+}
+
+.memento-root .rotation-lock-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding:
+    max(28px, env(safe-area-inset-top, 0px))
+    max(24px, env(safe-area-inset-right, 0px))
+    max(28px, env(safe-area-inset-bottom, 0px))
+    max(24px, env(safe-area-inset-left, 0px));
+  text-align: center;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--paper-light) 90%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+
+.memento-root .rotation-lock-overlay p {
+  margin: 0;
+  max-width: 16em;
+  font-family: var(--font-zalando-sans), sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+}

@@ -17,7 +17,7 @@ import {
   type SocialType,
 } from "./mementoColors";
 import MementoSocialField from "./MementoSocialField";
-import { Undo } from "iconoir-react";
+import { RefreshDouble, Undo } from "iconoir-react";
 import {
   applyDevConfirmPreviewState,
   DEV_CONFIRM_PREVIEW,
@@ -33,6 +33,18 @@ const PREVIEW_ROTATION_DEG = 2;
 const EXPORT_ALPHA_THRESHOLD = 1;
 const EXPORT_PADDING_CSS_PX = 4;
 const MAX_UNDO = 40;
+const PHONE_LANDSCAPE_MQ = "(orientation: landscape) and (max-height: 500px)";
+const PHONE_PORTRAIT_MQ = "(max-width: 768px) and (orientation: portrait)";
+
+function isPhoneLandscapeViewport(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia(PHONE_LANDSCAPE_MQ).matches;
+}
+
+function isPhonePortraitViewport(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia(PHONE_PORTRAIT_MQ).matches;
+}
 
 function replayStepAnimation(element: HTMLElement | null) {
   if (!element) return;
@@ -227,6 +239,11 @@ export default function MementoPage({
   );
   const [canUndo, setCanUndo] = useState(false);
   const [colorRowFade, setColorRowFade] = useState(false);
+  const [isPhoneLandscape, setIsPhoneLandscape] = useState(false);
+  const [portraitCanvasSize, setPortraitCanvasSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   const drawingRef = useRef(false);
   const hasDrawnRef = useRef(false);
@@ -234,6 +251,10 @@ export default function MementoPage({
   const lastPointRef = useRef({ x: 0, y: 0 });
   const stepRef = useRef<MementoStep>(step);
   const editingSnapshotRef = useRef<string | null>(null);
+  const drawingSnapshotRef = useRef<string | null>(null);
+  const portraitCanvasSizeRef = useRef<{ width: number; height: number } | null>(
+    null,
+  );
   const layoutVarsRef = useRef(layoutVars);
   const mountedRef = useRef(true);
 
@@ -259,6 +280,21 @@ export default function MementoPage({
     stepRef.current = step;
     layoutVarsRef.current = layoutVars;
   }, [step, layoutVars]);
+
+  useEffect(() => {
+    const mq = window.matchMedia(PHONE_LANDSCAPE_MQ);
+    const sync = () => setIsPhoneLandscape(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (step !== 3) return;
+    portraitCanvasSizeRef.current = null;
+    setPortraitCanvasSize(null);
+    drawingSnapshotRef.current = null;
+  }, [step]);
 
   useEffect(() => {
     if (step !== 2) {
@@ -347,6 +383,7 @@ export default function MementoPage({
 
   const isDrawStep = step === 1;
   const isFormStep = step === 2;
+  const isPhoneLandscapeDraw = isDrawStep && isPhoneLandscape;
 
   useLayoutEffect(() => {
     if (!isDrawStep || !hasDrawn) {
@@ -394,50 +431,86 @@ export default function MementoPage({
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    if (rect.width === 0 || rect.height === 0) return;
+
     const image = new Image();
     image.onload = () => {
       ctx.clearRect(0, 0, rect.width, rect.height);
-      ctx.drawImage(image, 0, 0, image.width / dpr, image.height / dpr);
+      ctx.drawImage(image, 0, 0, rect.width, rect.height);
+      drawingSnapshotRef.current = canvas.toDataURL("image/png");
     };
     image.src = snapshot;
   }, []);
 
-  const setupCanvas = useCallback((snapshotOverride?: string | null) => {
-    if (stepRef.current !== 1) return;
+  const setupCanvas = useCallback(
+    (snapshotOverride?: string | null) => {
+      if (stepRef.current !== 1) return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-    const snapshot =
-      snapshotOverride !== undefined
-        ? snapshotOverride
-        : hasDrawnRef.current
-          ? canvas.toDataURL("image/png")
-          : null;
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return;
+      if (isPhoneLandscapeViewport() && portraitCanvasSizeRef.current) {
+        return;
+      }
 
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(dpr, dpr);
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
 
-    if (snapshot) {
-      restoreCanvasSnapshot(snapshot);
-    } else {
-      drawCanvasBackground();
-    }
-  }, [drawCanvasBackground, restoreCanvasSnapshot]);
+      const dpr = window.devicePixelRatio || 1;
+      const bufferWidth = canvas.width > 0 ? canvas.width / dpr : 0;
+      const bufferHeight = canvas.height > 0 ? canvas.height / dpr : 0;
+      const cssWidth = rect.width;
+      const cssHeight = rect.height;
+
+      const snapshot =
+        snapshotOverride !== undefined
+          ? snapshotOverride
+          : hasDrawnRef.current && bufferWidth > 0
+            ? canvas.toDataURL("image/png")
+            : drawingSnapshotRef.current;
+
+      if (
+        snapshotOverride === undefined &&
+        bufferWidth > 0 &&
+        Math.abs(bufferWidth - cssWidth) < 1 &&
+        Math.abs(bufferHeight - cssHeight) < 1
+      ) {
+        return;
+      }
+
+      if (isPhonePortraitViewport() && !portraitCanvasSizeRef.current) {
+        const size = { width: cssWidth, height: cssHeight };
+        portraitCanvasSizeRef.current = size;
+        setPortraitCanvasSize(size);
+      }
+
+      canvas.width = cssWidth * dpr;
+      canvas.height = cssHeight * dpr;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+
+      if (snapshot) {
+        restoreCanvasSnapshot(snapshot);
+      } else {
+        drawCanvasBackground();
+      }
+    },
+    [drawCanvasBackground, restoreCanvasSnapshot],
+  );
 
   useEffect(() => {
     setupCanvas();
     const onResize = () => setupCanvas();
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    window.screen?.orientation?.addEventListener("change", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+      window.screen?.orientation?.removeEventListener("change", onResize);
+    };
   }, [setupCanvas]);
 
   useEffect(() => {
@@ -473,6 +546,7 @@ export default function MementoPage({
     if (undoStackRef.current.length === 0) {
       hasDrawnRef.current = false;
       setHasDrawn(false);
+      drawingSnapshotRef.current = null;
     }
   }, [restoreCanvasSnapshot]);
 
@@ -484,7 +558,7 @@ export default function MementoPage({
   };
 
   const startDraw = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawStep) return;
+    if (!isDrawStep || isPhoneLandscapeDraw) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -510,7 +584,7 @@ export default function MementoPage({
   };
 
   const moveDraw = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (!drawingRef.current || !isDrawStep) return;
+    if (!drawingRef.current || !isDrawStep || isPhoneLandscapeDraw) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -537,6 +611,9 @@ export default function MementoPage({
       canvas.hasPointerCapture(event.pointerId)
     ) {
       canvas.releasePointerCapture(event.pointerId);
+    }
+    if (canvas && hasDrawnRef.current) {
+      drawingSnapshotRef.current = canvas.toDataURL("image/png");
     }
   };
 
@@ -683,6 +760,14 @@ export default function MementoPage({
       } as CSSProperties)
     : undefined;
 
+  const portraitLockStyle =
+    isPhoneLandscapeDraw && portraitCanvasSize
+      ? ({
+          width: `${portraitCanvasSize.width}px`,
+          height: `${portraitCanvasSize.height}px`,
+        } as CSSProperties)
+      : undefined;
+
   const confirmPreviewSize =
     drawingSize != null
       ? fitPreviewSize(drawingSize.width, drawingSize.height, 120, 200)
@@ -693,9 +778,21 @@ export default function MementoPage({
   return (
     <div className="memento-root">
       <div className="page">
+        {isPhoneLandscapeDraw ? (
+          <div className="rotation-lock-overlay" role="status" aria-live="polite">
+            <RefreshDouble
+              width={28}
+              height={28}
+              strokeWidth={1.75}
+              color="currentColor"
+              aria-hidden
+            />
+            <p>Lock phone rotation or return to portrait mode</p>
+          </div>
+        ) : null}
         {(isDrawStep || isFormStep) && (
           <div
-            className={`memento-flow${isDrawStep ? " layout-draw" : " layout-form"}`}
+            className={`memento-flow${isDrawStep ? " layout-draw" : " layout-form"}${isPhoneLandscapeDraw ? " is-phone-landscape" : ""}`}
             style={flowStyle}
           >
             <h1 className="memento-title">Leave your mark</h1>
@@ -720,8 +817,8 @@ export default function MementoPage({
             >
               <div className="canvas-scaler">
                 <div
-                  className={`canvas-wrap${isDrawStep ? " is-active" : " is-inactive"}`}
-                  style={wrapStyle}
+                  className={`canvas-wrap${isDrawStep ? " is-active" : " is-inactive"}${isPhoneLandscapeDraw ? " is-rotation-locked" : ""}`}
+                  style={{ ...portraitLockStyle, ...wrapStyle }}
                 >
                   <canvas
                     ref={canvasRef}
