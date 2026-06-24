@@ -24,6 +24,7 @@
   --swatch-gap: 8px;
   --color-row-fade: calc(var(--swatch-size) + var(--swatch-gap));
   --memento-transition: 150ms ease-out;
+  --canvas-shrink-transition: 200ms ease-out;
   --form-fade-transition: 150ms ease-out;
   --memento-section-gap: 24px;
 
@@ -212,6 +213,19 @@
   height: var(--preview-h, 200px);
   flex: 0 0 auto;
   overflow: visible;
+  transition:
+    width var(--canvas-shrink-transition),
+    height var(--canvas-shrink-transition);
+}
+
+.memento-root .layout-form .canvas-wrap {
+  transition:
+    transform var(--canvas-shrink-transition),
+    width var(--canvas-shrink-transition),
+    height var(--canvas-shrink-transition),
+    padding var(--canvas-shrink-transition),
+    box-shadow var(--canvas-shrink-transition),
+    clip-path var(--canvas-shrink-transition);
 }
 
 .memento-root .layout-form .canvas-slot:hover .canvas-wrap {
@@ -306,7 +320,7 @@
   color: var(--ink-soft);
   opacity: 0.55;
   pointer-events: none;
-  transition: opacity 0.2s ease-out;
+  transition: opacity var(--canvas-shrink-transition);
   z-index: 2;
 }
 
@@ -327,8 +341,8 @@
   min-height: var(--canvas-toolbar-h);
   min-width: 0;
   transition:
-    opacity var(--memento-transition),
-    visibility var(--memento-transition);
+    opacity var(--canvas-shrink-transition),
+    visibility var(--canvas-shrink-transition);
 }
 
 .memento-root .canvas-actions {

@@ -27,6 +27,7 @@ import {
 import "./Memento.css";
 
 const TRANSITION_MS = 150;
+const CANVAS_SHRINK_MS = 200;
 
 const PREVIEW_ROTATION_DEG = 2;
 const EXPORT_ALPHA_THRESHOLD = 1;
@@ -268,7 +269,7 @@ export default function MementoPage({
     }
 
     clearFormTimers();
-    const showId = deferFormStep(() => setFormShown(true));
+    const showId = deferFormStep(() => setFormShown(true), CANVAS_SHRINK_MS);
 
     return () => {
       window.clearTimeout(showId);
