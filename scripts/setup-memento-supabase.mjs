@@ -50,10 +50,16 @@ try {
   const exists = buckets?.some((bucket) => bucket.name === BUCKET);
   if (exists) {
     console.log(`Storage bucket "${BUCKET}" already exists.`);
+    const { error: updateError } = await supabase.storage.updateBucket(BUCKET, {
+      allowedMimeTypes: ["image/png", "image/jpeg", "image/webp"],
+    });
+    if (updateError) throw updateError;
+    console.log("Bucket mime types updated (png, jpeg, webp).");
   } else {
     console.log(`Creating storage bucket "${BUCKET}"…`);
     const { error: bucketError } = await supabase.storage.createBucket(BUCKET, {
       public: false,
+      allowedMimeTypes: ["image/png", "image/jpeg", "image/webp"],
     });
     if (bucketError) throw bucketError;
     console.log("Bucket ready.");
