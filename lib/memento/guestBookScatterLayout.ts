@@ -15,13 +15,29 @@ export const GUEST_BOOK_DRAWING_GAP_PX = 20;
 /** Bottom band reserved for the printed date label. */
 export const GUEST_BOOK_PAGE_NUMBER_RESERVE_PX = 20;
 
-/** @deprecated Use GUEST_BOOK_PAGE_EDGE_MARGIN_PX */
-export const GUEST_BOOK_PAGE_INSET_PX = GUEST_BOOK_PAGE_EDGE_MARGIN_PX;
-
 const MAX_RANDOM_ATTEMPTS = 200;
 const GRID_SCAN_STEP_PX = 4;
 const MIN_LAYOUT_SCALE = 0.35;
 export const GUEST_BOOK_SCATTER_ALGO_VERSION = "random-v2";
+
+/** Ignore transient layout reads during cover/flip animations. */
+export const GUEST_BOOK_MIN_PAGE_FACE_PX = 160;
+
+export function measureGuestBookPageFace(page: HTMLElement): {
+  width: number;
+  height: number;
+} {
+  const slot = page.closest<HTMLElement>(".guest-book-slot");
+  const probe = slot ?? page;
+  const width = probe.clientWidth;
+  const height = probe.clientHeight;
+  if (width > 0 && height > 0) {
+    return { width, height };
+  }
+
+  const rect = page.getBoundingClientRect();
+  return { width: rect.width, height: rect.height };
+}
 
 export type DrawingNaturalSize = {
   width: number;

@@ -266,6 +266,7 @@
 
 .guest-book-page--dismiss {
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .guest-book-page--dismiss .guest-book-page__scatter-item,
@@ -329,13 +330,17 @@
 }
 
 .guest-book-half--page .guest-book-page {
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .guest-book-page__scatter-item,
-.guest-book-page__full-bleed,
-.guest-book-page__scatter-item img {
+.guest-book-page__full-bleed {
   pointer-events: auto;
+}
+
+.guest-book-page__scatter-item--turnable,
+.guest-book-page__full-bleed--turnable {
+  cursor: pointer;
 }
 
 .guest-book-turn-margins {
@@ -602,11 +607,20 @@
 .guest-book-page--filled {
   padding: 0;
   min-height: 0;
+  min-width: 100%;
+  flex: 1 1 auto;
   overflow: hidden;
 }
 
 .guest-book-page--full-bleed {
   padding: 0;
+}
+
+.guest-book-page__full-bleed,
+.guest-book-page__scatter-item {
+  transition:
+    opacity 0.5s ease,
+    filter 0.5s ease;
 }
 
 .guest-book-page__full-bleed {
@@ -621,10 +635,6 @@
   user-select: none;
   -webkit-user-drag: none;
   z-index: 2;
-  pointer-events: auto;
-  transition:
-    opacity 0.5s ease,
-    filter 0.5s ease;
 }
 
 .guest-book-page--highlight-scrub .guest-book-page__full-bleed,
@@ -643,10 +653,6 @@
   min-width: 0;
   min-height: 0;
   z-index: 2;
-  pointer-events: auto;
-  transition:
-    opacity 0.5s ease,
-    filter 0.5s ease;
 }
 
 .guest-book-page__scatter-item img {

@@ -16,12 +16,11 @@ import {
   GUEST_BOOK_HOVER_DELAY_MS,
   GUEST_BOOK_HOVER_FADE_OUT_MS,
   clearGuestBookTimeoutRef,
+  guestBookDrawingSearchHighlightStyle,
+  type GuestBookPageSearchProps,
   type GuestBookSearchProfilePin,
 } from "@/lib/memento/guestBookSearch";
 import { mementoAvatarUrl } from "@/lib/memento/mementoAvatarUrl";
-import "./GuestBook.css";
-
-export type { GuestBookDrawingHoverTarget };
 
 const GUEST_BOOK_HOVER_LEAVE_GRACE_MS = 80;
 
@@ -41,7 +40,9 @@ function searchProfileCardOpacity(
 
 export function GuestBookHoverProvider({
   children,
-  opacityFor,
+  searchHighlight,
+  searchFlip,
+  searchRiffleMs,
   spreadRef,
   measureSpread,
   spreadOpen,
@@ -56,7 +57,6 @@ export function GuestBookHoverProvider({
   pages,
 }: {
   children: React.ReactNode;
-  opacityFor: (drawingId: string, pageNumber: number) => number;
   spreadRef: React.RefObject<HTMLDivElement | null>;
   measureSpread: () => DOMRect | null;
   spreadOpen: boolean;
@@ -69,7 +69,7 @@ export function GuestBookHoverProvider({
   searchProfileCssFadeIn: boolean;
   searchProfileFadeOpacity: number | null;
   pages: GuestBookPageContent[];
-}) {
+} & GuestBookPageSearchProps) {
   const [mouseHover, setMouseHover] = useState<GuestBookDrawingHoverTarget | null>(
     null,
   );
@@ -90,6 +90,18 @@ export function GuestBookHoverProvider({
   const probeHoverAtRef = useRef<((x: number, y: number) => void) | null>(null);
   const prevAnimatingRef = useRef(animating);
   const searchProfilePinned = searchProfilePin !== null;
+
+  const drawingOpacity = useCallback(
+    (drawingId: string, pageNumber: number) =>
+      guestBookDrawingSearchHighlightStyle(
+        drawingId,
+        pageNumber,
+        searchHighlight,
+        searchFlip,
+        searchRiffleMs,
+      ).opacity,
+    [searchHighlight, searchFlip, searchRiffleMs],
+  );
 
   const commitMouseHover = useCallback(
     (target: GuestBookDrawingHoverTarget | null) => {
@@ -550,7 +562,7 @@ export function GuestBookHoverProvider({
             key={`exit-${mouseHoverExit.drawing.id}`}
             hover={mouseHoverExit}
             hoverFadingOut
-            opacity={opacityFor(
+            opacity={drawingOpacity(
               mouseHoverExit.drawing.id,
               mouseHoverExit.pageNumber,
             )}
@@ -566,7 +578,7 @@ export function GuestBookHoverProvider({
               searchProfileFadingOut,
               searchProfileFadeOpacity,
               displayHover,
-              opacityFor(displayHover.drawing.id, displayHover.pageNumber),
+              drawingOpacity(displayHover.drawing.id, displayHover.pageNumber),
             )}
           />
         ) : null}

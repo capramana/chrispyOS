@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import type { GuestBookPageContent } from "@/lib/memento/guestBookPages";
 import type { GuestBookPageSearchProps } from "@/lib/memento/guestBookSearch";
@@ -11,10 +12,11 @@ import {
   type BookLayout,
 } from "@/lib/memento/guestBookFlip";
 import {
-  GuestBookPage,
-  guestBookPageContentForNumber,
-  LeatherMarginPageFace,
-} from "@/app/components/GuestBookPage";
+  guestBookPageInteraction,
+  resolveGuestBookForwardTurn,
+  resolveGuestBookPageDismiss,
+} from "@/lib/memento/guestBookInteraction";
+import { GuestBookSheetPageFace } from "@/app/components/GuestBookPage";
 
 type GuestBookSheetProps = {
   sheetIndex: number;
@@ -32,26 +34,11 @@ type GuestBookSheetProps = {
   openBook: () => void;
   openFromBack: () => void;
   turnForward: () => void;
+  goForward: () => void;
   goBack: () => void;
-  dismissFrontCover: () => void;
+  closeBook: () => void;
   dismissBackCover: () => void;
 } & GuestBookPageSearchProps;
-
-function resolvePageDismiss(
-  pageNumber: number,
-  step: number,
-  animating: boolean,
-  layout: BookLayout,
-  dismissFrontCover: () => void,
-  dismissBackCover: () => void,
-): (() => void) | undefined {
-  if (animating) return undefined;
-  if (step === 1 && pageNumber === 1) return dismissFrontCover;
-  if (step === layout.maxStep && pageNumber === layout.pageCount) {
-    return dismissBackCover;
-  }
-  return undefined;
-}
 
 function GuestBookTurnMargins({
   active,
@@ -169,23 +156,50 @@ export function GuestBookSheet({
   openBook,
   openFromBack,
   turnForward,
+  goForward,
   goBack,
-  dismissFrontCover,
+  closeBook,
   dismissBackCover,
 }: GuestBookSheetProps) {
   const { sheetCount } = layout;
   const lastSheet = sheetCount - 1;
   const frontPage = frontPageNumber(sheetIndex, layout);
   const backPage = backPageNumber(sheetIndex, layout);
-  const pageDismissFor = (pageNumber: number) =>
-    resolvePageDismiss(
-      pageNumber,
+  const searchProps = { searchHighlight, searchFlip, searchRiffleMs };
+  const interactionCtx = useMemo(
+    () => ({
       step,
       animating,
+      frontClosed,
+      backClosed,
       layout,
-      dismissFrontCover,
+      goBack,
+      goForward,
+      closeBook,
       dismissBackCover,
-    );
+    }),
+    [
+      step,
+      animating,
+      frontClosed,
+      backClosed,
+      layout,
+      goBack,
+      goForward,
+      closeBook,
+      dismissBackCover,
+    ],
+  );
+  const pageFace = (pageNumber: number, leatherMargin = false) => (
+    <GuestBookSheetPageFace
+      pageNumber={pageNumber}
+      pageContents={pageContents}
+      leatherMargin={leatherMargin}
+      bookStep={step}
+      {...searchProps}
+      {...guestBookPageInteraction(pageNumber, interactionCtx)}
+    />
+  );
   const isLeftTarget = sheetIndex === leftSheet;
   const isRightTarget = sheetIndex === rightSheet;
   const isBackCoverTarget =
@@ -205,6 +219,14 @@ export function GuestBookSheet({
   const frontTurnActive =
     (isRightTarget || isBackCoverTarget) && !animating && !frontClosed;
   const backTurnActive = (isLeftTarget || isBackCoverTarget) && !animating;
+  const turnForwardAction = resolveGuestBookForwardTurn(
+    isBackCoverTarget,
+    frontClosed,
+    openFromBack,
+    openBook,
+    turnForward,
+  );
+  const turnBackAction = isBackCoverTarget ? openFromBack : goBack;
 
   return (
     <motion.div
@@ -240,13 +262,7 @@ export function GuestBookSheet({
         <GuestBookTurnMargins
           active={(isRightTarget || isBackCoverTarget) && !animating}
           label="Turn page forward"
-          onTurn={
-            isBackCoverTarget
-              ? openFromBack
-              : frontClosed
-                ? openBook
-                : turnForward
-          }
+          onTurn={turnForwardAction}
         />
         {sheetIndex === 0 ? (
           <GuestBookInteractiveLeatherPanel
@@ -263,37 +279,17 @@ export function GuestBookSheet({
                 onTurn={turnForward}
               />
             ) : null}
-            <LeatherMarginPageFace
-              pageNumber={frontPage}
-              pageContents={pageContents}
-              searchHighlight={searchHighlight}
-              searchFlip={searchFlip}
-              searchRiffleMs={searchRiffleMs}
-              onPageDismiss={pageDismissFor(frontPage)}
-            />
+            {pageFace(frontPage, true)}
           </>
         ) : frontPage !== null ? (
           <>
             {frontTurnActive ? (
               <GuestBookTurnSurface
                 label="Turn page forward"
-                onTurn={
-                  isBackCoverTarget
-                    ? openFromBack
-                    : frontClosed
-                      ? openBook
-                      : turnForward
-                }
+                onTurn={turnForwardAction}
               />
             ) : null}
-            <GuestBookPage
-              number={frontPage}
-              content={guestBookPageContentForNumber(pageContents, frontPage)}
-              searchHighlight={searchHighlight}
-              searchFlip={searchFlip}
-              searchRiffleMs={searchRiffleMs}
-              onPageDismiss={pageDismissFor(frontPage)}
-            />
+            {pageFace(frontPage)}
           </>
         ) : null}
       </div>
@@ -314,7 +310,7 @@ export function GuestBookSheet({
         <GuestBookTurnMargins
           active={(isLeftTarget || isBackCoverTarget) && !animating}
           label="Turn page back"
-          onTurn={isBackCoverTarget ? openFromBack : goBack}
+          onTurn={turnBackAction}
         />
         {sheetIndex === 0 && backPage !== null ? (
           <div
@@ -323,17 +319,10 @@ export function GuestBookSheet({
             {backTurnActive ? (
               <GuestBookTurnSurface
                 label="Turn page back"
-                onTurn={isBackCoverTarget ? openFromBack : goBack}
+                onTurn={turnBackAction}
               />
             ) : null}
-            <GuestBookPage
-              number={backPage}
-              content={guestBookPageContentForNumber(pageContents, backPage)}
-              searchHighlight={searchHighlight}
-              searchFlip={searchFlip}
-              searchRiffleMs={searchRiffleMs}
-              onPageDismiss={pageDismissFor(backPage)}
-            />
+            {pageFace(backPage)}
           </div>
         ) : sheetIndex === lastSheet ? (
           <GuestBookInteractiveLeatherPanel
@@ -347,17 +336,10 @@ export function GuestBookSheet({
             {backTurnActive ? (
               <GuestBookTurnSurface
                 label="Turn page back"
-                onTurn={isBackCoverTarget ? openFromBack : goBack}
+                onTurn={turnBackAction}
               />
             ) : null}
-            <GuestBookPage
-              number={backPage}
-              content={guestBookPageContentForNumber(pageContents, backPage)}
-              searchHighlight={searchHighlight}
-              searchFlip={searchFlip}
-              searchRiffleMs={searchRiffleMs}
-              onPageDismiss={pageDismissFor(backPage)}
-            />
+            {pageFace(backPage)}
           </>
         ) : null}
       </div>
@@ -376,7 +358,7 @@ export function BackCoverFlipper({
   searchRiffleStep,
   searchRiffleMs,
   searchHighlight,
-  dismissFrontCover,
+  closeBook,
   dismissBackCover,
   animating,
 }: {
@@ -386,7 +368,7 @@ export function BackCoverFlipper({
   active: boolean;
   pageContents: GuestBookPageContent[];
   searchRiffleStep: number | null;
-  dismissFrontCover: () => void;
+  closeBook: () => void;
   dismissBackCover: () => void;
   animating: boolean;
 } & GuestBookPageSearchProps) {
@@ -394,12 +376,12 @@ export function BackCoverFlipper({
   const lastPage = frontPageNumber(lastSheet, layout);
   const lastPageDismiss =
     lastPage !== null
-      ? resolvePageDismiss(
+      ? resolveGuestBookPageDismiss(
           lastPage,
           step,
           animating,
           layout,
-          dismissFrontCover,
+          closeBook,
           dismissBackCover,
         )
       : undefined;
@@ -430,9 +412,11 @@ export function BackCoverFlipper({
     >
       <div className="guest-book-half guest-book-half--front guest-book-half--cover">
         {lastPage !== null ? (
-          <LeatherMarginPageFace
+          <GuestBookSheetPageFace
             pageNumber={lastPage}
             pageContents={pageContents}
+            leatherMargin
+            bookStep={step}
             searchHighlight={searchHighlight}
             searchFlip={searchFlip}
             searchRiffleMs={searchRiffleMs}
@@ -446,4 +430,3 @@ export function BackCoverFlipper({
     </motion.div>
   );
 }
-

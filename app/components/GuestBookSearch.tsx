@@ -19,7 +19,6 @@ import {
   type GuestBookSearchEntry,
 } from "@/lib/memento/guestBookPages";
 import { mementoAvatarUrl } from "@/lib/memento/mementoAvatarUrl";
-import "./GuestBook.css";
 
 type GuestBookSearchProps = {
   pages: GuestBookPageContent[];

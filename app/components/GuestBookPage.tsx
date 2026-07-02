@@ -10,13 +10,27 @@ import {
 import { loadDrawingNaturalSize } from "@/lib/memento/loadDrawingNaturalSize";
 import {
   GUEST_BOOK_SCATTER_ALGO_VERSION,
+  GUEST_BOOK_MIN_PAGE_FACE_PX,
+  measureGuestBookPageFace,
   scatterGuestBookDrawings,
   type PlacedGuestBookDrawing,
 } from "@/lib/memento/guestBookScatterLayout";
+import { pageOuterClass } from "@/lib/memento/guestBookFlip";
 import {
   guestBookDrawingSearchHighlightStyle,
   type GuestBookPageSearchProps,
 } from "@/lib/memento/guestBookSearch";
+
+function stopPropagationHandlers(action?: () => void) {
+  if (!action) return {};
+  return {
+    onPointerDown: (event: React.PointerEvent) => event.stopPropagation(),
+    onClick: (event: React.MouseEvent) => {
+      event.stopPropagation();
+      action();
+    },
+  };
+}
 
 export function GuestBookPage({
   number,
@@ -25,10 +39,14 @@ export function GuestBookPage({
   searchFlip,
   searchRiffleMs,
   onPageDismiss,
+  onDrawingClick,
+  bookStep,
 }: {
   number: number;
   content: GuestBookPageContent | null;
   onPageDismiss?: () => void;
+  onDrawingClick?: () => void;
+  bookStep?: number;
 } & GuestBookPageSearchProps) {
   const pageRef = useRef<HTMLDivElement>(null);
   const layoutRunIdRef = useRef(0);
@@ -62,16 +80,10 @@ export function GuestBookPage({
     guestBookIsPageOnSpread(number, searchHighlight.spreadStep);
   const highlightScrubbing = onHighlightSpread && searchFlip !== null;
 
-  const handleDismissPointerDown = (event: React.PointerEvent) => {
-    if (!onPageDismiss) return;
-    event.stopPropagation();
-  };
-
-  const handleDismissClick = (event: React.MouseEvent) => {
-    if (!onPageDismiss) return;
-    event.stopPropagation();
-    onPageDismiss();
-  };
+  const drawingTurnProps = stopPropagationHandlers(onDrawingClick);
+  const dismissProps = stopPropagationHandlers(onPageDismiss);
+  const drawingTurnClass = onDrawingClick ? " guest-book-page__scatter-item--turnable" : "";
+  const fullBleedTurnClass = onDrawingClick ? " guest-book-page__full-bleed--turnable" : "";
 
   useLayoutEffect(() => {
     if (!hasDrawings || fullPageDrawing) return;
@@ -84,9 +96,6 @@ export function GuestBookPage({
 
     const runLayout = async () => {
       const runId = ++layoutRunIdRef.current;
-      const pageWidth = page.clientWidth;
-      const pageHeight = page.clientHeight;
-      if (pageWidth <= 0 || pageHeight <= 0) return;
 
       const sizes = await Promise.all(
         drawings.map(async (drawing) => {
@@ -95,16 +104,29 @@ export function GuestBookPage({
 
           const size = await loadDrawingNaturalSize(
             `/api/memento/drawing/${drawing.id}`,
-          ).catch(() => ({
-            width: pageWidth * 0.5,
-            height: pageWidth * 0.38,
-          }));
+          ).catch(() => {
+            const { width: fallbackWidth } = measureGuestBookPageFace(page);
+            const pageWidth =
+              fallbackWidth >= GUEST_BOOK_MIN_PAGE_FACE_PX ? fallbackWidth : 292;
+            return {
+              width: pageWidth * 0.5,
+              height: pageWidth * 0.38,
+            };
+          });
           sizeCache.set(drawing.id, size);
           return size;
         }),
       );
 
       if (cancelled || runId !== layoutRunIdRef.current) return;
+
+      const { width: pageWidth, height: pageHeight } = measureGuestBookPageFace(page);
+      if (
+        pageWidth < GUEST_BOOK_MIN_PAGE_FACE_PX ||
+        pageHeight < GUEST_BOOK_MIN_PAGE_FACE_PX
+      ) {
+        return;
+      }
 
       setPlacements(
         scatterGuestBookDrawings({
@@ -119,16 +141,24 @@ export function GuestBookPage({
 
     void runLayout();
 
+    let frameId = 0;
     const observer = new ResizeObserver(() => {
-      void runLayout();
+      if (frameId !== 0) cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        frameId = 0;
+        void runLayout();
+      });
     });
     observer.observe(page);
+    const slot = page.closest(".guest-book-slot");
+    if (slot instanceof HTMLElement) observer.observe(slot);
 
     return () => {
       cancelled = true;
+      if (frameId !== 0) cancelAnimationFrame(frameId);
       observer.disconnect();
     };
-  }, [drawings, fullPageDrawing, hasDrawings, layoutKey, number]);
+  }, [drawings, fullPageDrawing, hasDrawings, layoutKey, number, bookStep]);
 
   return (
     <div
@@ -136,20 +166,19 @@ export function GuestBookPage({
       className={`guest-book-page${hasDrawings ? " guest-book-page--filled" : ""}${
         fullPageDrawing ? " guest-book-page--full-bleed" : ""
       }${number % 2 === 1 ? " guest-book-page--outer-left" : " guest-book-page--outer-right"}${
-        onHighlightSpread ? " guest-book-page--highlight-active" : ""
-      }${highlightScrubbing ? " guest-book-page--highlight-scrub" : ""}${
+        highlightScrubbing ? " guest-book-page--highlight-scrub" : ""
+      }${
         onPageDismiss ? " guest-book-page--dismiss" : ""
       }`}
       data-page-number={number}
-      onPointerDown={handleDismissPointerDown}
-      onClick={handleDismissClick}
+      {...dismissProps}
     >
       <span className="guest-book-page__gutter-line" aria-hidden />
       {fullPageDrawing ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            className="guest-book-page__full-bleed"
+            className={`guest-book-page__full-bleed${fullBleedTurnClass}`}
             src={`/api/memento/drawing/${fullPageDrawing.id}`}
             alt={fullPageDrawing.name}
             data-guest-book-drawing={fullPageDrawing.id}
@@ -158,6 +187,7 @@ export function GuestBookPage({
             decoding="async"
             draggable={false}
             style={highlightStyleFor(fullPageDrawing.id)}
+            {...drawingTurnProps}
           />
         </>
       ) : null}
@@ -170,7 +200,7 @@ export function GuestBookPage({
             return (
               <div
                 key={placement.id}
-                className="guest-book-page__scatter-item"
+                className={`guest-book-page__scatter-item${drawingTurnClass}`}
                 data-guest-book-drawing={placement.id}
                 tabIndex={0}
                 aria-label={drawing.name}
@@ -181,6 +211,7 @@ export function GuestBookPage({
                   height: `${placement.height}px`,
                   ...highlightStyleFor(placement.id),
                 }}
+                {...drawingTurnProps}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -209,6 +240,48 @@ export function guestBookPageContentForNumber(
   return pageContents[pageNumber - 1] ?? null;
 }
 
+export function GuestBookSheetPageFace({
+  pageNumber,
+  pageContents,
+  leatherMargin,
+  bookStep,
+  onPageDismiss,
+  onDrawingClick,
+  searchHighlight,
+  searchFlip,
+  searchRiffleMs,
+}: {
+  pageNumber: number;
+  pageContents: GuestBookPageContent[];
+  leatherMargin?: boolean;
+  onPageDismiss?: () => void;
+  onDrawingClick?: () => void;
+  bookStep: number;
+} & GuestBookPageSearchProps) {
+  const searchProps = { searchHighlight, searchFlip, searchRiffleMs };
+  const interactionProps = { onPageDismiss, onDrawingClick, bookStep };
+
+  if (leatherMargin) {
+    return (
+      <LeatherMarginPageFace
+        pageNumber={pageNumber}
+        pageContents={pageContents}
+        {...searchProps}
+        {...interactionProps}
+      />
+    );
+  }
+
+  return (
+    <GuestBookPage
+      number={pageNumber}
+      content={guestBookPageContentForNumber(pageContents, pageNumber)}
+      {...searchProps}
+      {...interactionProps}
+    />
+  );
+}
+
 /** Right-side page inset on full-bleed leather (last page, flipper, front-close flat layer). */
 export function LeatherMarginPageFace({
   pageNumber,
@@ -217,10 +290,14 @@ export function LeatherMarginPageFace({
   searchFlip,
   searchRiffleMs,
   onPageDismiss,
+  onDrawingClick,
+  bookStep,
 }: {
   pageNumber: number;
   pageContents: GuestBookPageContent[];
   onPageDismiss?: () => void;
+  onDrawingClick?: () => void;
+  bookStep?: number;
 } & GuestBookPageSearchProps) {
   return (
     <>
@@ -235,14 +312,10 @@ export function LeatherMarginPageFace({
           searchFlip={searchFlip}
           searchRiffleMs={searchRiffleMs}
           onPageDismiss={onPageDismiss}
+          onDrawingClick={onDrawingClick}
+          bookStep={bookStep}
         />
       </div>
     </>
   );
-}
-
-function pageOuterClass(pageNumber: number) {
-  return pageNumber % 2 === 1
-    ? "guest-book-half--page-outer-left"
-    : "guest-book-half--page-outer-right";
 }

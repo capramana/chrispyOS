@@ -14,7 +14,6 @@ import {
   isGuestBookInteractiveTarget,
 } from "@/lib/memento/guestBookConstants";
 import { createBookLayout, getGuestBookRenderState, turnDurationMs } from "@/lib/memento/guestBookFlip";
-import { guestBookDrawingSearchHighlightStyle } from "@/lib/memento/guestBookSearch";
 import GuestBookSearch from "@/app/components/GuestBookSearch";
 import { GuestBookHoverProvider } from "@/app/components/GuestBookDrawingHover";
 import { LeatherMarginPageFace } from "@/app/components/GuestBookPage";
@@ -50,7 +49,6 @@ export default function GuestBook({ pages = [] }: GuestBookProps) {
     searchProfilePin,
     searchProfileCssFadeIn,
     searchProfileFadingOut,
-    searchProfilePinned,
     searchProfileFadeOpacity,
     navigateToEntry,
     openBook,
@@ -114,15 +112,8 @@ export default function GuestBook({ pages = [] }: GuestBookProps) {
     return () => window.clearTimeout(id);
   }, [step, prevStep, layout.maxStep, settleStep]);
 
-  const opacityFor = useCallback(
-    (drawingId: string, pageNumber: number) =>
-      guestBookDrawingSearchHighlightStyle(
-        drawingId,
-        pageNumber,
-        searchHighlight,
-        searchFlip,
-        searchRiffleMs,
-      ).opacity,
+  const searchProps = useMemo(
+    () => ({ searchHighlight, searchFlip, searchRiffleMs }),
     [searchHighlight, searchFlip, searchRiffleMs],
   );
 
@@ -170,18 +161,17 @@ export default function GuestBook({ pages = [] }: GuestBookProps) {
       frontClosed,
       backClosed,
       animating,
-      searchFlip,
       searchRiffleStep,
-      searchRiffleMs,
-      searchHighlight,
       layout,
       pageContents: pages,
       openBook,
       openFromBack,
       turnForward,
+      goForward,
       goBack,
-      dismissFrontCover: closeBook,
+      closeBook,
       dismissBackCover,
+      ...searchProps,
     }),
     [
       step,
@@ -191,18 +181,17 @@ export default function GuestBook({ pages = [] }: GuestBookProps) {
       frontClosed,
       backClosed,
       animating,
-      searchFlip,
       searchRiffleStep,
-      searchRiffleMs,
-      searchHighlight,
       layout,
       pages,
       openBook,
       openFromBack,
       turnForward,
+      goForward,
       goBack,
       closeBook,
       dismissBackCover,
+      searchProps,
     ],
   );
 
@@ -310,7 +299,7 @@ export default function GuestBook({ pages = [] }: GuestBookProps) {
       searchProfileCssFadeIn={searchProfileCssFadeIn}
       searchProfileFadeOpacity={searchProfileFadeOpacity}
       pages={pages}
-      opacityFor={opacityFor}
+      {...searchProps}
     >
       <div ref={rootRef} className="guest-book-root">
         <GuestBookSearch
@@ -378,9 +367,7 @@ export default function GuestBook({ pages = [] }: GuestBookProps) {
                       <LeatherMarginPageFace
                         pageNumber={flatRightPage}
                         pageContents={pages}
-                        searchHighlight={searchHighlight}
-                        searchFlip={searchFlip}
-                        searchRiffleMs={searchRiffleMs}
+                        {...searchProps}
                       />
                     </div>
                   </div>
@@ -401,13 +388,11 @@ export default function GuestBook({ pages = [] }: GuestBookProps) {
                   layout={layout}
                   active={backCoverFlipActive}
                   pageContents={pages}
-                  searchFlip={searchFlip}
                   searchRiffleStep={searchRiffleStep}
-                  searchRiffleMs={searchRiffleMs}
-                  searchHighlight={searchHighlight}
-                  dismissFrontCover={closeBook}
+                  closeBook={closeBook}
                   dismissBackCover={dismissBackCover}
                   animating={animating}
+                  {...searchProps}
                 />
                 </div>
               </div>
