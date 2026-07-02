@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { guestBookSocialForEntry } from "@/lib/memento/guestBookPages";
+import { mementoSocialForEntry } from "@/lib/memento/mementoEntrySocial";
 import { fetchSocialAvatarImage } from "@/lib/memento/socialAvatar";
 import {
   getCachedMementoAvatar,
@@ -27,7 +27,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Entry not found." }, { status: 404 });
     }
 
-    const social = guestBookSocialForEntry(entry);
+    const social = mementoSocialForEntry(entry);
 
     const cached = await getCachedMementoAvatar(id);
     if (cached) {

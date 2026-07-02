@@ -73,17 +73,6 @@ export async function createMementoEntry(input: MementoSubmission) {
   if (insertError) throw insertError;
 }
 
-export async function listMementoEntries(): Promise<MementoEntryRow[]> {
-  const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
-    .from("memento_entries")
-    .select(MEMENTO_ENTRY_SELECT)
-    .order("submitted_at", { ascending: true });
-
-  if (error) throw error;
-  return (data ?? []) as MementoEntryRow[];
-}
-
 export async function getMementoEntryById(
   id: string,
 ): Promise<MementoEntryRow | null> {
