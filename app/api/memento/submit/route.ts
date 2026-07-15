@@ -4,11 +4,20 @@ import {
   type MementoSubmission,
 } from "@/lib/supabase/memento";
 
+const SUBMISSIONS_CLOSED = true;
+
 function isSocialType(value: unknown): value is MementoSubmission["socialType"] {
   return value === "twitter" || value === "linkedin";
 }
 
 export async function POST(request: Request) {
+  if (SUBMISSIONS_CLOSED) {
+    return NextResponse.json(
+      { error: "Memento submissions are closed." },
+      { status: 403 },
+    );
+  }
+
   let body: unknown;
 
   try {

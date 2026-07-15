@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/memento/book",
-        destination: "https://config26.chrispramana.com",
+        destination: "https://config.chrispramana.com",
         permanent: true,
       },
       {

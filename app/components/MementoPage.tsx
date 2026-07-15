@@ -752,7 +752,14 @@ export default function MementoPage({
       });
 
       if (!response.ok) {
-        throw new Error("Submit failed");
+        const data = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(
+          typeof data?.error === "string" && data.error.trim()
+            ? data.error
+            : "Couldn't save that, check your connection and try again.",
+        );
       }
 
       if (!mountedRef.current) return;
@@ -761,9 +768,13 @@ export default function MementoPage({
       setConfirmSocialType(socialType);
       setStep(3);
       replayStepAnimation(confirmStepRef.current);
-    } catch {
+    } catch (error) {
       if (mountedRef.current) {
-        setFormError("Couldn't save that, check your connection and try again.");
+        setFormError(
+          error instanceof Error
+            ? error.message
+            : "Couldn't save that, check your connection and try again.",
+        );
       }
     } finally {
       if (mountedRef.current) {
