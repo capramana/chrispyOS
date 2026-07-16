@@ -66,6 +66,17 @@ const CARTRIDGE_HOVER_SCATTER_MUL = 1.08;
 const CARTRIDGE_HOVER_SCALE_MUL = 1.03;
 const PILE_SHELL_HOVER_TRANSITION =
   "transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)";
+/** Must match `.vault-cartridge-card` / `__pose` in `VaultCartridgeStack.css`. */
+const CARTRIDGE_HERO_EASE = "0.6s cubic-bezier(0.34, 1.3, 0.64, 1)";
+
+function heroCardTransition(delay: string) {
+  const part = `${CARTRIDGE_HERO_EASE} ${delay}`;
+  return `left ${part}, top ${part}, opacity ${part}`;
+}
+
+function heroPoseTransition(delay: string) {
+  return `transform ${CARTRIDGE_HERO_EASE} ${delay}`;
+}
 
 function posFromAnchor(cx: number, cy: number, w: number, h: number) {
   return { x: cx - w / 2, y: cy - h / 2 };
@@ -127,19 +138,17 @@ function CartridgeImage({ src, alt }: { src: string; alt: string }) {
 
 function CartridgeCardPose({
   transform,
-  transitionDelay,
   transition,
   children,
 }: {
   transform?: string;
-  transitionDelay?: string;
   transition?: string;
   children: ReactNode;
 }) {
   return (
     <div
       className="vault-cartridge-card__pose"
-      style={{ transform, transitionDelay, transition }}
+      style={{ transform, transition }}
     >
       {children}
     </div>
@@ -896,12 +905,12 @@ export default function VaultCartridgeStack({
                       zIndex: CARTRIDGE_COUNT - i,
                       opacity,
                       pointerEvents: collapsing ? "none" : "auto",
-                      transitionDelay: heroDelay,
+                      transition: heroCardTransition(heroDelay),
                     }}
                   >
                     <CartridgeCardPose
                       transform={`rotate(${heroPose === "list" ? 0 : scatter.rotate}deg) scale(${heroScale})`}
-                      transitionDelay={heroDelay}
+                      transition={heroPoseTransition(heroDelay)}
                     >
                       <CartridgeImage src={item.src} alt={item.alt} />
                     </CartridgeCardPose>
