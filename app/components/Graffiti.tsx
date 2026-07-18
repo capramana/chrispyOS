@@ -1,43 +1,56 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import JosephinePaths from "./Graffiti art/JosephinePaths";
-import CelinePaths from "./Graffiti art/CelinePaths";
-import FloraPaths from "./Graffiti art/FloraPaths";
 import {
   boxesOverlapBuffered,
   GRAFFITI_SPAWN_CHECKS,
+  fitsSpawnUi,
+  type PlacementBox,
 } from "./uiPlacement";
+import { useIsDark } from "./useIsDark";
 
 const IDLE_DELAY = 30000;
 const ROT_PAD_V = 16;
 const ROT_PAD_H = 16;
 
-const SVG_VARIANTS: { w: number; h: number; viewBox: string; paths: React.ReactNode }[] = [
-  {
-    w: 151, h: 75, viewBox: "0 0 151 75",
-    paths: <JosephinePaths />,
-  },
-  {
-    w: 84, h: 109, viewBox: "0 0 84 109",
-    paths: <CelinePaths />,
-  },
-  {
-    w: 105, h: 96, viewBox: "0 0 105 96",
-    paths: <FloraPaths />,
-  },
+const VARIANTS: { w: number; h: number; srcLight: string; srcDark: string }[] = [
+  { w: 151, h: 74, srcLight: "/graffiti/josephine.png", srcDark: "/graffiti/josephine-dark.png" },
+  { w: 83, h: 109, srcLight: "/graffiti/celine.png", srcDark: "/graffiti/celine-dark.png" },
+  { w: 105, h: 87, srcLight: "/graffiti/flora.png", srcDark: "/graffiti/flora-dark.png" },
 ];
 
-const NEON_COLORS = ["#FF6B9D", "#00F5FF", "#7B2FFF", "#FFE600", "#00FF88"];
+type Bounds = { minLeft: number; maxLeft: number; minTop: number; maxTop: number };
+type Placement = { variantIdx: number; top: number; left: number; rotation: number; quadrant: number };
 
-type PlacedBox = { top: number; bottom: number; left: number; right: number };
-type Bounds    = { minLeft: number; maxLeft: number; minTop: number; maxTop: number };
-type Placement = { variantIdx: number; top: number; left: number; rotation: number; color: string; quadrant: number };
+function paddedBox(top: number, left: number, w: number, h: number): PlacementBox {
+  return {
+    top: top - ROT_PAD_V,
+    bottom: top + h + ROT_PAD_V,
+    left: left - ROT_PAD_H,
+    right: left + w + ROT_PAD_H,
+  };
+}
+
+function hitsSvg(gb: PlacementBox) {
+  for (const svg of document.querySelectorAll("svg")) {
+    const r = svg.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) continue;
+    if (boxesOverlapBuffered(gb, r, 12)) return true;
+  }
+  return false;
+}
+
+function hitsPlaced(gb: PlacementBox, placed: PlacementBox[]) {
+  for (const box of placed) {
+    if (boxesOverlapBuffered(gb, box, 16)) return true;
+  }
+  return false;
+}
 
 function findPlacement(
   W: number,
   H: number,
-  placedBoxes: PlacedBox[],
+  placedBoxes: PlacementBox[],
   bounds?: Bounds
 ): { top: number; left: number; rotation: number } | null {
   const vw = window.innerWidth;
@@ -53,38 +66,12 @@ function findPlacement(
   for (let attempt = 0; attempt < 150; attempt++) {
     const left = minLeft + Math.random() * (maxLeft - minLeft);
     const top  = minTop  + Math.random() * (maxTop  - minTop);
+    const gb = paddedBox(top, left, W, H);
 
-    const gb: PlacedBox = {
-      top:    top    - ROT_PAD_V,
-      bottom: top    + H + ROT_PAD_V,
-      left:   left   - ROT_PAD_H,
-      right:  left   + W + ROT_PAD_H,
-    };
+    if (!fitsSpawnUi(gb, GRAFFITI_SPAWN_CHECKS)) continue;
+    if (hitsSvg(gb) || hitsPlaced(gb, placedBoxes)) continue;
 
-    let valid = true;
-
-    for (const { selector, buffer } of GRAFFITI_SPAWN_CHECKS) {
-      for (const el of document.querySelectorAll(selector)) {
-        if (boxesOverlapBuffered(gb, el.getBoundingClientRect(), buffer)) { valid = false; break; }
-      }
-      if (!valid) break;
-    }
-
-    if (valid) {
-      for (const svg of document.querySelectorAll("svg:not([data-graffiti])")) {
-        const r = svg.getBoundingClientRect();
-        if (r.width === 0 && r.height === 0) continue;
-        if (boxesOverlapBuffered(gb, r, 12)) { valid = false; break; }
-      }
-    }
-
-    if (valid) {
-      for (const box of placedBoxes) {
-        if (boxesOverlapBuffered(gb, box, 16)) { valid = false; break; }
-      }
-    }
-
-    if (valid) return { top, left, rotation: (Math.random() - 0.5) * 45 };
+    return { top, left, rotation: (Math.random() - 0.5) * 45 };
   }
 
   return null;
@@ -109,73 +96,43 @@ function getQuadrantBounds(quadrant: number, W: number, H: number): Bounds {
   };
 }
 
-function pickAllPlacements(colorMap: Record<number, string>): Placement[] {
-  const n = SVG_VARIANTS.length;
-
-  const base  = Math.floor(n / 4);
-  const extra = n % 4;
-
+function pickAllPlacements(): Placement[] {
+  const variantOrder = VARIANTS.map((_, i) => i).sort(() => Math.random() - 0.5);
   const quadrantOrder = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
-  const quadrantCounts = [0, 0, 0, 0];
-  for (let q = 0; q < 4; q++) {
-    quadrantCounts[quadrantOrder[q]] = q < extra ? base + 1 : base;
-  }
 
-  const variantOrder = SVG_VARIANTS.map((_, i) => i).sort(() => Math.random() - 0.5);
-
-  const assignments: number[][] = [[], [], [], []];
-  let vi = 0;
-  for (let q = 0; q < 4; q++) {
-    for (let c = 0; c < quadrantCounts[q]; c++) {
-      assignments[q].push(variantOrder[vi++]);
-    }
-  }
-
-  const colorPool = [...NEON_COLORS].sort(() => Math.random() - 0.5);
-  let colorIdx = 0;
-  const getColor = (variantIdx: number) => {
-    if (colorMap[variantIdx] !== undefined) return colorMap[variantIdx];
-    const c = colorPool[colorIdx++ % colorPool.length];
-    colorMap[variantIdx] = c;
-    return c;
-  };
-
-  const placedBoxes: PlacedBox[] = [];
+  const placedBoxes: PlacementBox[] = [];
   const results: Placement[] = [];
 
-  for (let q = 0; q < 4; q++) {
-    for (const variantIdx of assignments[q]) {
-      const variant   = SVG_VARIANTS[variantIdx];
-      const bounds    = getQuadrantBounds(q, variant.w, variant.h);
-      const placement = findPlacement(variant.w, variant.h, placedBoxes, bounds);
-      if (!placement) continue;
-      const { top, left, rotation } = placement;
-      placedBoxes.push({
-        top:    top    - ROT_PAD_V,
-        bottom: top    + variant.h + ROT_PAD_V,
-        left:   left   - ROT_PAD_H,
-        right:  left   + variant.w + ROT_PAD_H,
-      });
-      results.push({ variantIdx, top, left, rotation, color: getColor(variantIdx), quadrant: q });
-    }
-  }
+  variantOrder.forEach((variantIdx, i) => {
+    const variant = VARIANTS[variantIdx];
+    const quadrant = quadrantOrder[i % 4];
+    const placement = findPlacement(
+      variant.w,
+      variant.h,
+      placedBoxes,
+      getQuadrantBounds(quadrant, variant.w, variant.h),
+    );
+    if (!placement) return;
+
+    const { top, left, rotation } = placement;
+    placedBoxes.push(paddedBox(top, left, variant.w, variant.h));
+    results.push({ variantIdx, top, left, rotation, quadrant });
+  });
 
   return results;
 }
 
 export default function Graffiti() {
+  const isDark = useIsDark();
   const [placements, setPlacements] = useState<Placement[] | null>(null);
   const [visible, setVisible] = useState(false);
-  const [instant, setInstant] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const visibleRef = useRef(false);
-  const colorMapRef = useRef<Record<number, string>>({});
 
   const startTimer = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      if (!document.documentElement.classList.contains("dark")) return;
-      setPlacements(pickAllPlacements(colorMapRef.current));
+      setPlacements(pickAllPlacements());
       visibleRef.current = true;
       setVisible(true);
     }, IDLE_DELAY);
@@ -195,70 +152,51 @@ export default function Graffiti() {
       if (resizeTimer) clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         if (!alive) return;
-        setPlacements(prev => {
+        setPlacements((prev) => {
           if (!prev) return prev;
-
-          const kept: Placement[]  = [];
-          const toFix: Placement[] = [];
 
           const vw = window.innerWidth;
           const vh = window.innerHeight;
+          const kept: Placement[] = [];
+          const toFix: Placement[] = [];
 
           for (const p of prev) {
-            const variant = SVG_VARIANTS[p.variantIdx];
+            const { w, h } = VARIANTS[p.variantIdx];
+            const offScreen =
+              p.left < ROT_PAD_H ||
+              p.left + w > vw - ROT_PAD_H ||
+              p.top < ROT_PAD_V ||
+              p.top + h > vh - ROT_PAD_V;
 
-            const offScreen = p.left < ROT_PAD_H ||
-                              p.left + variant.w > vw - ROT_PAD_H ||
-                              p.top  < ROT_PAD_V ||
-                              p.top  + variant.h > vh - ROT_PAD_V;
-            if (offScreen) { toFix.push(p); continue; }
+            if (offScreen) {
+              toFix.push(p);
+              continue;
+            }
 
-            const gb: PlacedBox = {
-              top:    p.top    - ROT_PAD_V,
-              bottom: p.top    + variant.h + ROT_PAD_V,
-              left:   p.left   - ROT_PAD_H,
-              right:  p.left   + variant.w + ROT_PAD_H,
-            };
-            let bad = false;
-            for (const { selector, buffer } of GRAFFITI_SPAWN_CHECKS) {
-              for (const el of document.querySelectorAll(selector)) {
-                if (boxesOverlapBuffered(gb, el.getBoundingClientRect(), buffer)) { bad = true; break; }
-              }
-              if (bad) break;
-            }
-            if (!bad) {
-              for (const svg of document.querySelectorAll("svg:not([data-graffiti])")) {
-                const r = svg.getBoundingClientRect();
-                if (r.width === 0 && r.height === 0) continue;
-                if (boxesOverlapBuffered(gb, r, 12)) { bad = true; break; }
-              }
-            }
+            const gb = paddedBox(p.top, p.left, w, h);
+            const bad = !fitsSpawnUi(gb, GRAFFITI_SPAWN_CHECKS) || hitsSvg(gb);
             (bad ? toFix : kept).push(p);
           }
 
           if (toFix.length === 0) return prev;
 
-          const placedBoxes: PlacedBox[] = kept.map(p => {
-            const v = SVG_VARIANTS[p.variantIdx];
-            return { top: p.top - ROT_PAD_V, bottom: p.top + v.h + ROT_PAD_V,
-                     left: p.left - ROT_PAD_H, right: p.left + v.w + ROT_PAD_H };
+          const placedBoxes = kept.map((p) => {
+            const { w, h } = VARIANTS[p.variantIdx];
+            return paddedBox(p.top, p.left, w, h);
           });
 
           const result: Placement[] = [...kept];
-
           for (const p of toFix) {
-            const variant   = SVG_VARIANTS[p.variantIdx];
-            const bounds    = getQuadrantBounds(p.quadrant, variant.w, variant.h);
-            const placement = findPlacement(variant.w, variant.h, placedBoxes, bounds);
-            if (placement) {
-              result.push({ ...p, top: placement.top, left: placement.left });
-              placedBoxes.push({
-                top:    placement.top  - ROT_PAD_V,
-                bottom: placement.top  + variant.h + ROT_PAD_V,
-                left:   placement.left - ROT_PAD_H,
-                right:  placement.left + variant.w + ROT_PAD_H,
-              });
-            }
+            const { w, h } = VARIANTS[p.variantIdx];
+            const placement = findPlacement(
+              w,
+              h,
+              placedBoxes,
+              getQuadrantBounds(p.quadrant, w, h),
+            );
+            if (!placement) continue;
+            result.push({ ...p, top: placement.top, left: placement.left });
+            placedBoxes.push(paddedBox(placement.top, placement.left, w, h));
           }
 
           return result;
@@ -270,26 +208,10 @@ export default function Graffiti() {
     document.addEventListener("click", handleClick);
     window.addEventListener("resize", handleResize);
 
-    const observer = new MutationObserver(() => {
-      const isDark = document.documentElement.classList.contains("dark");
-      if (!isDark) {
-        visibleRef.current = false;
-        colorMapRef.current = {};
-        setInstant(true);
-        setVisible(false);
-        if (timerRef.current) clearTimeout(timerRef.current);
-      } else {
-        setInstant(false);
-        startTimer();
-      }
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-
     return () => {
       alive = false;
       document.removeEventListener("click", handleClick);
       window.removeEventListener("resize", handleResize);
-      observer.disconnect();
       if (timerRef.current) clearTimeout(timerRef.current);
       if (resizeTimer) clearTimeout(resizeTimer);
     };
@@ -299,9 +221,8 @@ export default function Graffiti() {
 
   return (
     <>
-      {placements.map(({ variantIdx, top, left, rotation, color }) => {
-        const { w, h, viewBox, paths } = SVG_VARIANTS[variantIdx];
-        const filterId = `graffiti-glow-${variantIdx}`;
+      {placements.map(({ variantIdx, top, left, rotation }) => {
+        const { w, h, srcLight, srcDark } = VARIANTS[variantIdx];
         return (
           <div
             key={variantIdx}
@@ -311,33 +232,23 @@ export default function Graffiti() {
               left,
               width: w,
               height: h,
-              overflow: "visible",
               transform: `rotate(${rotation}deg)`,
               transformOrigin: "center",
-              color,
               pointerEvents: "none",
               zIndex: 50,
               opacity: visible ? 1 : 0,
-              filter: visible ? "blur(0px)" : "blur(8px)",
-              transition: instant ? "none" : "opacity 0.5s ease, filter 0.5s ease",
+              filter: visible ? "none" : "blur(8px)",
+              transition: "opacity 0.5s ease, filter 0.5s ease",
             }}
           >
-            <svg data-graffiti width={w} height={h} viewBox={viewBox} fill="none" xmlns="http://www.w3.org/2000/svg" style={{ overflow: "visible" }}>
-              <defs>
-                <filter id={filterId} x="-80%" y="-80%" width="260%" height="260%">
-                  <feGaussianBlur stdDeviation="3" result="blur-tight" />
-                  <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur-wide" />
-                  <feMerge>
-                    <feMergeNode in="blur-wide" />
-                    <feMergeNode in="blur-tight" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <g filter={`url(#${filterId})`}>
-                {paths}
-              </g>
-            </svg>
+            <img
+              src={isDark ? srcDark : srcLight}
+              alt=""
+              width={w}
+              height={h}
+              draggable={false}
+              className="block size-full"
+            />
           </div>
         );
       })}
