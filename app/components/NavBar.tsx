@@ -111,70 +111,77 @@ export default function NavBar({ activePage, onActivePageChange }: NavBarProps) 
         layout
         transition={showFilter ? expandTransition : collapseTransition}
         onLayoutAnimationComplete={updateScrollHints}
-        className="navbar-pill relative flex min-w-0 items-center overflow-hidden"
-        style={{ background: "var(--navbar-bg)", borderRadius: 9999, willChange: "width" }}
+        className="navbar-pill relative min-w-0"
+        style={{
+          background: "var(--navbar-bg)",
+          borderRadius: 9999,
+          willChange: "width",
+          boxShadow: "var(--navbar-drop-shadow)",
+        }}
       >
-        <div className="navbar-shadow-overlay pointer-events-none absolute inset-0" style={{ borderRadius: 9999, border: "var(--navbar-border)", boxShadow: "var(--navbar-shadow)" }} />
-        <div
-          className={`navbar-pill-scroll-wrap${scrollHints.left ? " navbar-pill-scroll-wrap--overflow-left" : ""}${scrollHints.right ? " navbar-pill-scroll-wrap--overflow-right" : ""}`}
-        >
-          <div ref={scrollRef} className="navbar-pill-scroll">
-            <div className="flex w-max shrink-0 items-center py-2 pl-3 pr-2">
-              <NavButton icon={HomeIcon} label="Home" active={activePage === "home"} onClick={() => onActivePageChange("home")} {...sharedProps} />
-              <div className="w-3 shrink-0" />
-              <NavButton icon={JournalIcon} label="Writing" active={activePage === "writing"} onClick={() => onActivePageChange("writing")} {...sharedProps} />
-              <div className="w-3 shrink-0" />
-              <NavButton icon={VaultIcon} label="Vault" active={activePage === "vault"} onClick={() => onActivePageChange("vault")} {...sharedProps} />
-              <div className="w-3 shrink-0" />
-              <div className="mx-1 h-6 w-px shrink-0 bg-gray-200 dark:bg-[#444]" />
-
-              <AnimatePresence mode="popLayout">
-                {showFilter && (
-                  <motion.div
-                    layout="position"
-                    variants={{
-                      visible: {
-                        maxWidth: FILTER_SLOT_MAX_PX,
-                        opacity: 1,
-                        filter: "blur(0px)",
-                        scale: 1,
-                        transition: filterEnterTransition,
-                      },
-                      hidden: {
-                        maxWidth: 0,
-                        opacity: 0,
-                        filter: "blur(4px)",
-                        transition: filterExitTransition,
-                      },
-                    }}
-                    initial="hidden"
-                    animate="visible"
-                    exit="hidden"
-                    className="flex shrink-0 items-center overflow-hidden"
-                  >
-                    <div className="w-3 shrink-0" />
-                    <NavButton icon={FilterIcon} label="Filter" {...sharedProps} />
-                    <div className="w-3 shrink-0" />
-                    <div className="mx-1 h-6 w-px shrink-0 bg-gray-200 dark:bg-[#444]" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <div className="w-3 shrink-0" />
-              <NavButton icon={isDark ? SunIcon : MoonIcon} label={isDark ? "Light mode" : "Dark mode"} iconKey={isDark ? "sun" : "moon"} iconAnimation={isDark ? "animate-icon-enter-sunrise" : "animate-icon-enter-sunset"} onClick={() => { const next = !isDark; setIsDark(next); document.documentElement.classList.add("theme-snap"); document.documentElement.classList.toggle("dark", next); document.documentElement.classList.add("theme-transitioning"); requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove("theme-snap"))); setTimeout(() => document.documentElement.classList.remove("theme-transitioning"), 275); }} {...sharedProps} />
-              <div className="w-3 shrink-0" />
-              <NavButton icon={MailIcon} label="Email" href="mailto:christopher.apramana@gmail.com" {...sharedProps} />
-              <div className="flex shrink-0 items-center md:hidden">
+        <div className="relative flex min-w-0 items-center overflow-hidden" style={{ borderRadius: 9999 }}>
+          <div className="navbar-shadow-overlay pointer-events-none absolute inset-0" style={{ borderRadius: 9999, border: "var(--navbar-border)", boxShadow: "var(--navbar-inset-shadow)" }} />
+          <div
+            className={`navbar-pill-scroll-wrap${scrollHints.left ? " navbar-pill-scroll-wrap--overflow-left" : ""}${scrollHints.right ? " navbar-pill-scroll-wrap--overflow-right" : ""}`}
+          >
+            <div ref={scrollRef} className="navbar-pill-scroll">
+              <div className="flex w-max shrink-0 items-center py-2 pl-3 pr-2">
+                <NavButton icon={HomeIcon} label="Home" active={activePage === "home"} onClick={() => onActivePageChange("home")} {...sharedProps} />
                 <div className="w-3 shrink-0" />
-                <NavButton icon={XIcon} label="X profile" href="https://x.com/chrispramana" target="_blank" rel="noopener noreferrer" {...sharedProps} />
+                <NavButton icon={JournalIcon} label="Writing" active={activePage === "writing"} onClick={() => onActivePageChange("writing")} {...sharedProps} />
+                <div className="w-3 shrink-0" />
+                <NavButton icon={VaultIcon} label="Vault" active={activePage === "vault"} onClick={() => onActivePageChange("vault")} {...sharedProps} />
+                <div className="w-3 shrink-0" />
+                <div className="mx-1 h-6 w-px shrink-0 bg-gray-200 dark:bg-[#444]" />
+
+                <AnimatePresence mode="popLayout">
+                  {showFilter && (
+                    <motion.div
+                      layout="position"
+                      variants={{
+                        visible: {
+                          maxWidth: FILTER_SLOT_MAX_PX,
+                          opacity: 1,
+                          filter: "blur(0px)",
+                          scale: 1,
+                          transition: filterEnterTransition,
+                        },
+                        hidden: {
+                          maxWidth: 0,
+                          opacity: 0,
+                          filter: "blur(4px)",
+                          transition: filterExitTransition,
+                        },
+                      }}
+                      initial="hidden"
+                      animate="visible"
+                      exit="hidden"
+                      className="flex shrink-0 items-center overflow-hidden"
+                    >
+                      <div className="w-3 shrink-0" />
+                      <NavButton icon={FilterIcon} label="Filter" {...sharedProps} />
+                      <div className="w-3 shrink-0" />
+                      <div className="mx-1 h-6 w-px shrink-0 bg-gray-200 dark:bg-[#444]" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="w-3 shrink-0" />
+                <NavButton icon={isDark ? SunIcon : MoonIcon} label={isDark ? "Light mode" : "Dark mode"} iconKey={isDark ? "sun" : "moon"} iconAnimation={isDark ? "animate-icon-enter-sunrise" : "animate-icon-enter-sunset"} onClick={() => { const next = !isDark; setIsDark(next); document.documentElement.classList.add("theme-snap"); document.documentElement.classList.toggle("dark", next); document.documentElement.classList.add("theme-transitioning"); requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove("theme-snap"))); setTimeout(() => document.documentElement.classList.remove("theme-transitioning"), 275); }} {...sharedProps} />
+                <div className="w-3 shrink-0" />
+                <NavButton icon={MailIcon} label="Email" href="mailto:christopher.apramana@gmail.com" {...sharedProps} />
+                <div className="flex shrink-0 items-center md:hidden">
+                  <div className="w-3 shrink-0" />
+                  <NavButton icon={XIcon} label="X profile" href="https://x.com/chrispramana" target="_blank" rel="noopener noreferrer" {...sharedProps} />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="navbar-pill-music relative z-[1] flex shrink-0 items-center py-2 pr-2 pl-1">
-          <div className="mx-1 h-6 w-px shrink-0 bg-gray-200 dark:bg-[#444]" />
-          <div className="w-3 shrink-0" />
-          <MusicPlayer />
+          <div className="navbar-pill-music relative z-[1] flex shrink-0 items-center py-2 pr-2 pl-1">
+            <div className="mx-1 h-6 w-px shrink-0 bg-gray-200 dark:bg-[#444]" />
+            <div className="w-3 shrink-0" />
+            <MusicPlayer />
+          </div>
         </div>
       </motion.div>
     </div>
