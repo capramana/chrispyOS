@@ -1,6 +1,6 @@
 export const SPAWN_PEER_GAP_PX = 8;
 export const HERO_SPAWN_BUFFER_PX = 12;
-export const GRAFFITI_HERO_BUFFER_PX = 28;
+export const DRAWING_HERO_BUFFER_PX = 28;
 /** Viewport edge inset for vault / widget spawn search (matches desktop picker). */
 export const VAULT_SPAWN_MARGIN_PX = 16;
 export const NAV_SPAWN_BUFFER_PX = 20;
@@ -29,7 +29,7 @@ export function spawnElementChecks(heroBuffer: number): SpawnElementCheck[] {
 }
 
 export const VAULT_SPAWN_CHECKS = spawnElementChecks(HERO_SPAWN_BUFFER_PX);
-export const GRAFFITI_SPAWN_CHECKS = spawnElementChecks(GRAFFITI_HERO_BUFFER_PX);
+export const DRAWING_SPAWN_CHECKS = spawnElementChecks(DRAWING_HERO_BUFFER_PX);
 
 export function eventTargetWithin(
   target: EventTarget | null,

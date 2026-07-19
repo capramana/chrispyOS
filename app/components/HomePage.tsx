@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { NavPage } from "../types/nav-page";
-import Graffiti from "./Graffiti";
+import Drawing from "./Drawing";
 import NavBar from "./NavBar";
 import ChisledText from "./ChisledText";
 import SiteCursor from "./SiteCursor";
@@ -105,7 +105,7 @@ export default function HomePage() {
 
       <NavBar activePage={activePage} onActivePageChange={handleActivePageChange} />
 
-      <Graffiti />
+      <Drawing />
       <SiteCursor />
     </div>
   );

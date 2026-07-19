@@ -56,7 +56,7 @@ Each component that needs custom CSS has its own `.css` file alongside the `.tsx
 - **`VaultArtifacts.tsx`** / **`VaultPictureStack.tsx`** / **`VaultBook.tsx`** / **`VaultCartridgeStack.tsx`** / **`VaultPostIt.tsx`** / **`VaultArtifact.tsx`** / **`vaultRects.ts`** — vault tab: draggable stacks; picture stacks follow **`Expandable Stacked Div Prototype.html`** (`computeLayout`, portaled expand). `VaultBook` is a draggable 3D book with open/close overlay. `VaultCartridgeStack` is a draggable Game Boy cartridge fan that expands into a scrollable list + GBA SP shell (YouTube playback). `VaultPostIt` is a draggable quote note (tap to expand, rotation settles to 0°). Touch or open promotes an artifact to the top z-index (`VaultArtifacts.tsx`). `VaultArtifactCard` is for non-picture artifacts; picture captions live only on `VaultPictureItem` data while stacked.
 - **`NavButton.tsx`** — icon swap animations with CSS keyframe sequences (sunrise/sunset metaphor for moon/sun)
 - **`ChisledText.tsx`** — metallic 3D text effect via `background-clip`, `text-stroke`, and layered `text-shadow`
-- **`Graffiti.tsx`** — dark-mode-only idle neon doodles; 30s idle timer; collision-detects against UI elements before placing SVGs
+- **`Drawing.tsx`** — idle neon doodles; 30s idle timer; collision-detects against UI elements before placing PNGs
 - **`MusicPlayer.tsx`** — album art spins via `requestAnimationFrame` (360° per 3s); hover reveals playback controls
 - **`WorkExperience.tsx`** — cascading card reveal on hover with staggered opacity/transform transitions
 

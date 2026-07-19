@@ -3,13 +3,15 @@
 import { useState, useRef, useEffect } from "react";
 import {
   boxesOverlapBuffered,
-  GRAFFITI_SPAWN_CHECKS,
+  DRAWING_SPAWN_CHECKS,
   fitsSpawnUi,
   type PlacementBox,
 } from "./uiPlacement";
 import { useIsDark } from "./useIsDark";
 
 const IDLE_DELAY = 30000;
+const FADE_DURATION = "0.5s";
+const FADE_EASE = "cubic-bezier(0.23, 1, 0.32, 1)";
 const ROT_PAD_V = 16;
 const ROT_PAD_H = 16;
 
@@ -23,22 +25,22 @@ const VARIANTS: {
   {
     w: 151,
     h: 74,
-    srcLight: "/graffiti/josephine.png",
-    srcDark: "/graffiti/josephine-dark.png",
+    srcLight: "/drawing/josephine.png",
+    srcDark: "/drawing/josephine-dark.png",
     cursor: { label: "Josephine", href: "https://www.josephines.world/" },
   },
   {
     w: 83,
     h: 109,
-    srcLight: "/graffiti/celine.png",
-    srcDark: "/graffiti/celine-dark.png",
+    srcLight: "/drawing/celine.png",
+    srcDark: "/drawing/celine-dark.png",
     cursor: { label: "Celine", href: "https://celinekeomany.me/" },
   },
   {
     w: 105,
     h: 87,
-    srcLight: "/graffiti/flora.png",
-    srcDark: "/graffiti/flora-dark.png",
+    srcLight: "/drawing/flora.png",
+    srcDark: "/drawing/flora-dark.png",
     cursor: { label: "Flora", href: "https://floguo.com" },
   },
 ];
@@ -92,7 +94,7 @@ function findPlacement(
     const top  = minTop  + Math.random() * (maxTop  - minTop);
     const gb = paddedBox(top, left, W, H);
 
-    if (!fitsSpawnUi(gb, GRAFFITI_SPAWN_CHECKS)) continue;
+    if (!fitsSpawnUi(gb, DRAWING_SPAWN_CHECKS)) continue;
     if (hitsSvg(gb) || hitsPlaced(gb, placedBoxes)) continue;
 
     return { top, left, rotation: (Math.random() - 0.5) * 45 };
@@ -146,19 +148,29 @@ function pickAllPlacements(): Placement[] {
   return results;
 }
 
-export default function Graffiti() {
+function revealDrawings(
+  setPlacements: (placements: Placement[]) => void,
+  setVisible: (visible: boolean) => void,
+) {
+  setPlacements(pickAllPlacements());
+  setVisible(false);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => setVisible(true));
+  });
+}
+
+export default function Drawing() {
   const isDark = useIsDark();
   const [placements, setPlacements] = useState<Placement[] | null>(null);
   const [visible, setVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const visibleRef = useRef(false);
+  const shownRef = useRef(false);
 
   const startTimer = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      setPlacements(pickAllPlacements());
-      visibleRef.current = true;
-      setVisible(true);
+      shownRef.current = true;
+      revealDrawings(setPlacements, setVisible);
     }, IDLE_DELAY);
   };
 
@@ -166,13 +178,13 @@ export default function Graffiti() {
     let alive = true;
 
     const handleClick = () => {
-      if (visibleRef.current) return;
+      if (shownRef.current) return;
       startTimer();
     };
 
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     const handleResize = () => {
-      if (!visibleRef.current) return;
+      if (!shownRef.current) return;
       if (resizeTimer) clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         if (!alive) return;
@@ -198,7 +210,7 @@ export default function Graffiti() {
             }
 
             const gb = paddedBox(p.top, p.left, w, h);
-            const bad = !fitsSpawnUi(gb, GRAFFITI_SPAWN_CHECKS) || hitsSvg(gb);
+            const bad = !fitsSpawnUi(gb, DRAWING_SPAWN_CHECKS) || hitsSvg(gb);
             (bad ? toFix : kept).push(p);
           }
 
@@ -243,6 +255,8 @@ export default function Graffiti() {
 
   if (!placements) return null;
 
+  const fadeTransition = `opacity ${FADE_DURATION} ${FADE_EASE}, filter ${FADE_DURATION} ${FADE_EASE}`;
+
   return (
     <>
       {placements.map(({ variantIdx, top, left, rotation }) => {
@@ -274,7 +288,7 @@ export default function Graffiti() {
               zIndex: 50,
               opacity: visible ? 1 : 0,
               filter: visible ? "none" : "blur(8px)",
-              transition: "opacity 0.5s ease, filter 0.5s ease",
+              transition: fadeTransition,
             }}
           >
             {cursor ? (
