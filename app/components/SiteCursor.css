@@ -1,5 +1,13 @@
 /* Custom site cursor — Paper cyan orb / text I-beam / pressed / expanded pill */
 
+.site-cursor {
+  --site-cursor-ease: cubic-bezier(0.24, 0.69, 0.45, 0.94);
+  --site-cursor-duration: 0.3s;
+  --site-cursor-fade: 0.16s;
+  --site-cursor-collapse-delay: 0.16s;
+  --site-cursor-layout-end: 0.46s;
+}
+
 .site-cursor-on,
 .site-cursor-on body {
   cursor: none;
@@ -49,6 +57,7 @@
   justify-content: center;
   gap: 0;
   width: 16px;
+  max-width: 16px;
   height: 16px;
   padding: 0;
   overflow: hidden;
@@ -63,11 +72,11 @@
   filter: drop-shadow(#4aa7d5 0 0 0) drop-shadow(#00000026 0 2px 2px);
   outline: 1px solid #20b1ee;
   transition:
-    width 0.18s cubic-bezier(0.24, 0.69, 0.45, 0.94),
-    height 0.18s cubic-bezier(0.24, 0.69, 0.45, 0.94),
-    padding 0.18s cubic-bezier(0.24, 0.69, 0.45, 0.94),
-    gap 0.18s cubic-bezier(0.24, 0.69, 0.45, 0.94),
-    border-radius 0.18s cubic-bezier(0.24, 0.69, 0.45, 0.94);
+    max-width var(--site-cursor-duration) var(--site-cursor-ease) var(--site-cursor-collapse-delay),
+    height var(--site-cursor-duration) var(--site-cursor-ease) var(--site-cursor-collapse-delay),
+    padding var(--site-cursor-duration) var(--site-cursor-ease) var(--site-cursor-collapse-delay),
+    gap var(--site-cursor-duration) var(--site-cursor-ease) var(--site-cursor-collapse-delay),
+    border-radius var(--site-cursor-duration) var(--site-cursor-ease) var(--site-cursor-collapse-delay);
 }
 
 /* Paper: grab — same 16×16 orb, asymmetric corners */
@@ -83,21 +92,36 @@
 /* Paper: Cursor (onClick) — 12×12 */
 .site-cursor--pressed .site-cursor__shell {
   width: 12px;
+  max-width: 12px;
   height: 12px;
+  transition:
+    max-width var(--site-cursor-duration) var(--site-cursor-ease),
+    height var(--site-cursor-duration) var(--site-cursor-ease),
+    padding var(--site-cursor-duration) var(--site-cursor-ease),
+    gap var(--site-cursor-duration) var(--site-cursor-ease),
+    border-radius var(--site-cursor-duration) var(--site-cursor-ease);
 }
 
 /* Paper: Cursor (caret) — tall thin I-beam for selectable text */
 .site-cursor--text .site-cursor__shell {
   width: 8px;
+  max-width: 8px;
   height: 20px;
 }
 
 .site-cursor--expanded .site-cursor__shell {
-  width: auto;
+  width: fit-content;
+  max-width: 20rem;
   height: 24px;
   min-height: 24px;
   gap: 4px;
   padding: 4px 8px;
+  transition:
+    max-width var(--site-cursor-duration) var(--site-cursor-ease),
+    height var(--site-cursor-duration) var(--site-cursor-ease),
+    padding var(--site-cursor-duration) var(--site-cursor-ease),
+    gap var(--site-cursor-duration) var(--site-cursor-ease),
+    border-radius var(--site-cursor-duration) var(--site-cursor-ease);
 }
 
 .site-cursor__label {
@@ -112,13 +136,16 @@
   font-weight: 400;
   white-space: nowrap;
   transition:
-    max-width 0.22s cubic-bezier(0.24, 0.69, 0.45, 0.94),
-    opacity 0.16s ease;
+    opacity var(--site-cursor-fade) ease,
+    max-width 0s linear var(--site-cursor-layout-end);
 }
 
 .site-cursor--expanded .site-cursor__label {
   max-width: 10rem;
   opacity: 1;
+  transition:
+    opacity var(--site-cursor-fade) ease,
+    max-width var(--site-cursor-duration) var(--site-cursor-ease);
 }
 
 .site-cursor__arrow {
@@ -127,15 +154,19 @@
   height: 0;
   opacity: 0;
   transition:
-    width 0.22s cubic-bezier(0.24, 0.69, 0.45, 0.94),
-    height 0.22s cubic-bezier(0.24, 0.69, 0.45, 0.94),
-    opacity 0.16s ease;
+    opacity var(--site-cursor-fade) ease,
+    width 0s linear var(--site-cursor-layout-end),
+    height 0s linear var(--site-cursor-layout-end);
 }
 
 .site-cursor--expanded .site-cursor__arrow {
   width: 12px;
   height: 12px;
   opacity: 1;
+  transition:
+    opacity var(--site-cursor-fade) ease,
+    width var(--site-cursor-duration) var(--site-cursor-ease),
+    height var(--site-cursor-duration) var(--site-cursor-ease);
 }
 
 @media (prefers-reduced-motion: reduce) {

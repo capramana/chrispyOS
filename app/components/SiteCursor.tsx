@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { ArrowUpRight } from "iconoir-react";
 import { useClientMounted } from "./useClientMounted";
 import "./SiteCursor.css";
 
@@ -299,21 +300,13 @@ export default function SiteCursor() {
     >
       <div className="site-cursor__shell">
         <span className="site-cursor__label">{ui.target?.label ?? ""}</span>
-        <svg
+        <ArrowUpRight
           className="site-cursor__arrow"
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          fill="none"
+          width={12}
+          height={12}
+          color="#fff"
           aria-hidden
-        >
-          <path
-            d="M3 9.5L9.5 3M9.5 3V9.24M9.5 3H3.26"
-            stroke="#fff"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        />
       </div>
     </div>,
     document.body,
