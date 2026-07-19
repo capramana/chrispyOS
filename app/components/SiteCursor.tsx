@@ -31,6 +31,8 @@ const INITIAL_UI: CursorUi = {
   nativeOverride: false,
 };
 
+const CANVAS_TOOLTIP_DELAY_MS = 500;
+
 function readTarget(el: Element | null): CursorTarget | null {
   const node = el?.closest?.("[data-site-cursor]") as HTMLElement | null;
   if (!node) return null;
@@ -194,6 +196,8 @@ export default function SiteCursor() {
   const elRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
   const uiRef = useRef(INITIAL_UI);
+  const pendingTargetRef = useRef<CursorTarget | null>(null);
+  const expandTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!mounted) return;
@@ -224,6 +228,12 @@ export default function SiteCursor() {
       rafRef.current = requestAnimationFrame(paint);
     };
 
+    const clearExpandTimer = () => {
+      if (!expandTimerRef.current) return;
+      clearTimeout(expandTimerRef.current);
+      expandTimerRef.current = null;
+    };
+
     const patchUi = (patch: Partial<CursorUi>) => {
       const prev = uiRef.current;
       const next = { ...prev, ...patch };
@@ -243,12 +253,44 @@ export default function SiteCursor() {
 
     const syncFromPoint = (x: number, y: number, pressed: boolean) => {
       const under = document.elementFromPoint(x, y);
+      const hoverTarget = readTarget(under);
+      const grab = isGrabTarget(under);
+      const nativeOverride = isNativeOverride(under);
+      const text = isSelectableTextAt(x, y, under);
+
+      let target = uiRef.current.target;
+
+      if (hoverTarget) {
+        if (!sameTarget(target, hoverTarget)) {
+          if (
+            expandTimerRef.current &&
+            sameTarget(pendingTargetRef.current, hoverTarget)
+          ) {
+            target = null;
+          } else {
+            clearExpandTimer();
+            pendingTargetRef.current = hoverTarget;
+            target = null;
+            expandTimerRef.current = setTimeout(() => {
+              expandTimerRef.current = null;
+              if (sameTarget(pendingTargetRef.current, hoverTarget)) {
+                patchUi({ target: hoverTarget });
+              }
+            }, CANVAS_TOOLTIP_DELAY_MS);
+          }
+        }
+      } else {
+        clearExpandTimer();
+        pendingTargetRef.current = null;
+        target = null;
+      }
+
       patchUi({
         visible: true,
-        target: readTarget(under),
-        grab: isGrabTarget(under),
-        nativeOverride: isNativeOverride(under),
-        text: isSelectableTextAt(x, y, under),
+        target,
+        grab,
+        nativeOverride,
+        text,
         pressed,
       });
     };
@@ -267,7 +309,9 @@ export default function SiteCursor() {
     const onPointerUp = () => patchUi({ pressed: false });
 
     const onPointerLeave = () => {
-      patchUi({ visible: false, pressed: false });
+      clearExpandTimer();
+      pendingTargetRef.current = null;
+      patchUi({ visible: false, target: null, pressed: false });
     };
 
     window.addEventListener("pointermove", onPointerMove, { passive: true });
@@ -278,6 +322,7 @@ export default function SiteCursor() {
 
     return () => {
       document.documentElement.classList.remove("site-cursor-on");
+      clearExpandTimer();
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("pointerup", onPointerUp);
@@ -304,6 +349,7 @@ export default function SiteCursor() {
           className="site-cursor__arrow"
           width={12}
           height={12}
+          strokeWidth={2}
           color="#fff"
           aria-hidden
         />

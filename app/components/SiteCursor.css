@@ -1,13 +1,5 @@
 /* Custom site cursor — Paper cyan orb / text I-beam / pressed / expanded pill */
 
-.site-cursor {
-  --site-cursor-ease: cubic-bezier(0.24, 0.69, 0.45, 0.94);
-  --site-cursor-duration: 0.3s;
-  --site-cursor-fade: 0.16s;
-  --site-cursor-collapse-delay: 0.16s;
-  --site-cursor-layout-end: 0.46s;
-}
-
 .site-cursor-on,
 .site-cursor-on body {
   cursor: none;
@@ -37,6 +29,10 @@
 }
 
 .site-cursor {
+  --site-cursor-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --site-cursor-duration: 0.3s;
+  --site-cursor-fade: 0.16s;
+
   position: fixed;
   top: 0;
   left: 0;
@@ -72,16 +68,17 @@
   filter: drop-shadow(#4aa7d5 0 0 0) drop-shadow(#00000026 0 2px 2px);
   outline: 1px solid #20b1ee;
   transition:
-    max-width var(--site-cursor-duration) var(--site-cursor-ease) var(--site-cursor-collapse-delay),
-    height var(--site-cursor-duration) var(--site-cursor-ease) var(--site-cursor-collapse-delay),
-    padding var(--site-cursor-duration) var(--site-cursor-ease) var(--site-cursor-collapse-delay),
-    gap var(--site-cursor-duration) var(--site-cursor-ease) var(--site-cursor-collapse-delay),
-    border-radius var(--site-cursor-duration) var(--site-cursor-ease) var(--site-cursor-collapse-delay);
+    max-width var(--site-cursor-duration) var(--site-cursor-ease),
+    height var(--site-cursor-duration) var(--site-cursor-ease),
+    padding var(--site-cursor-duration) var(--site-cursor-ease),
+    gap var(--site-cursor-duration) var(--site-cursor-ease),
+    border-radius var(--site-cursor-duration) var(--site-cursor-ease);
 }
 
 /* Paper: grab — same 16×16 orb, asymmetric corners */
 .site-cursor--grab .site-cursor__shell {
   width: 16px;
+  max-width: 16px;
   height: 16px;
   border-top-left-radius: 4px;
   border-top-right-radius: 16px;
@@ -94,12 +91,6 @@
   width: 12px;
   max-width: 12px;
   height: 12px;
-  transition:
-    max-width var(--site-cursor-duration) var(--site-cursor-ease),
-    height var(--site-cursor-duration) var(--site-cursor-ease),
-    padding var(--site-cursor-duration) var(--site-cursor-ease),
-    gap var(--site-cursor-duration) var(--site-cursor-ease),
-    border-radius var(--site-cursor-duration) var(--site-cursor-ease);
 }
 
 /* Paper: Cursor (caret) — tall thin I-beam for selectable text */
@@ -116,12 +107,6 @@
   min-height: 24px;
   gap: 4px;
   padding: 4px 8px;
-  transition:
-    max-width var(--site-cursor-duration) var(--site-cursor-ease),
-    height var(--site-cursor-duration) var(--site-cursor-ease),
-    padding var(--site-cursor-duration) var(--site-cursor-ease),
-    gap var(--site-cursor-duration) var(--site-cursor-ease),
-    border-radius var(--site-cursor-duration) var(--site-cursor-ease);
 }
 
 .site-cursor__label {
@@ -137,15 +122,13 @@
   white-space: nowrap;
   transition:
     opacity var(--site-cursor-fade) ease,
-    max-width 0s linear var(--site-cursor-layout-end);
+    max-width var(--site-cursor-duration) var(--site-cursor-ease);
 }
 
 .site-cursor--expanded .site-cursor__label {
   max-width: 10rem;
   opacity: 1;
-  transition:
-    opacity var(--site-cursor-fade) ease,
-    max-width var(--site-cursor-duration) var(--site-cursor-ease);
+  transition: opacity var(--site-cursor-fade) ease;
 }
 
 .site-cursor__arrow {
@@ -155,18 +138,15 @@
   opacity: 0;
   transition:
     opacity var(--site-cursor-fade) ease,
-    width 0s linear var(--site-cursor-layout-end),
-    height 0s linear var(--site-cursor-layout-end);
+    width var(--site-cursor-duration) var(--site-cursor-ease),
+    height var(--site-cursor-duration) var(--site-cursor-ease);
 }
 
 .site-cursor--expanded .site-cursor__arrow {
   width: 12px;
   height: 12px;
   opacity: 1;
-  transition:
-    opacity var(--site-cursor-fade) ease,
-    width var(--site-cursor-duration) var(--site-cursor-ease),
-    height var(--site-cursor-duration) var(--site-cursor-ease);
+  transition: opacity var(--site-cursor-fade) ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
