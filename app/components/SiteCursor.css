@@ -86,10 +86,10 @@
   height: 12px;
 }
 
-/* Paper: Cursor (shrink) — tall thin I-beam for selectable text */
+/* Paper: Cursor (caret) — tall thin I-beam for selectable text */
 .site-cursor--text .site-cursor__shell {
   width: 8px;
-  height: 16px;
+  height: 20px;
 }
 
 .site-cursor--expanded .site-cursor__shell {
