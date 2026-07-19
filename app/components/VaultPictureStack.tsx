@@ -854,7 +854,7 @@ export default function VaultPictureStack({
         display: "inline-block",
         lineHeight: 0,
         zIndex,
-        cursor: dragging || gliding ? "grabbing" : "default",
+        cursor: dragging || gliding ? "grabbing" : "none",
         filter: "drop-shadow(0 16px 28px rgba(0,0,0,0.08))",
         transform,
         transformOrigin: "center center",
@@ -900,7 +900,7 @@ export default function VaultPictureStack({
                   zIndex: isVis ? 10 + vp : 5,
                   opacity: isVis && spawnEntered ? 1 : 0,
                   pointerEvents: isVis && spawnEntered ? "auto" : "none",
-                  cursor: isVis ? (dragging ? "grabbing" : "grab") : "default",
+                  cursor: isVis ? (dragging ? "grabbing" : "grab") : "none",
                   transform:
                     isVis && spawnEntered
                       ? `rotate(${(pileHovered ? HOVER_ROTS[vp] : ROTS[vp])}deg) scale(${pileHovered ? 1.03 : 1})`

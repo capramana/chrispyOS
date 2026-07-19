@@ -13,10 +13,34 @@ const IDLE_DELAY = 30000;
 const ROT_PAD_V = 16;
 const ROT_PAD_H = 16;
 
-const VARIANTS: { w: number; h: number; srcLight: string; srcDark: string }[] = [
-  { w: 151, h: 74, srcLight: "/graffiti/josephine.png", srcDark: "/graffiti/josephine-dark.png" },
-  { w: 83, h: 109, srcLight: "/graffiti/celine.png", srcDark: "/graffiti/celine-dark.png" },
-  { w: 105, h: 87, srcLight: "/graffiti/flora.png", srcDark: "/graffiti/flora-dark.png" },
+const VARIANTS: {
+  w: number;
+  h: number;
+  srcLight: string;
+  srcDark: string;
+  cursor?: { label: string; href: string };
+}[] = [
+  {
+    w: 151,
+    h: 74,
+    srcLight: "/graffiti/josephine.png",
+    srcDark: "/graffiti/josephine-dark.png",
+    cursor: { label: "Josephine", href: "https://www.josephines.world/" },
+  },
+  {
+    w: 83,
+    h: 109,
+    srcLight: "/graffiti/celine.png",
+    srcDark: "/graffiti/celine-dark.png",
+    cursor: { label: "Celine", href: "https://celinekeomany.me/" },
+  },
+  {
+    w: 105,
+    h: 87,
+    srcLight: "/graffiti/flora.png",
+    srcDark: "/graffiti/flora-dark.png",
+    cursor: { label: "Flora", href: "https://floguo.com" },
+  },
 ];
 
 type Bounds = { minLeft: number; maxLeft: number; minTop: number; maxTop: number };
@@ -222,7 +246,19 @@ export default function Graffiti() {
   return (
     <>
       {placements.map(({ variantIdx, top, left, rotation }) => {
-        const { w, h, srcLight, srcDark } = VARIANTS[variantIdx];
+        const { w, h, srcLight, srcDark, cursor } = VARIANTS[variantIdx];
+        const interactive = Boolean(cursor) && visible;
+        const img = (
+          <img
+            src={isDark ? srcDark : srcLight}
+            alt=""
+            width={w}
+            height={h}
+            draggable={false}
+            className="block size-full"
+          />
+        );
+
         return (
           <div
             key={variantIdx}
@@ -234,21 +270,30 @@ export default function Graffiti() {
               height: h,
               transform: `rotate(${rotation}deg)`,
               transformOrigin: "center",
-              pointerEvents: "none",
+              pointerEvents: interactive ? "auto" : "none",
               zIndex: 50,
               opacity: visible ? 1 : 0,
               filter: visible ? "none" : "blur(8px)",
               transition: "opacity 0.5s ease, filter 0.5s ease",
             }}
           >
-            <img
-              src={isDark ? srcDark : srcLight}
-              alt=""
-              width={w}
-              height={h}
-              draggable={false}
-              className="block size-full"
-            />
+            {cursor ? (
+              <a
+                href={cursor.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-site-cursor=""
+                data-site-cursor-label={cursor.label}
+                data-site-cursor-href={cursor.href}
+                aria-label={cursor.label}
+                className="block size-full"
+                tabIndex={interactive ? 0 : -1}
+              >
+                {img}
+              </a>
+            ) : (
+              img
+            )}
           </div>
         );
       })}

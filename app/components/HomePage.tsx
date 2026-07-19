@@ -5,6 +5,7 @@ import type { NavPage } from "../types/nav-page";
 import Graffiti from "./Graffiti";
 import NavBar from "./NavBar";
 import ChisledText from "./ChisledText";
+import SiteCursor from "./SiteCursor";
 import {
   DESCRIPTION_SIZE,
   HERO_COMBINED_DARK_SRC,
@@ -105,6 +106,7 @@ export default function HomePage() {
       <NavBar activePage={activePage} onActivePageChange={handleActivePageChange} />
 
       <Graffiti />
+      <SiteCursor />
     </div>
   );
 }

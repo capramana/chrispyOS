@@ -462,7 +462,7 @@ export default function VaultBook({
     justifyContent: "center",
     overflow: "visible",
     zIndex: overlayActive ? undefined : zIndex,
-    cursor: open ? "default" : dragging ? "grabbing" : "grab",
+    cursor: open ? "none" : dragging ? "grabbing" : "grab",
     opacity: spawnEntered ? 1 : 0,
     pointerEvents: spawnEntered ? "auto" : "none",
     transform: shellTransform,

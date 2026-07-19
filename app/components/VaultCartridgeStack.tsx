@@ -760,7 +760,7 @@ export default function VaultCartridgeStack({
         height: footprintH,
         zIndex,
         overflow: "visible",
-        cursor: dragging || gliding ? "grabbing" : "default",
+        cursor: dragging || gliding ? "grabbing" : "grab",
         transform: shellTransform,
         transformOrigin: "center center",
         visibility: expanded ? "hidden" : "visible",

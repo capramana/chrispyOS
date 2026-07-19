@@ -1,0 +1,147 @@
+/* Custom site cursor — Paper cyan orb / text I-beam / pressed / expanded pill */
+
+.site-cursor-on,
+.site-cursor-on body {
+  cursor: none;
+}
+
+.site-cursor-on a,
+.site-cursor-on button,
+.site-cursor-on [role="button"],
+.site-cursor-on [data-site-cursor],
+.site-cursor-on .cursor-pointer,
+.site-cursor-on .cursor-default,
+.site-cursor-on .cursor-text,
+.site-cursor-on .cursor-grab,
+.site-cursor-on .cursor-grabbing,
+.site-cursor-on .vault-artifact,
+.site-cursor-on .vault-artifact *,
+.site-cursor-on .vault-book-root,
+.site-cursor-on .vault-book-root *,
+.site-cursor-on .vault-postit,
+.site-cursor-on .vault-postit *,
+.site-cursor-on .vault-cartridge-card,
+.site-cursor-on .vault-cartridge-card *,
+.site-cursor-on input,
+.site-cursor-on textarea,
+.site-cursor-on [contenteditable="true"] {
+  cursor: none !important;
+}
+
+.site-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100000;
+  pointer-events: none;
+  opacity: 0;
+  overflow: visible;
+  will-change: transform;
+}
+
+.site-cursor--visible {
+  opacity: 1;
+}
+
+.site-cursor__shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 100px;
+  box-sizing: border-box;
+  background-image: linear-gradient(
+    in oklab 0deg,
+    oklab(65% -0.058 -0.147) 0%,
+    oklab(72.6% -0.086 -0.116) 100%
+  );
+  box-shadow: #2cc0ff 0 0 4px 1px inset;
+  filter: drop-shadow(#4aa7d5 0 0 0) drop-shadow(#00000026 0 2px 2px);
+  outline: 1px solid #20b1ee;
+  transition:
+    width 0.18s cubic-bezier(0.24, 0.69, 0.45, 0.94),
+    height 0.18s cubic-bezier(0.24, 0.69, 0.45, 0.94),
+    padding 0.18s cubic-bezier(0.24, 0.69, 0.45, 0.94),
+    gap 0.18s cubic-bezier(0.24, 0.69, 0.45, 0.94),
+    border-radius 0.18s cubic-bezier(0.24, 0.69, 0.45, 0.94);
+}
+
+/* Paper: grab — same 16×16 orb, asymmetric corners */
+.site-cursor--grab .site-cursor__shell {
+  width: 16px;
+  height: 16px;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 16px;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+}
+
+/* Paper: Cursor (onClick) — 12×12 */
+.site-cursor--pressed .site-cursor__shell {
+  width: 12px;
+  height: 12px;
+}
+
+/* Paper: Cursor (shrink) — tall thin I-beam for selectable text */
+.site-cursor--text .site-cursor__shell {
+  width: 8px;
+  height: 16px;
+}
+
+.site-cursor--expanded .site-cursor__shell {
+  width: auto;
+  height: 24px;
+  min-height: 24px;
+  gap: 4px;
+  padding: 4px 8px;
+}
+
+.site-cursor__label {
+  flex-shrink: 0;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  color: #fff;
+  font-family: var(--font-zalando-sans), system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  white-space: nowrap;
+  transition:
+    max-width 0.22s cubic-bezier(0.24, 0.69, 0.45, 0.94),
+    opacity 0.16s ease;
+}
+
+.site-cursor--expanded .site-cursor__label {
+  max-width: 10rem;
+  opacity: 1;
+}
+
+.site-cursor__arrow {
+  flex-shrink: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  transition:
+    width 0.22s cubic-bezier(0.24, 0.69, 0.45, 0.94),
+    height 0.22s cubic-bezier(0.24, 0.69, 0.45, 0.94),
+    opacity 0.16s ease;
+}
+
+.site-cursor--expanded .site-cursor__arrow {
+  width: 12px;
+  height: 12px;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-cursor__shell,
+  .site-cursor__label,
+  .site-cursor__arrow {
+    transition: none;
+  }
+}
