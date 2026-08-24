@@ -202,6 +202,14 @@ const PICTURE_ITEMS: VaultPictureItem[] = [
     captionUrl: "https://www.gettyimages.com/detail/news-photo/john-d-rockefeller-marks-his-84th-birthday-by-handing-out-a-news-photo/97305508",
   },
   {
+    id: "picture-chung-ju-yung-construction",
+    src: "/vault/artifact-chung-ju-yung-construction.png",
+    alt: "Chung Ju-yung in a hard hat talking with lawmakers at a construction site",
+    caption: "Chung Ju-yung at a construction site talking to law makers",
+    captionYear: "1970s",
+    captionUrl: "https://www.asan-chungjuyung.com/mobile_eng/sub_02_01_2.html",
+  },
+  {
     id: "picture-falcon-1",
     src: "/vault/artifact-1.png",
     alt: "Falcon 1 debris hangar, 2006",
