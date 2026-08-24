@@ -192,6 +192,16 @@ const PICTURE_ITEMS: VaultPictureItem[] = [
     captionUrl: "https://library.nps.edu/richard-w-hamming",
   },
   {
+    id: "picture-rockefeller-nickel",
+    src: "/vault/artifact-rockefeller-nickel.png",
+    alt: "John D. Rockefeller, 84, handing a nickel to a child on stone steps",
+    maxWidth: 100,
+    maxHeight: 125,
+    caption: "Rockefeller, 84, gifts a nickel to a child",
+    captionYear: "1923",
+    captionUrl: "https://www.gettyimages.com/detail/news-photo/john-d-rockefeller-marks-his-84th-birthday-by-handing-out-a-news-photo/97305508",
+  },
+  {
     id: "picture-falcon-1",
     src: "/vault/artifact-1.png",
     alt: "Falcon 1 debris hangar, 2006",
